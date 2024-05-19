@@ -1,0 +1,29 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: CamelotPositionManager
+    network: mainnet
+    source:
+      address: "0x672aBf9EC1c9DacB74721DE96bedFf051dFd85F6"
+      abi: CamelotPositionManager
+      startBlock: 160111754
+    mapping:
+      entities:
+        - HolyEmittedPool
+        - IsekaMirrorPoolTvl
+        - MirrorDeposit
+        - NitroDeposit
+        - TotalHolyEmitted
+        - NewLp
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      abis:
+        - name: CamelotPositionManager
+          file: ./abi/abis/CamelotPositionManager.json
+      eventHandlers:
+        - event: HarvestedRewards(uint256,address,indexed address,indexed uint256)
+          handler: handleHarvest
+      file: ./src/cpm.ts
