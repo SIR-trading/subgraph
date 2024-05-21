@@ -1,0 +1,9 @@
+type Vault @entity(immutable: true) {
+  id: String!
+  vaultId: BigInt!
+  collateralToken: Bytes!
+  debtToken: Bytes!
+  collateralSymbol: String!
+  debtSymbol: String!
+  leverageTier: Int!
+}

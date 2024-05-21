@@ -11,13 +11,16 @@ dataSources:
       startBlock: 19901370
     mapping:
       entities:
+        - Vault
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       abis:
         - name: VaultExternal
-          file: ./abi/VaultExternal.json
+          file: ./abis/VaultExternal.json
+        - name: ERC20
+          file: ./abis/Erc20.json
       eventHandlers:
-        - event: VaultInitialized(address indexed, address indexed, int8 indexed, uint256)
+        - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256)
           handler: handleVaultInitialized
       file: ./src/index.ts
