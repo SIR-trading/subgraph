@@ -6,9 +6,14 @@ export function handleTransferFrom(event: Transfer): void {
   let context = dataSource.context();
   let apeAddress = context.getString("apeAddress");
   const toUP = UserPosition.load(event.params.to.toHexString() + apeAddress);
+
   const fromUP = UserPosition.load(
     event.params.from.toHexString() + apeAddress
   );
+  if (fromUP) {
+    fromUP.balance = fromUP.balance.minus(event.params.amount);
+    fromUP.save();
+  }
   // TODO
   // NEED TO CHECK FOR BURNING
   if (toUP) {
@@ -20,6 +25,6 @@ export function handleTransferFrom(event: Transfer): void {
     newUP.balance = event.params.amount;
     newUP.APE = apeAddress;
     newUP.save();
-    return;
   }
+  return;
 }
