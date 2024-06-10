@@ -6,7 +6,7 @@ dataSources:
     name: VaultExternal
     network: mainnet
     source:
-      address: "0x41219a0a9C0b86ED81933c788a6B63Dfef8f17eE"
+      address: "0xCaC60200c1Cb424f2C1e438c7Ee1B98d487f0254"
       abi: VaultExternal
       startBlock: 19943272
     mapping:
@@ -32,7 +32,7 @@ templates:
       abi: APE
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.6
+      apiVersion: 0.0.7
       language: wasm/assemblyscript
       file: ./src/mappings/ape.ts
       entities:

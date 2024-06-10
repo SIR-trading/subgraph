@@ -208,4 +208,56 @@ export class UserPosition extends Entity {
   set User(value: Bytes) {
     this.set("User", Value.fromBytes(value));
   }
+
+  get collateralSymbol(): string {
+    let value = this.get("collateralSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set collateralSymbol(value: string) {
+    this.set("collateralSymbol", Value.fromString(value));
+  }
+
+  get debtSymbol(): string {
+    let value = this.get("debtSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set debtSymbol(value: string) {
+    this.set("debtSymbol", Value.fromString(value));
+  }
+
+  get collateralToken(): string {
+    let value = this.get("collateralToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set collateralToken(value: string) {
+    this.set("collateralToken", Value.fromString(value));
+  }
+
+  get debtToken(): string {
+    let value = this.get("debtToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set debtToken(value: string) {
+    this.set("debtToken", Value.fromString(value));
+  }
 }

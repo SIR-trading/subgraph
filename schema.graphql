@@ -12,4 +12,8 @@ type UserPosition @entity(immutable:false) {
   balance: BigInt!
   APE: String! 
   User: Bytes!
+  collateralSymbol: String!
+  debtSymbol: String!
+  collateralToken: String!
+  debtToken: String!
 }
