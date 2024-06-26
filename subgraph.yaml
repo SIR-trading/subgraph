@@ -6,9 +6,9 @@ dataSources:
     name: VaultExternal
     network: mainnet
     source:
-      address: "0x28227B230d3945e580eD3B1c6c8ea1df658A7AA9"
+      address: "0x2ca60d89144D4cdf85dA87af4FE12aBF9265F28C"
       abi: VaultExternal
-      startBlock: 19692023 
+      startBlock: 19934930
     mapping:
       entities:
         - Vault
