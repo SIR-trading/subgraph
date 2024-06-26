@@ -38,6 +38,10 @@ export class VaultInitialized__Params {
   get vaultId(): BigInt {
     return this._event.parameters[3].value.toBigInt();
   }
+
+  get apeAddress(): Address {
+    return this._event.parameters[4].value.toAddress();
+  }
 }
 
 export class VaultExternal extends ethereum.SmartContract {

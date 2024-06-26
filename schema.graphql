@@ -1,9 +1,19 @@
 type Vault @entity(immutable: true) {
   id: String!
-  vaultId: BigInt!
-  collateralToken: Bytes!
-  debtToken: Bytes!
+  vaultId: String!
+  collateralToken: String!
+  debtToken: String!
   collateralSymbol: String!
   debtSymbol: String!
   leverageTier: Int!
+}
+type UserPosition @entity(immutable: false) {
+  id: String!
+  balance: BigInt!
+  APE: String!
+  User: Bytes!
+  collateralSymbol: String!
+  debtSymbol: String!
+  collateralToken: String!
+  debtToken: String!
 }

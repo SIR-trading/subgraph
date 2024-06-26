@@ -6,9 +6,9 @@ dataSources:
     name: VaultExternal
     network: mainnet
     source:
-      address: "0x2ca60d89144D4cdf85dA87af4FE12aBF9265F28C"
+      address: "0xCaC60200c1Cb424f2C1e438c7Ee1B98d487f0254"
       abi: VaultExternal
-      startBlock: 19934930
+      startBlock: 19943272
     mapping:
       entities:
         - Vault
@@ -21,6 +21,25 @@ dataSources:
         - name: ERC20
           file: ./abis/Erc20.json
       eventHandlers:
-        - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256)
+        - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256,address)
           handler: handleVaultInitialized
-      file: ./src/index.ts
+      file: ./src/mappings/vault.ts
+templates:
+  - name: APE
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: APE
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mappings/ape.ts
+      entities:
+        - APE
+      abis:
+        - name: APE
+          file: ./abis/APE.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransferFrom
