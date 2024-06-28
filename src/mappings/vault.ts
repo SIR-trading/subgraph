@@ -12,6 +12,15 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   let vault = Vault.load(event.params.vaultId.toHexString());
   let context = new DataSourceContext();
   context.setString("apeAddress", event.params.apeAddress.toHexString());
+  context.setString("collateralSymbol", collateralSymbol);
+  context.setString(
+    "collateralToken",
+    event.params.collateralToken.toHexString()
+  );
+  context.setString("debtSymbol", debtSymbol);
+  context.setString("debtToken", event.params.debtToken.toHexString());
+  context.setString("leverageTier", event.params.leverageTier.toString());
+
   APE.createWithContext(event.params.apeAddress, context);
   if (vault) {
     return;
@@ -23,6 +32,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.collateralSymbol = collateralSymbol;
     vault.debtSymbol = debtSymbol;
     vault.vaultId = event.params.vaultId.toString();
+
     vault.save();
     return;
   }

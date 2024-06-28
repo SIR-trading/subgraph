@@ -6,8 +6,12 @@ import { ERC20 } from "../../generated/VaultExternal/ERC20";
 export function handleTransferFrom(event: Transfer): void {
   let context = dataSource.context();
   let apeAddress = context.getString("apeAddress");
+  let debtToken = context.getString("debtToken");
+  let debtSymbol = context.getString("debtSymbol");
+  let collateralToken = context.getString("collateralToken");
+  let collateralSymbol = context.getString("collateralSymbol");
+  let leverageTier = context.getString("leverageTier");
   const toUP = UserPosition.load(event.params.to.toHexString() + apeAddress);
-  const apeInstance = APE.bind(Address.fromHexString(apeAddress));
   const fromUP = UserPosition.load(
     event.params.from.toHexString() + apeAddress
   );
@@ -21,16 +25,15 @@ export function handleTransferFrom(event: Transfer): void {
     toUP.balance = event.params.amount.plus(toUP.balance);
     toUP.save();
   } else {
-    const debt = apeInstance.debtToken();
-    const col = apeInstance.collateralToken();
     const newUP = new UserPosition(event.params.to.toHexString() + apeAddress);
     newUP.User = event.params.to;
     newUP.balance = event.params.amount;
     newUP.APE = apeAddress;
-    newUP.collateralToken = col.toHexString();
-    newUP.debtToken = debt.toHexString();
-    newUP.debtSymbol = ERC20.bind(debt).symbol();
-    newUP.collateralSymbol = ERC20.bind(col).symbol();
+    newUP.collateralToken = collateralToken;
+    newUP.debtToken = debtToken;
+    newUP.debtSymbol = debtSymbol;
+    newUP.collateralSymbol = collateralSymbol;
+    newUP.leverageTier = leverageTier;
     newUP.save();
   }
   return;

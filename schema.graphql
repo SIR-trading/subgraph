@@ -16,4 +16,5 @@ type UserPosition @entity(immutable:false) {
   debtSymbol: String!
   collateralToken: String!
   debtToken: String!
+  leverageTier: String!
 }
