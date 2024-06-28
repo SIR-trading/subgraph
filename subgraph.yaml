@@ -6,7 +6,7 @@ dataSources:
     name: VaultExternal
     network: mainnet
     source:
-      address: "0xCaC60200c1Cb424f2C1e438c7Ee1B98d487f0254"
+      address: "0x43dFD957bB91b568176E976A8d4e8ab4E94aeBfD"
       abi: VaultExternal
       startBlock: 19943272
     mapping:
