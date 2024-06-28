@@ -1,7 +1,6 @@
-import { Address, dataSource } from "@graphprotocol/graph-ts";
 import { UserPosition } from "../../generated/schema";
-import { APE, Transfer } from "../../generated/templates/APE/APE";
-import { ERC20 } from "../../generated/VaultExternal/ERC20";
+import { Transfer } from "../../generated/templates/APE/APE";
+import { dataSource } from "@graphprotocol/graph-ts";
 
 export function handleTransferFrom(event: Transfer): void {
   let context = dataSource.context();
@@ -19,8 +18,6 @@ export function handleTransferFrom(event: Transfer): void {
     fromUP.balance = fromUP.balance.minus(event.params.amount);
     fromUP.save();
   }
-  // TODO
-  // NEED TO CHECK FOR BURNING
   if (toUP) {
     toUP.balance = event.params.amount.plus(toUP.balance);
     toUP.save();

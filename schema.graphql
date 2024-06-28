@@ -7,10 +7,10 @@ type Vault @entity(immutable: true) {
   debtSymbol: String!
   leverageTier: Int!
 }
-type UserPosition @entity(immutable:false) {
+type UserPosition @entity(immutable: false) {
   id: String!
   balance: BigInt!
-  APE: String! 
+  APE: String!
   User: Bytes!
   collateralSymbol: String!
   debtSymbol: String!
