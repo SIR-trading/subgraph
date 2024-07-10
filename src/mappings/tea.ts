@@ -7,7 +7,10 @@ import {
 import { UserPositionTea } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 export function handleSingleTransfer(event: transfersingle): void {
-  const { amount, to, from, id: vaultId } = event.params;
+  const amount = event.params.amount;
+  const to = event.params.to;
+  const from = event.params.from;
+  const vaultId = event.params.id;
   handleTransfer(vaultId, to, from, amount);
 }
 
@@ -62,7 +65,9 @@ function handleTransfer(
 
 export function handleBatchTransfer(event: transferbatch): void {
   const vaults = event.params.vaultids;
-  const { to, from, amounts } = event.params;
+  const to = event.params.to;
+  const from = event.params.to;
+  const amounts = event.params.amounts;
   vaults.forEach((vault, index) => {
     const amount = amounts[index];
     handleTransfer(vault, to, from, amount);
