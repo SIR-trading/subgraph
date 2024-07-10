@@ -19,6 +19,7 @@ export function handleTransferFrom(event: Transfer): void {
     fromUP.balance = fromUP.balance.minus(event.params.amount);
     fromUP.save();
   }
+
   if (toUP) {
     toUP.balance = event.params.amount.plus(toUP.balance);
     toUP.save();
@@ -35,5 +36,6 @@ export function handleTransferFrom(event: Transfer): void {
     newUP.leverageTier = leverageTier;
     newUP.save();
   }
+
   return;
 }
