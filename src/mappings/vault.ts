@@ -15,11 +15,12 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   context.setString("collateralSymbol", collateralSymbol);
   context.setString(
     "collateralToken",
-    event.params.collateralToken.toHexString()
+    event.params.collateralToken.toHexString(),
   );
   context.setString("debtSymbol", debtSymbol);
   context.setString("debtToken", event.params.debtToken.toHexString());
   context.setString("leverageTier", event.params.leverageTier.toString());
+  context.setString("vaultId", event.params.vaultId.toString());
 
   APE.createWithContext(event.params.apeAddress, context);
   if (vault) {

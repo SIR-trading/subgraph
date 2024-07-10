@@ -17,4 +17,5 @@ type UserPosition @entity(immutable: false) {
   collateralToken: String!
   debtToken: String!
   leverageTier: String!
+  vautlId: String!
 }

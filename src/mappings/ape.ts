@@ -10,9 +10,10 @@ export function handleTransferFrom(event: Transfer): void {
   let collateralToken = context.getString("collateralToken");
   let collateralSymbol = context.getString("collateralSymbol");
   let leverageTier = context.getString("leverageTier");
+  let vaultId = context.getString("vaultId");
   const toUP = UserPosition.load(event.params.to.toHexString() + apeAddress);
   const fromUP = UserPosition.load(
-    event.params.from.toHexString() + apeAddress
+    event.params.from.toHexString() + apeAddress,
   );
   if (fromUP) {
     fromUP.balance = fromUP.balance.minus(event.params.amount);
@@ -25,6 +26,7 @@ export function handleTransferFrom(event: Transfer): void {
     const newUP = new UserPosition(event.params.to.toHexString() + apeAddress);
     newUP.User = event.params.to;
     newUP.balance = event.params.amount;
+    newUP.vautlId = vaultId;
     newUP.APE = apeAddress;
     newUP.collateralToken = collateralToken;
     newUP.debtToken = debtToken;

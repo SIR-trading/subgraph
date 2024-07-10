@@ -273,4 +273,17 @@ export class UserPosition extends Entity {
   set leverageTier(value: string) {
     this.set("leverageTier", Value.fromString(value));
   }
+
+  get vautlId(): string {
+    let value = this.get("vautlId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set vautlId(value: string) {
+    this.set("vautlId", Value.fromString(value));
+  }
 }
