@@ -19,3 +19,14 @@ type UserPosition @entity(immutable: false) {
   leverageTier: String!
   vautlId: String!
 }
+type UserPositionTea @entity(immutable: false) {
+  id: String!
+  balance: BigInt!
+  user: Bytes!
+  collateralSymbol: String!
+  debtSymbol: String!
+  collateralToken: Bytes!
+  debtToken: Bytes!
+  leverageTier: String!
+  vautlId: String!
+}

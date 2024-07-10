@@ -24,6 +24,30 @@ dataSources:
         - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256,address)
           handler: handleVaultInitialized
       file: ./src/mappings/vault.ts
+  - kind: ethereum
+    name: Vault
+    network: mainnet
+    source:
+      address: "0x43dFD957bB91b568176E976A8d4e8ab4E94aeBfD"
+      abi: Vault
+      startBlock: 19943272
+    mapping:
+      entities:
+        - Vault
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      abis:
+        - name: Vault
+          file: ./abis/Vault.json
+        - name: ERC20
+          file: ./abis/Erc20.json
+      eventHandlers:
+        - event: transfersingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleSingleTransfer
+        - event: transferbatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+          handler: handleBatchTransfer
+      file: ./src/mappings/tea.ts
 templates:
   - name: APE
     kind: ethereum/contract
