@@ -19,7 +19,7 @@ function handleTransfer(
   to: Address,
   from: Address,
   amount: BigInt,
-) {
+): void {
   const contract = Vault.bind(
     Address.fromString("0x43dfd957bb91b568176e976a8d4e8ab4e94aebfd"),
   );
@@ -68,10 +68,10 @@ export function handleBatchTransfer(event: transferbatch): void {
   const to = event.params.to;
   const from = event.params.to;
   const amounts = event.params.amounts;
-  vaults.forEach((vault, index) => {
-    const amount = amounts[index];
-    handleTransfer(vault, to, from, amount);
-  });
+  for (let i = 0; i++; i < vaults.length) {
+    const amount = amounts[i];
+    handleTransfer(vaults[i], to, from, amount);
+  }
 }
 
 // const contract = Vault.bind(
