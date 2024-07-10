@@ -287,3 +287,149 @@ export class UserPosition extends Entity {
     this.set("vautlId", Value.fromString(value));
   }
 }
+
+export class UserPositionTea extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save UserPositionTea entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type UserPositionTea must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("UserPositionTea", id.toString(), this);
+    }
+  }
+
+  static loadInBlock(id: string): UserPositionTea | null {
+    return changetype<UserPositionTea | null>(
+      store.get_in_block("UserPositionTea", id),
+    );
+  }
+
+  static load(id: string): UserPositionTea | null {
+    return changetype<UserPositionTea | null>(store.get("UserPositionTea", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get balance(): BigInt {
+    let value = this.get("balance");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set balance(value: BigInt) {
+    this.set("balance", Value.fromBigInt(value));
+  }
+
+  get user(): Bytes {
+    let value = this.get("user");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set user(value: Bytes) {
+    this.set("user", Value.fromBytes(value));
+  }
+
+  get collateralSymbol(): string {
+    let value = this.get("collateralSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set collateralSymbol(value: string) {
+    this.set("collateralSymbol", Value.fromString(value));
+  }
+
+  get debtSymbol(): string {
+    let value = this.get("debtSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set debtSymbol(value: string) {
+    this.set("debtSymbol", Value.fromString(value));
+  }
+
+  get collateralToken(): Bytes {
+    let value = this.get("collateralToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set collateralToken(value: Bytes) {
+    this.set("collateralToken", Value.fromBytes(value));
+  }
+
+  get debtToken(): Bytes {
+    let value = this.get("debtToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set debtToken(value: Bytes) {
+    this.set("debtToken", Value.fromBytes(value));
+  }
+
+  get leverageTier(): string {
+    let value = this.get("leverageTier");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set leverageTier(value: string) {
+    this.set("leverageTier", Value.fromString(value));
+  }
+
+  get vautlId(): string {
+    let value = this.get("vautlId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set vautlId(value: string) {
+    this.set("vautlId", Value.fromString(value));
+  }
+}
