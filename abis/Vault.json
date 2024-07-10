@@ -1,0 +1,1063 @@
+[
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "systemcontrol",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "sir",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "oracle",
+        "type": "address"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "lengthmismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "notauthorized",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "teamaxsupplyexceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "unsaferecipient",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internaltype": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "approvalforall",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internaltype": "uint48",
+        "name": "vaultid",
+        "type": "uint48"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint144",
+        "name": "collateralwithdrawn",
+        "type": "uint144"
+      }
+    ],
+    "name": "burn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internaltype": "uint48",
+        "name": "vaultid",
+        "type": "uint48"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint144",
+        "name": "collateraldeposited",
+        "type": "uint144"
+      }
+    ],
+    "name": "mint",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint256[]",
+        "name": "vaultids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "transferbatch",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internaltype": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfersingle",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internaltype": "string",
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internaltype": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internaltype": "uint48",
+        "name": "vault",
+        "type": "uint48"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint8",
+        "name": "tax",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internaltype": "uint16",
+        "name": "cumtax",
+        "type": "uint16"
+      }
+    ],
+    "name": "vaultnewtax",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ts_issuance_start",
+    "outputs": [
+      {
+        "internaltype": "uint40",
+        "name": "",
+        "type": "uint40"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceof",
+    "outputs": [
+      {
+        "internaltype": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address[]",
+        "name": "owners",
+        "type": "address[]"
+      },
+      {
+        "internaltype": "uint256[]",
+        "name": "vaultids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "balanceofbatch",
+    "outputs": [
+      {
+        "internaltype": "uint256[]",
+        "name": "balances_",
+        "type": "uint256[]"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "bool",
+        "name": "isape",
+        "type": "bool"
+      },
+      {
+        "components": [
+          {
+            "internaltype": "address",
+            "name": "debttoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "address",
+            "name": "collateraltoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "int8",
+            "name": "leveragetier",
+            "type": "int8"
+          }
+        ],
+        "internaltype": "struct vaultstructs.vaultparameters",
+        "name": "vaultparams",
+        "type": "tuple"
+      },
+      {
+        "internaltype": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "burn",
+    "outputs": [
+      {
+        "internaltype": "uint144",
+        "name": "collateralwithdrawn",
+        "type": "uint144"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      },
+      {
+        "internaltype": "address",
+        "name": "lper",
+        "type": "address"
+      }
+    ],
+    "name": "claimsir",
+    "outputs": [
+      {
+        "internaltype": "uint80",
+        "name": "",
+        "type": "uint80"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      }
+    ],
+    "name": "cumulativesirpertea",
+    "outputs": [
+      {
+        "internaltype": "uint176",
+        "name": "cumsirperteax96",
+        "type": "uint176"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internaltype": "address",
+            "name": "debttoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "address",
+            "name": "collateraltoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "int8",
+            "name": "leveragetier",
+            "type": "int8"
+          }
+        ],
+        "internaltype": "struct vaultstructs.vaultparameters",
+        "name": "vaultparams",
+        "type": "tuple"
+      }
+    ],
+    "name": "getreserves",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internaltype": "uint144",
+            "name": "reserveapes",
+            "type": "uint144"
+          },
+          {
+            "internaltype": "uint144",
+            "name": "reservelpers",
+            "type": "uint144"
+          },
+          {
+            "internaltype": "int64",
+            "name": "tickpricex42",
+            "type": "int64"
+          }
+        ],
+        "internaltype": "struct vaultstructs.reserves",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internaltype": "address",
+            "name": "debttoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "address",
+            "name": "collateraltoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "int8",
+            "name": "leveragetier",
+            "type": "int8"
+          }
+        ],
+        "internaltype": "struct vaultstructs.vaultparameters",
+        "name": "vaultparams",
+        "type": "tuple"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isapprovedforall",
+    "outputs": [
+      {
+        "internaltype": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "latesttokenparams",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internaltype": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internaltype": "string",
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "internaltype": "uint8",
+            "name": "decimals",
+            "type": "uint8"
+          }
+        ],
+        "internaltype": "struct vaultstructs.tokenparameters",
+        "name": "",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internaltype": "address",
+            "name": "debttoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "address",
+            "name": "collateraltoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "int8",
+            "name": "leveragetier",
+            "type": "int8"
+          }
+        ],
+        "internaltype": "struct vaultstructs.vaultparameters",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "bool",
+        "name": "isape",
+        "type": "bool"
+      },
+      {
+        "components": [
+          {
+            "internaltype": "address",
+            "name": "debttoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "address",
+            "name": "collateraltoken",
+            "type": "address"
+          },
+          {
+            "internaltype": "int8",
+            "name": "leveragetier",
+            "type": "int8"
+          }
+        ],
+        "internaltype": "struct vaultstructs.vaultparameters",
+        "name": "vaultparams",
+        "type": "tuple"
+      }
+    ],
+    "name": "mint",
+    "outputs": [
+      {
+        "internaltype": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numberofvaults",
+    "outputs": [
+      {
+        "internaltype": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internaltype": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "internaltype": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "internaltype": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "onerc1155batchreceived",
+    "outputs": [
+      {
+        "internaltype": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internaltype": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internaltype": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internaltype": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "onerc1155received",
+    "outputs": [
+      {
+        "internaltype": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "paramsbyid",
+    "outputs": [
+      {
+        "internaltype": "address",
+        "name": "debttoken",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "collateraltoken",
+        "type": "address"
+      },
+      {
+        "internaltype": "int8",
+        "name": "leveragetier",
+        "type": "int8"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internaltype": "uint256[]",
+        "name": "vaultids",
+        "type": "uint256[]"
+      },
+      {
+        "internaltype": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internaltype": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safebatchtransferfrom",
+    "outputs": [],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      },
+      {
+        "internaltype": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internaltype": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safetransferfrom",
+    "outputs": [],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internaltype": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setapprovalforall",
+    "outputs": [],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "bytes4",
+        "name": "interfaceid",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsinterface",
+    "outputs": [
+      {
+        "internaltype": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "statemutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "systemparams",
+    "outputs": [
+      {
+        "internaltype": "uint16",
+        "name": "basefee",
+        "type": "uint16"
+      },
+      {
+        "internaltype": "uint16",
+        "name": "lpfee",
+        "type": "uint16"
+      },
+      {
+        "internaltype": "bool",
+        "name": "mintingstopped",
+        "type": "bool"
+      },
+      {
+        "internaltype": "uint16",
+        "name": "cumtax",
+        "type": "uint16"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "collateral",
+        "type": "address"
+      }
+    ],
+    "name": "tokenstates",
+    "outputs": [
+      {
+        "internaltype": "uint112",
+        "name": "collectedfees",
+        "type": "uint112"
+      },
+      {
+        "internaltype": "uint144",
+        "name": "total",
+        "type": "uint144"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      }
+    ],
+    "name": "totalsupply",
+    "outputs": [
+      {
+        "internaltype": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      },
+      {
+        "internaltype": "address",
+        "name": "lper",
+        "type": "address"
+      }
+    ],
+    "name": "unclaimedrewards",
+    "outputs": [
+      {
+        "internaltype": "uint80",
+        "name": "",
+        "type": "uint80"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint16",
+        "name": "basefee",
+        "type": "uint16"
+      },
+      {
+        "internaltype": "uint16",
+        "name": "lpfee",
+        "type": "uint16"
+      },
+      {
+        "internaltype": "bool",
+        "name": "mintingstopped",
+        "type": "bool"
+      }
+    ],
+    "name": "updatesystemstate",
+    "outputs": [],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint48[]",
+        "name": "oldvaults",
+        "type": "uint48[]"
+      },
+      {
+        "internaltype": "uint48[]",
+        "name": "newvaults",
+        "type": "uint48[]"
+      },
+      {
+        "internaltype": "uint8[]",
+        "name": "newtaxes",
+        "type": "uint8[]"
+      },
+      {
+        "internaltype": "uint16",
+        "name": "cumtax",
+        "type": "uint16"
+      }
+    ],
+    "name": "updatevaults",
+    "outputs": [],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint256",
+        "name": "vaultid",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "outputs": [
+      {
+        "internaltype": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "debttoken",
+        "type": "address"
+      },
+      {
+        "internaltype": "address",
+        "name": "collateraltoken",
+        "type": "address"
+      },
+      {
+        "internaltype": "int8",
+        "name": "leveragetier",
+        "type": "int8"
+      }
+    ],
+    "name": "vaultstates",
+    "outputs": [
+      {
+        "internaltype": "uint144",
+        "name": "reserve",
+        "type": "uint144"
+      },
+      {
+        "internaltype": "int64",
+        "name": "tickpricesatx42",
+        "type": "int64"
+      },
+      {
+        "internaltype": "uint48",
+        "name": "vaultid",
+        "type": "uint48"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "uint48",
+        "name": "vaultid",
+        "type": "uint48"
+      }
+    ],
+    "name": "vaulttax",
+    "outputs": [
+      {
+        "internaltype": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "statemutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawfees",
+    "outputs": [
+      {
+        "internaltype": "uint112",
+        "name": "collectedfees",
+        "type": "uint112"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internaltype": "address[]",
+        "name": "tokens",
+        "type": "address[]"
+      },
+      {
+        "internaltype": "address",
+        "name": "to",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawtosavesystem",
+    "outputs": [
+      {
+        "internaltype": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      }
+    ],
+    "statemutability": "nonpayable",
+    "type": "function"
+  }
+]
