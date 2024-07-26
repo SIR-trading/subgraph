@@ -10,16 +10,16 @@ import {
   BigInt,
 } from "@graphprotocol/graph-ts";
 
-export class approvalforall extends ethereum.Event {
-  get params(): approvalforall__Params {
-    return new approvalforall__Params(this);
+export class ApprovalForAll extends ethereum.Event {
+  get params(): ApprovalForAll__Params {
+    return new ApprovalForAll__Params(this);
   }
 }
 
-export class approvalforall__Params {
-  _event: approvalforall;
+export class ApprovalForAll__Params {
+  _event: ApprovalForAll;
 
-  constructor(event: approvalforall) {
+  constructor(event: ApprovalForAll) {
     this._event = event;
   }
 
@@ -36,60 +36,84 @@ export class approvalforall__Params {
   }
 }
 
-export class burn extends ethereum.Event {
-  get params(): burn__Params {
-    return new burn__Params(this);
+export class Burn extends ethereum.Event {
+  get params(): Burn__Params {
+    return new Burn__Params(this);
   }
 }
 
-export class burn__Params {
-  _event: burn;
+export class Burn__Params {
+  _event: Burn;
 
-  constructor(event: burn) {
+  constructor(event: Burn) {
     this._event = event;
   }
 
-  get vaultid(): BigInt {
+  get vaultId(): BigInt {
     return this._event.parameters[0].value.toBigInt();
   }
 
-  get collateralwithdrawn(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
+  get isAPE(): boolean {
+    return this._event.parameters[1].value.toBoolean();
+  }
+
+  get collateralWithdrawn(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get collateralFeeToLPers(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
   }
 }
 
-export class mint extends ethereum.Event {
-  get params(): mint__Params {
-    return new mint__Params(this);
+export class Mint extends ethereum.Event {
+  get params(): Mint__Params {
+    return new Mint__Params(this);
   }
 }
 
-export class mint__Params {
-  _event: mint;
+export class Mint__Params {
+  _event: Mint;
 
-  constructor(event: mint) {
+  constructor(event: Mint) {
     this._event = event;
   }
 
-  get vaultid(): BigInt {
+  get vaultId(): BigInt {
     return this._event.parameters[0].value.toBigInt();
   }
 
-  get collateraldeposited(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
+  get isAPE(): boolean {
+    return this._event.parameters[1].value.toBoolean();
+  }
+
+  get collateralIn(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get collateralFeeToLPers(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
   }
 }
 
-export class transferbatch extends ethereum.Event {
-  get params(): transferbatch__Params {
-    return new transferbatch__Params(this);
+export class TransferBatch extends ethereum.Event {
+  get params(): TransferBatch__Params {
+    return new TransferBatch__Params(this);
   }
 }
 
-export class transferbatch__Params {
-  _event: transferbatch;
+export class TransferBatch__Params {
+  _event: TransferBatch;
 
-  constructor(event: transferbatch) {
+  constructor(event: TransferBatch) {
     this._event = event;
   }
 
@@ -105,7 +129,7 @@ export class transferbatch__Params {
     return this._event.parameters[2].value.toAddress();
   }
 
-  get vaultids(): Array<BigInt> {
+  get vaultIds(): Array<BigInt> {
     return this._event.parameters[3].value.toBigIntArray();
   }
 
@@ -114,16 +138,16 @@ export class transferbatch__Params {
   }
 }
 
-export class transfersingle extends ethereum.Event {
-  get params(): transfersingle__Params {
-    return new transfersingle__Params(this);
+export class TransferSingle extends ethereum.Event {
+  get params(): TransferSingle__Params {
+    return new TransferSingle__Params(this);
   }
 }
 
-export class transfersingle__Params {
-  _event: transfersingle;
+export class TransferSingle__Params {
+  _event: TransferSingle;
 
-  constructor(event: transfersingle) {
+  constructor(event: TransferSingle) {
     this._event = event;
   }
 
@@ -148,16 +172,16 @@ export class transfersingle__Params {
   }
 }
 
-export class uri extends ethereum.Event {
-  get params(): uri__Params {
-    return new uri__Params(this);
+export class URI extends ethereum.Event {
+  get params(): URI__Params {
+    return new URI__Params(this);
   }
 }
 
-export class uri__Params {
-  _event: uri;
+export class URI__Params {
+  _event: URI;
 
-  constructor(event: uri) {
+  constructor(event: URI) {
     this._event = event;
   }
 
@@ -170,16 +194,16 @@ export class uri__Params {
   }
 }
 
-export class vaultnewtax extends ethereum.Event {
-  get params(): vaultnewtax__Params {
-    return new vaultnewtax__Params(this);
+export class VaultNewTax extends ethereum.Event {
+  get params(): VaultNewTax__Params {
+    return new VaultNewTax__Params(this);
   }
 }
 
-export class vaultnewtax__Params {
-  _event: vaultnewtax;
+export class VaultNewTax__Params {
+  _event: VaultNewTax;
 
-  constructor(event: vaultnewtax) {
+  constructor(event: VaultNewTax) {
     this._event = event;
   }
 
@@ -191,54 +215,64 @@ export class vaultnewtax__Params {
     return this._event.parameters[1].value.toI32();
   }
 
-  get cumtax(): i32 {
+  get cumTax(): i32 {
     return this._event.parameters[2].value.toI32();
   }
 }
 
-export class Vault__burnInputVaultparamsStruct extends ethereum.Tuple {
-  get debttoken(): Address {
+export class Vault__burnInputVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
     return this[0].toAddress();
   }
 
-  get collateraltoken(): Address {
+  get collateralToken(): Address {
     return this[1].toAddress();
   }
 
-  get leveragetier(): i32 {
+  get leverageTier(): i32 {
     return this[2].toI32();
   }
 }
 
-export class Vault__getreservesResultValue0Struct extends ethereum.Tuple {
-  get reserveapes(): BigInt {
+export class Vault__collateralStatesResultValue0Struct extends ethereum.Tuple {
+  get totalFeesToStakers(): BigInt {
     return this[0].toBigInt();
   }
 
-  get reservelpers(): BigInt {
+  get total(): BigInt {
+    return this[1].toBigInt();
+  }
+}
+
+export class Vault__getReservesResultValue0Struct extends ethereum.Tuple {
+  get reserveApes(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get reserveLPers(): BigInt {
     return this[1].toBigInt();
   }
 
-  get tickpricex42(): BigInt {
+  get tickPriceX42(): BigInt {
     return this[2].toBigInt();
   }
 }
 
-export class Vault__getreservesInputVaultparamsStruct extends ethereum.Tuple {
-  get debttoken(): Address {
+export class Vault__getReservesInputVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
     return this[0].toAddress();
   }
 
-  get collateraltoken(): Address {
+  get collateralToken(): Address {
     return this[1].toAddress();
   }
 
-  get leveragetier(): i32 {
+  get leverageTier(): i32 {
     return this[2].toI32();
   }
 }
 
-export class Vault__latesttokenparamsResultValue0Struct extends ethereum.Tuple {
+export class Vault__latestTokenParamsResultValue0Struct extends ethereum.Tuple {
   get name(): string {
     return this[0].toString();
   }
@@ -252,27 +286,27 @@ export class Vault__latesttokenparamsResultValue0Struct extends ethereum.Tuple {
   }
 }
 
-export class Vault__latesttokenparamsResultValue1Struct extends ethereum.Tuple {
-  get debttoken(): Address {
+export class Vault__latestTokenParamsResultValue1Struct extends ethereum.Tuple {
+  get debtToken(): Address {
     return this[0].toAddress();
   }
 
-  get collateraltoken(): Address {
+  get collateralToken(): Address {
     return this[1].toAddress();
   }
 
-  get leveragetier(): i32 {
+  get leverageTier(): i32 {
     return this[2].toI32();
   }
 }
 
-export class Vault__latesttokenparamsResult {
-  value0: Vault__latesttokenparamsResultValue0Struct;
-  value1: Vault__latesttokenparamsResultValue1Struct;
+export class Vault__latestTokenParamsResult {
+  value0: Vault__latestTokenParamsResultValue0Struct;
+  value1: Vault__latestTokenParamsResultValue1Struct;
 
   constructor(
-    value0: Vault__latesttokenparamsResultValue0Struct,
-    value1: Vault__latesttokenparamsResultValue1Struct,
+    value0: Vault__latestTokenParamsResultValue0Struct,
+    value1: Vault__latestTokenParamsResultValue1Struct,
   ) {
     this.value0 = value0;
     this.value1 = value1;
@@ -285,163 +319,86 @@ export class Vault__latesttokenparamsResult {
     return map;
   }
 
-  getValue0(): Vault__latesttokenparamsResultValue0Struct {
+  getValue0(): Vault__latestTokenParamsResultValue0Struct {
     return this.value0;
   }
 
-  getValue1(): Vault__latesttokenparamsResultValue1Struct {
+  getValue1(): Vault__latestTokenParamsResultValue1Struct {
     return this.value1;
   }
 }
 
-export class Vault__mintInputVaultparamsStruct extends ethereum.Tuple {
-  get debttoken(): Address {
+export class Vault__mintInputVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
     return this[0].toAddress();
   }
 
-  get collateraltoken(): Address {
+  get collateralToken(): Address {
     return this[1].toAddress();
   }
 
-  get leveragetier(): i32 {
+  get leverageTier(): i32 {
     return this[2].toI32();
   }
 }
 
-export class Vault__paramsbyidResult {
-  value0: Address;
-  value1: Address;
-  value2: i32;
-
-  constructor(value0: Address, value1: Address, value2: i32) {
-    this.value0 = value0;
-    this.value1 = value1;
-    this.value2 = value2;
+export class Vault__paramsByIdResultValue0Struct extends ethereum.Tuple {
+  get debtToken(): Address {
+    return this[0].toAddress();
   }
 
-  toMap(): TypedMap<string, ethereum.Value> {
-    let map = new TypedMap<string, ethereum.Value>();
-    map.set("value0", ethereum.Value.fromAddress(this.value0));
-    map.set("value1", ethereum.Value.fromAddress(this.value1));
-    map.set("value2", ethereum.Value.fromI32(this.value2));
-    return map;
+  get collateralToken(): Address {
+    return this[1].toAddress();
   }
 
-  getDebttoken(): Address {
-    return this.value0;
-  }
-
-  getCollateraltoken(): Address {
-    return this.value1;
-  }
-
-  getLeveragetier(): i32 {
-    return this.value2;
+  get leverageTier(): i32 {
+    return this[2].toI32();
   }
 }
 
-export class Vault__systemparamsResult {
-  value0: i32;
-  value1: i32;
-  value2: boolean;
-  value3: i32;
-
-  constructor(value0: i32, value1: i32, value2: boolean, value3: i32) {
-    this.value0 = value0;
-    this.value1 = value1;
-    this.value2 = value2;
-    this.value3 = value3;
+export class Vault__systemParamsResultValue0Struct extends ethereum.Tuple {
+  get baseFee(): i32 {
+    return this[0].toI32();
   }
 
-  toMap(): TypedMap<string, ethereum.Value> {
-    let map = new TypedMap<string, ethereum.Value>();
-    map.set(
-      "value0",
-      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value0)),
-    );
-    map.set(
-      "value1",
-      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value1)),
-    );
-    map.set("value2", ethereum.Value.fromBoolean(this.value2));
-    map.set(
-      "value3",
-      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value3)),
-    );
-    return map;
+  get lpFee(): i32 {
+    return this[1].toI32();
   }
 
-  getBasefee(): i32 {
-    return this.value0;
+  get mintingStopped(): boolean {
+    return this[2].toBoolean();
   }
 
-  getLpfee(): i32 {
-    return this.value1;
-  }
-
-  getMintingstopped(): boolean {
-    return this.value2;
-  }
-
-  getCumtax(): i32 {
-    return this.value3;
+  get cumTax(): i32 {
+    return this[3].toI32();
   }
 }
 
-export class Vault__tokenstatesResult {
-  value0: BigInt;
-  value1: BigInt;
-
-  constructor(value0: BigInt, value1: BigInt) {
-    this.value0 = value0;
-    this.value1 = value1;
+export class Vault__vaultStatesResultValue0Struct extends ethereum.Tuple {
+  get reserve(): BigInt {
+    return this[0].toBigInt();
   }
 
-  toMap(): TypedMap<string, ethereum.Value> {
-    let map = new TypedMap<string, ethereum.Value>();
-    map.set("value0", ethereum.Value.fromUnsignedBigInt(this.value0));
-    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
-    return map;
+  get tickPriceSatX42(): BigInt {
+    return this[1].toBigInt();
   }
 
-  getCollectedfees(): BigInt {
-    return this.value0;
-  }
-
-  getTotal(): BigInt {
-    return this.value1;
+  get vaultId(): BigInt {
+    return this[2].toBigInt();
   }
 }
 
-export class Vault__vaultstatesResult {
-  value0: BigInt;
-  value1: BigInt;
-  value2: BigInt;
-
-  constructor(value0: BigInt, value1: BigInt, value2: BigInt) {
-    this.value0 = value0;
-    this.value1 = value1;
-    this.value2 = value2;
+export class Vault__vaultStatesInputVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
+    return this[0].toAddress();
   }
 
-  toMap(): TypedMap<string, ethereum.Value> {
-    let map = new TypedMap<string, ethereum.Value>();
-    map.set("value0", ethereum.Value.fromUnsignedBigInt(this.value0));
-    map.set("value1", ethereum.Value.fromSignedBigInt(this.value1));
-    map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
-    return map;
+  get collateralToken(): Address {
+    return this[1].toAddress();
   }
 
-  getReserve(): BigInt {
-    return this.value0;
-  }
-
-  getTickpricesatx42(): BigInt {
-    return this.value1;
-  }
-
-  getVaultid(): BigInt {
-    return this.value2;
+  get leverageTier(): i32 {
+    return this[2].toI32();
   }
 }
 
@@ -450,20 +407,20 @@ export class Vault extends ethereum.SmartContract {
     return new Vault("Vault", address);
   }
 
-  ts_issuance_start(): BigInt {
+  TS_ISSUANCE_START(): BigInt {
     let result = super.call(
-      "ts_issuance_start",
-      "ts_issuance_start():(uint40)",
+      "TS_ISSUANCE_START",
+      "TS_ISSUANCE_START():(uint40)",
       [],
     );
 
     return result[0].toBigInt();
   }
 
-  try_ts_issuance_start(): ethereum.CallResult<BigInt> {
+  try_TS_ISSUANCE_START(): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "ts_issuance_start",
-      "ts_issuance_start():(uint40)",
+      "TS_ISSUANCE_START",
+      "TS_ISSUANCE_START():(uint40)",
       [],
     );
     if (result.reverted) {
@@ -473,29 +430,29 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  balanceof(account: Address, vaultid: BigInt): BigInt {
+  balanceOf(account: Address, vaultId: BigInt): BigInt {
     let result = super.call(
-      "balanceof",
-      "balanceof(address,uint256):(uint256)",
+      "balanceOf",
+      "balanceOf(address,uint256):(uint256)",
       [
         ethereum.Value.fromAddress(account),
-        ethereum.Value.fromUnsignedBigInt(vaultid),
+        ethereum.Value.fromUnsignedBigInt(vaultId),
       ],
     );
 
     return result[0].toBigInt();
   }
 
-  try_balanceof(
+  try_balanceOf(
     account: Address,
-    vaultid: BigInt,
+    vaultId: BigInt,
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "balanceof",
-      "balanceof(address,uint256):(uint256)",
+      "balanceOf",
+      "balanceOf(address,uint256):(uint256)",
       [
         ethereum.Value.fromAddress(account),
-        ethereum.Value.fromUnsignedBigInt(vaultid),
+        ethereum.Value.fromUnsignedBigInt(vaultId),
       ],
     );
     if (result.reverted) {
@@ -505,32 +462,32 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  balanceofbatch(
+  balanceOfBatch(
     owners: Array<Address>,
-    vaultids: Array<BigInt>,
+    vaultIds: Array<BigInt>,
   ): Array<BigInt> {
     let result = super.call(
-      "balanceofbatch",
-      "balanceofbatch(address[],uint256[]):(uint256[])",
+      "balanceOfBatch",
+      "balanceOfBatch(address[],uint256[]):(uint256[])",
       [
         ethereum.Value.fromAddressArray(owners),
-        ethereum.Value.fromUnsignedBigIntArray(vaultids),
+        ethereum.Value.fromUnsignedBigIntArray(vaultIds),
       ],
     );
 
     return result[0].toBigIntArray();
   }
 
-  try_balanceofbatch(
+  try_balanceOfBatch(
     owners: Array<Address>,
-    vaultids: Array<BigInt>,
+    vaultIds: Array<BigInt>,
   ): ethereum.CallResult<Array<BigInt>> {
     let result = super.tryCall(
-      "balanceofbatch",
-      "balanceofbatch(address[],uint256[]):(uint256[])",
+      "balanceOfBatch",
+      "balanceOfBatch(address[],uint256[]):(uint256[])",
       [
         ethereum.Value.fromAddressArray(owners),
-        ethereum.Value.fromUnsignedBigIntArray(vaultids),
+        ethereum.Value.fromUnsignedBigIntArray(vaultIds),
       ],
     );
     if (result.reverted) {
@@ -541,16 +498,16 @@ export class Vault extends ethereum.SmartContract {
   }
 
   burn(
-    isape: boolean,
-    vaultparams: Vault__burnInputVaultparamsStruct,
+    isAPE: boolean,
+    vaultParams: Vault__burnInputVaultParamsStruct,
     amount: BigInt,
   ): BigInt {
     let result = super.call(
       "burn",
       "burn(bool,(address,address,int8),uint256):(uint144)",
       [
-        ethereum.Value.fromBoolean(isape),
-        ethereum.Value.fromTuple(vaultparams),
+        ethereum.Value.fromBoolean(isAPE),
+        ethereum.Value.fromTuple(vaultParams),
         ethereum.Value.fromUnsignedBigInt(amount),
       ],
     );
@@ -559,16 +516,16 @@ export class Vault extends ethereum.SmartContract {
   }
 
   try_burn(
-    isape: boolean,
-    vaultparams: Vault__burnInputVaultparamsStruct,
+    isAPE: boolean,
+    vaultParams: Vault__burnInputVaultParamsStruct,
     amount: BigInt,
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "burn",
       "burn(bool,(address,address,int8),uint256):(uint144)",
       [
-        ethereum.Value.fromBoolean(isape),
-        ethereum.Value.fromTuple(vaultparams),
+        ethereum.Value.fromBoolean(isAPE),
+        ethereum.Value.fromTuple(vaultParams),
         ethereum.Value.fromUnsignedBigInt(amount),
       ],
     );
@@ -579,21 +536,21 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  claimsir(vaultid: BigInt, lper: Address): BigInt {
-    let result = super.call("claimsir", "claimsir(uint256,address):(uint80)", [
-      ethereum.Value.fromUnsignedBigInt(vaultid),
+  claimSIR(vaultId: BigInt, lper: Address): BigInt {
+    let result = super.call("claimSIR", "claimSIR(uint256,address):(uint80)", [
+      ethereum.Value.fromUnsignedBigInt(vaultId),
       ethereum.Value.fromAddress(lper),
     ]);
 
     return result[0].toBigInt();
   }
 
-  try_claimsir(vaultid: BigInt, lper: Address): ethereum.CallResult<BigInt> {
+  try_claimSIR(vaultId: BigInt, lper: Address): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "claimsir",
-      "claimsir(uint256,address):(uint80)",
+      "claimSIR",
+      "claimSIR(uint256,address):(uint80)",
       [
-        ethereum.Value.fromUnsignedBigInt(vaultid),
+        ethereum.Value.fromUnsignedBigInt(vaultId),
         ethereum.Value.fromAddress(lper),
       ],
     );
@@ -604,21 +561,50 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  cumulativesirpertea(vaultid: BigInt): BigInt {
+  collateralStates(token: Address): Vault__collateralStatesResultValue0Struct {
     let result = super.call(
-      "cumulativesirpertea",
-      "cumulativesirpertea(uint256):(uint176)",
-      [ethereum.Value.fromUnsignedBigInt(vaultid)],
+      "collateralStates",
+      "collateralStates(address):((uint112,uint144))",
+      [ethereum.Value.fromAddress(token)],
+    );
+
+    return changetype<Vault__collateralStatesResultValue0Struct>(
+      result[0].toTuple(),
+    );
+  }
+
+  try_collateralStates(
+    token: Address,
+  ): ethereum.CallResult<Vault__collateralStatesResultValue0Struct> {
+    let result = super.tryCall(
+      "collateralStates",
+      "collateralStates(address):((uint112,uint144))",
+      [ethereum.Value.fromAddress(token)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      changetype<Vault__collateralStatesResultValue0Struct>(value[0].toTuple()),
+    );
+  }
+
+  cumulativeSIRPerTEA(vaultId: BigInt): BigInt {
+    let result = super.call(
+      "cumulativeSIRPerTEA",
+      "cumulativeSIRPerTEA(uint256):(uint176)",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
 
     return result[0].toBigInt();
   }
 
-  try_cumulativesirpertea(vaultid: BigInt): ethereum.CallResult<BigInt> {
+  try_cumulativeSIRPerTEA(vaultId: BigInt): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "cumulativesirpertea",
-      "cumulativesirpertea(uint256):(uint176)",
-      [ethereum.Value.fromUnsignedBigInt(vaultid)],
+      "cumulativeSIRPerTEA",
+      "cumulativeSIRPerTEA(uint256):(uint176)",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -627,54 +613,54 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getreserves(
-    vaultparams: Vault__getreservesInputVaultparamsStruct,
-  ): Vault__getreservesResultValue0Struct {
+  getReserves(
+    vaultParams: Vault__getReservesInputVaultParamsStruct,
+  ): Vault__getReservesResultValue0Struct {
     let result = super.call(
-      "getreserves",
-      "getreserves((address,address,int8)):((uint144,uint144,int64))",
-      [ethereum.Value.fromTuple(vaultparams)],
+      "getReserves",
+      "getReserves((address,address,int8)):((uint144,uint144,int64))",
+      [ethereum.Value.fromTuple(vaultParams)],
     );
 
-    return changetype<Vault__getreservesResultValue0Struct>(
+    return changetype<Vault__getReservesResultValue0Struct>(
       result[0].toTuple(),
     );
   }
 
-  try_getreserves(
-    vaultparams: Vault__getreservesInputVaultparamsStruct,
-  ): ethereum.CallResult<Vault__getreservesResultValue0Struct> {
+  try_getReserves(
+    vaultParams: Vault__getReservesInputVaultParamsStruct,
+  ): ethereum.CallResult<Vault__getReservesResultValue0Struct> {
     let result = super.tryCall(
-      "getreserves",
-      "getreserves((address,address,int8)):((uint144,uint144,int64))",
-      [ethereum.Value.fromTuple(vaultparams)],
+      "getReserves",
+      "getReserves((address,address,int8)):((uint144,uint144,int64))",
+      [ethereum.Value.fromTuple(vaultParams)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Vault__getreservesResultValue0Struct>(value[0].toTuple()),
+      changetype<Vault__getReservesResultValue0Struct>(value[0].toTuple()),
     );
   }
 
-  isapprovedforall(param0: Address, param1: Address): boolean {
+  isApprovedForAll(param0: Address, param1: Address): boolean {
     let result = super.call(
-      "isapprovedforall",
-      "isapprovedforall(address,address):(bool)",
+      "isApprovedForAll",
+      "isApprovedForAll(address,address):(bool)",
       [ethereum.Value.fromAddress(param0), ethereum.Value.fromAddress(param1)],
     );
 
     return result[0].toBoolean();
   }
 
-  try_isapprovedforall(
+  try_isApprovedForAll(
     param0: Address,
     param1: Address,
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
-      "isapprovedforall",
-      "isapprovedforall(address,address):(bool)",
+      "isApprovedForAll",
+      "isApprovedForAll(address,address):(bool)",
       [ethereum.Value.fromAddress(param0), ethereum.Value.fromAddress(param1)],
     );
     if (result.reverted) {
@@ -684,29 +670,29 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  latesttokenparams(): Vault__latesttokenparamsResult {
+  latestTokenParams(): Vault__latestTokenParamsResult {
     let result = super.call(
-      "latesttokenparams",
-      "latesttokenparams():((string,string,uint8),(address,address,int8))",
+      "latestTokenParams",
+      "latestTokenParams():((string,string,uint8),(address,address,int8))",
       [],
     );
 
-    return changetype<Vault__latesttokenparamsResult>(
-      new Vault__latesttokenparamsResult(
-        changetype<Vault__latesttokenparamsResultValue0Struct>(
+    return changetype<Vault__latestTokenParamsResult>(
+      new Vault__latestTokenParamsResult(
+        changetype<Vault__latestTokenParamsResultValue0Struct>(
           result[0].toTuple(),
         ),
-        changetype<Vault__latesttokenparamsResultValue1Struct>(
+        changetype<Vault__latestTokenParamsResultValue1Struct>(
           result[1].toTuple(),
         ),
       ),
     );
   }
 
-  try_latesttokenparams(): ethereum.CallResult<Vault__latesttokenparamsResult> {
+  try_latestTokenParams(): ethereum.CallResult<Vault__latestTokenParamsResult> {
     let result = super.tryCall(
-      "latesttokenparams",
-      "latesttokenparams():((string,string,uint8),(address,address,int8))",
+      "latestTokenParams",
+      "latestTokenParams():((string,string,uint8),(address,address,int8))",
       [],
     );
     if (result.reverted) {
@@ -714,12 +700,12 @@ export class Vault extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Vault__latesttokenparamsResult>(
-        new Vault__latesttokenparamsResult(
-          changetype<Vault__latesttokenparamsResultValue0Struct>(
+      changetype<Vault__latestTokenParamsResult>(
+        new Vault__latestTokenParamsResult(
+          changetype<Vault__latestTokenParamsResultValue0Struct>(
             value[0].toTuple(),
           ),
-          changetype<Vault__latesttokenparamsResultValue1Struct>(
+          changetype<Vault__latestTokenParamsResultValue1Struct>(
             value[1].toTuple(),
           ),
         ),
@@ -727,13 +713,13 @@ export class Vault extends ethereum.SmartContract {
     );
   }
 
-  mint(isape: boolean, vaultparams: Vault__mintInputVaultparamsStruct): BigInt {
+  mint(isAPE: boolean, vaultParams: Vault__mintInputVaultParamsStruct): BigInt {
     let result = super.call(
       "mint",
       "mint(bool,(address,address,int8)):(uint256)",
       [
-        ethereum.Value.fromBoolean(isape),
-        ethereum.Value.fromTuple(vaultparams),
+        ethereum.Value.fromBoolean(isAPE),
+        ethereum.Value.fromTuple(vaultParams),
       ],
     );
 
@@ -741,15 +727,15 @@ export class Vault extends ethereum.SmartContract {
   }
 
   try_mint(
-    isape: boolean,
-    vaultparams: Vault__mintInputVaultparamsStruct,
+    isAPE: boolean,
+    vaultParams: Vault__mintInputVaultParamsStruct,
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "mint",
       "mint(bool,(address,address,int8)):(uint256)",
       [
-        ethereum.Value.fromBoolean(isape),
-        ethereum.Value.fromTuple(vaultparams),
+        ethereum.Value.fromBoolean(isAPE),
+        ethereum.Value.fromTuple(vaultParams),
       ],
     );
     if (result.reverted) {
@@ -759,16 +745,16 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  numberofvaults(): BigInt {
-    let result = super.call("numberofvaults", "numberofvaults():(uint256)", []);
+  numberOfVaults(): BigInt {
+    let result = super.call("numberOfVaults", "numberOfVaults():(uint48)", []);
 
     return result[0].toBigInt();
   }
 
-  try_numberofvaults(): ethereum.CallResult<BigInt> {
+  try_numberOfVaults(): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "numberofvaults",
-      "numberofvaults():(uint256)",
+      "numberOfVaults",
+      "numberOfVaults():(uint48)",
       [],
     );
     if (result.reverted) {
@@ -778,7 +764,7 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  onerc1155batchreceived(
+  onERC1155BatchReceived(
     param0: Address,
     param1: Address,
     param2: Array<BigInt>,
@@ -786,8 +772,8 @@ export class Vault extends ethereum.SmartContract {
     param4: Bytes,
   ): Bytes {
     let result = super.call(
-      "onerc1155batchreceived",
-      "onerc1155batchreceived(address,address,uint256[],uint256[],bytes):(bytes4)",
+      "onERC1155BatchReceived",
+      "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes):(bytes4)",
       [
         ethereum.Value.fromAddress(param0),
         ethereum.Value.fromAddress(param1),
@@ -800,7 +786,7 @@ export class Vault extends ethereum.SmartContract {
     return result[0].toBytes();
   }
 
-  try_onerc1155batchreceived(
+  try_onERC1155BatchReceived(
     param0: Address,
     param1: Address,
     param2: Array<BigInt>,
@@ -808,8 +794,8 @@ export class Vault extends ethereum.SmartContract {
     param4: Bytes,
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
-      "onerc1155batchreceived",
-      "onerc1155batchreceived(address,address,uint256[],uint256[],bytes):(bytes4)",
+      "onERC1155BatchReceived",
+      "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes):(bytes4)",
       [
         ethereum.Value.fromAddress(param0),
         ethereum.Value.fromAddress(param1),
@@ -825,7 +811,7 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  onerc1155received(
+  onERC1155Received(
     param0: Address,
     param1: Address,
     param2: BigInt,
@@ -833,8 +819,8 @@ export class Vault extends ethereum.SmartContract {
     param4: Bytes,
   ): Bytes {
     let result = super.call(
-      "onerc1155received",
-      "onerc1155received(address,address,uint256,uint256,bytes):(bytes4)",
+      "onERC1155Received",
+      "onERC1155Received(address,address,uint256,uint256,bytes):(bytes4)",
       [
         ethereum.Value.fromAddress(param0),
         ethereum.Value.fromAddress(param1),
@@ -847,7 +833,7 @@ export class Vault extends ethereum.SmartContract {
     return result[0].toBytes();
   }
 
-  try_onerc1155received(
+  try_onERC1155Received(
     param0: Address,
     param1: Address,
     param2: BigInt,
@@ -855,8 +841,8 @@ export class Vault extends ethereum.SmartContract {
     param4: Bytes,
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
-      "onerc1155received",
-      "onerc1155received(address,address,uint256,uint256,bytes):(bytes4)",
+      "onERC1155Received",
+      "onERC1155Received(address,address,uint256,uint256,bytes):(bytes4)",
       [
         ethereum.Value.fromAddress(param0),
         ethereum.Value.fromAddress(param1),
@@ -872,54 +858,48 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  paramsbyid(param0: BigInt): Vault__paramsbyidResult {
+  paramsById(vaultId: BigInt): Vault__paramsByIdResultValue0Struct {
     let result = super.call(
-      "paramsbyid",
-      "paramsbyid(uint256):(address,address,int8)",
-      [ethereum.Value.fromUnsignedBigInt(param0)],
+      "paramsById",
+      "paramsById(uint48):((address,address,int8))",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
 
-    return new Vault__paramsbyidResult(
-      result[0].toAddress(),
-      result[1].toAddress(),
-      result[2].toI32(),
-    );
+    return changetype<Vault__paramsByIdResultValue0Struct>(result[0].toTuple());
   }
 
-  try_paramsbyid(param0: BigInt): ethereum.CallResult<Vault__paramsbyidResult> {
+  try_paramsById(
+    vaultId: BigInt,
+  ): ethereum.CallResult<Vault__paramsByIdResultValue0Struct> {
     let result = super.tryCall(
-      "paramsbyid",
-      "paramsbyid(uint256):(address,address,int8)",
-      [ethereum.Value.fromUnsignedBigInt(param0)],
+      "paramsById",
+      "paramsById(uint48):((address,address,int8))",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      new Vault__paramsbyidResult(
-        value[0].toAddress(),
-        value[1].toAddress(),
-        value[2].toI32(),
-      ),
+      changetype<Vault__paramsByIdResultValue0Struct>(value[0].toTuple()),
     );
   }
 
-  supportsinterface(interfaceid: Bytes): boolean {
+  supportsInterface(interfaceId: Bytes): boolean {
     let result = super.call(
-      "supportsinterface",
-      "supportsinterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceid)],
+      "supportsInterface",
+      "supportsInterface(bytes4):(bool)",
+      [ethereum.Value.fromFixedBytes(interfaceId)],
     );
 
     return result[0].toBoolean();
   }
 
-  try_supportsinterface(interfaceid: Bytes): ethereum.CallResult<boolean> {
+  try_supportsInterface(interfaceId: Bytes): ethereum.CallResult<boolean> {
     let result = super.tryCall(
-      "supportsinterface",
-      "supportsinterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceid)],
+      "supportsInterface",
+      "supportsInterface(bytes4):(bool)",
+      [ethereum.Value.fromFixedBytes(interfaceId)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -928,25 +908,22 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  systemparams(): Vault__systemparamsResult {
+  systemParams(): Vault__systemParamsResultValue0Struct {
     let result = super.call(
-      "systemparams",
-      "systemparams():(uint16,uint16,bool,uint16)",
+      "systemParams",
+      "systemParams():((uint16,uint16,bool,uint16))",
       [],
     );
 
-    return new Vault__systemparamsResult(
-      result[0].toI32(),
-      result[1].toI32(),
-      result[2].toBoolean(),
-      result[3].toI32(),
+    return changetype<Vault__systemParamsResultValue0Struct>(
+      result[0].toTuple(),
     );
   }
 
-  try_systemparams(): ethereum.CallResult<Vault__systemparamsResult> {
+  try_systemParams(): ethereum.CallResult<Vault__systemParamsResultValue0Struct> {
     let result = super.tryCall(
-      "systemparams",
-      "systemparams():(uint16,uint16,bool,uint16)",
+      "systemParams",
+      "systemParams():((uint16,uint16,bool,uint16))",
       [],
     );
     if (result.reverted) {
@@ -954,58 +931,23 @@ export class Vault extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      new Vault__systemparamsResult(
-        value[0].toI32(),
-        value[1].toI32(),
-        value[2].toBoolean(),
-        value[3].toI32(),
-      ),
+      changetype<Vault__systemParamsResultValue0Struct>(value[0].toTuple()),
     );
   }
 
-  tokenstates(collateral: Address): Vault__tokenstatesResult {
-    let result = super.call(
-      "tokenstates",
-      "tokenstates(address):(uint112,uint144)",
-      [ethereum.Value.fromAddress(collateral)],
-    );
-
-    return new Vault__tokenstatesResult(
-      result[0].toBigInt(),
-      result[1].toBigInt(),
-    );
-  }
-
-  try_tokenstates(
-    collateral: Address,
-  ): ethereum.CallResult<Vault__tokenstatesResult> {
-    let result = super.tryCall(
-      "tokenstates",
-      "tokenstates(address):(uint112,uint144)",
-      [ethereum.Value.fromAddress(collateral)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      new Vault__tokenstatesResult(value[0].toBigInt(), value[1].toBigInt()),
-    );
-  }
-
-  totalsupply(vaultid: BigInt): BigInt {
-    let result = super.call("totalsupply", "totalsupply(uint256):(uint256)", [
-      ethereum.Value.fromUnsignedBigInt(vaultid),
+  totalSupply(vaultId: BigInt): BigInt {
+    let result = super.call("totalSupply", "totalSupply(uint256):(uint256)", [
+      ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
 
     return result[0].toBigInt();
   }
 
-  try_totalsupply(vaultid: BigInt): ethereum.CallResult<BigInt> {
+  try_totalSupply(vaultId: BigInt): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "totalsupply",
-      "totalsupply(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(vaultid)],
+      "totalSupply",
+      "totalSupply(uint256):(uint256)",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1014,12 +956,12 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  unclaimedrewards(vaultid: BigInt, lper: Address): BigInt {
+  unclaimedRewards(vaultId: BigInt, lper: Address): BigInt {
     let result = super.call(
-      "unclaimedrewards",
-      "unclaimedrewards(uint256,address):(uint80)",
+      "unclaimedRewards",
+      "unclaimedRewards(uint256,address):(uint80)",
       [
-        ethereum.Value.fromUnsignedBigInt(vaultid),
+        ethereum.Value.fromUnsignedBigInt(vaultId),
         ethereum.Value.fromAddress(lper),
       ],
     );
@@ -1027,15 +969,15 @@ export class Vault extends ethereum.SmartContract {
     return result[0].toBigInt();
   }
 
-  try_unclaimedrewards(
-    vaultid: BigInt,
+  try_unclaimedRewards(
+    vaultId: BigInt,
     lper: Address,
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "unclaimedrewards",
-      "unclaimedrewards(uint256,address):(uint80)",
+      "unclaimedRewards",
+      "unclaimedRewards(uint256,address):(uint80)",
       [
-        ethereum.Value.fromUnsignedBigInt(vaultid),
+        ethereum.Value.fromUnsignedBigInt(vaultId),
         ethereum.Value.fromAddress(lper),
       ],
     );
@@ -1046,17 +988,17 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  uri(vaultid: BigInt): string {
+  uri(vaultId: BigInt): string {
     let result = super.call("uri", "uri(uint256):(string)", [
-      ethereum.Value.fromUnsignedBigInt(vaultid),
+      ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
 
     return result[0].toString();
   }
 
-  try_uri(vaultid: BigInt): ethereum.CallResult<string> {
+  try_uri(vaultId: BigInt): ethereum.CallResult<string> {
     let result = super.tryCall("uri", "uri(uint256):(string)", [
-      ethereum.Value.fromUnsignedBigInt(vaultid),
+      ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1065,66 +1007,48 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toString());
   }
 
-  vaultstates(
-    debttoken: Address,
-    collateraltoken: Address,
-    leveragetier: i32,
-  ): Vault__vaultstatesResult {
+  vaultStates(
+    vaultParams: Vault__vaultStatesInputVaultParamsStruct,
+  ): Vault__vaultStatesResultValue0Struct {
     let result = super.call(
-      "vaultstates",
-      "vaultstates(address,address,int8):(uint144,int64,uint48)",
-      [
-        ethereum.Value.fromAddress(debttoken),
-        ethereum.Value.fromAddress(collateraltoken),
-        ethereum.Value.fromI32(leveragetier),
-      ],
+      "vaultStates",
+      "vaultStates((address,address,int8)):((uint144,int64,uint48))",
+      [ethereum.Value.fromTuple(vaultParams)],
     );
 
-    return new Vault__vaultstatesResult(
-      result[0].toBigInt(),
-      result[1].toBigInt(),
-      result[2].toBigInt(),
+    return changetype<Vault__vaultStatesResultValue0Struct>(
+      result[0].toTuple(),
     );
   }
 
-  try_vaultstates(
-    debttoken: Address,
-    collateraltoken: Address,
-    leveragetier: i32,
-  ): ethereum.CallResult<Vault__vaultstatesResult> {
+  try_vaultStates(
+    vaultParams: Vault__vaultStatesInputVaultParamsStruct,
+  ): ethereum.CallResult<Vault__vaultStatesResultValue0Struct> {
     let result = super.tryCall(
-      "vaultstates",
-      "vaultstates(address,address,int8):(uint144,int64,uint48)",
-      [
-        ethereum.Value.fromAddress(debttoken),
-        ethereum.Value.fromAddress(collateraltoken),
-        ethereum.Value.fromI32(leveragetier),
-      ],
+      "vaultStates",
+      "vaultStates((address,address,int8)):((uint144,int64,uint48))",
+      [ethereum.Value.fromTuple(vaultParams)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      new Vault__vaultstatesResult(
-        value[0].toBigInt(),
-        value[1].toBigInt(),
-        value[2].toBigInt(),
-      ),
+      changetype<Vault__vaultStatesResultValue0Struct>(value[0].toTuple()),
     );
   }
 
-  vaulttax(vaultid: BigInt): i32 {
-    let result = super.call("vaulttax", "vaulttax(uint48):(uint8)", [
-      ethereum.Value.fromUnsignedBigInt(vaultid),
+  vaultTax(vaultId: BigInt): i32 {
+    let result = super.call("vaultTax", "vaultTax(uint48):(uint8)", [
+      ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
 
     return result[0].toI32();
   }
 
-  try_vaulttax(vaultid: BigInt): ethereum.CallResult<i32> {
-    let result = super.tryCall("vaulttax", "vaulttax(uint48):(uint8)", [
-      ethereum.Value.fromUnsignedBigInt(vaultid),
+  try_vaultTax(vaultId: BigInt): ethereum.CallResult<i32> {
+    let result = super.tryCall("vaultTax", "vaultTax(uint48):(uint8)", [
+      ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1133,18 +1057,18 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toI32());
   }
 
-  withdrawfees(token: Address): BigInt {
-    let result = super.call("withdrawfees", "withdrawfees(address):(uint112)", [
+  withdrawFees(token: Address): BigInt {
+    let result = super.call("withdrawFees", "withdrawFees(address):(uint112)", [
       ethereum.Value.fromAddress(token),
     ]);
 
     return result[0].toBigInt();
   }
 
-  try_withdrawfees(token: Address): ethereum.CallResult<BigInt> {
+  try_withdrawFees(token: Address): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "withdrawfees",
-      "withdrawfees(address):(uint112)",
+      "withdrawFees",
+      "withdrawFees(address):(uint112)",
       [ethereum.Value.fromAddress(token)],
     );
     if (result.reverted) {
@@ -1154,23 +1078,23 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  withdrawtosavesystem(tokens: Array<Address>, to: Address): Array<BigInt> {
+  withdrawToSaveSystem(tokens: Array<Address>, to: Address): Array<BigInt> {
     let result = super.call(
-      "withdrawtosavesystem",
-      "withdrawtosavesystem(address[],address):(uint256[])",
+      "withdrawToSaveSystem",
+      "withdrawToSaveSystem(address[],address):(uint256[])",
       [ethereum.Value.fromAddressArray(tokens), ethereum.Value.fromAddress(to)],
     );
 
     return result[0].toBigIntArray();
   }
 
-  try_withdrawtosavesystem(
+  try_withdrawToSaveSystem(
     tokens: Array<Address>,
     to: Address,
   ): ethereum.CallResult<Array<BigInt>> {
     let result = super.tryCall(
-      "withdrawtosavesystem",
-      "withdrawtosavesystem(address[],address):(uint256[])",
+      "withdrawToSaveSystem",
+      "withdrawToSaveSystem(address[],address):(uint256[])",
       [ethereum.Value.fromAddressArray(tokens), ethereum.Value.fromAddress(to)],
     );
     if (result.reverted) {
@@ -1178,5 +1102,617 @@ export class Vault extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigIntArray());
+  }
+}
+
+export class ConstructorCall extends ethereum.Call {
+  get inputs(): ConstructorCall__Inputs {
+    return new ConstructorCall__Inputs(this);
+  }
+
+  get outputs(): ConstructorCall__Outputs {
+    return new ConstructorCall__Outputs(this);
+  }
+}
+
+export class ConstructorCall__Inputs {
+  _call: ConstructorCall;
+
+  constructor(call: ConstructorCall) {
+    this._call = call;
+  }
+
+  get systemControl(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get sir(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get oracle(): Address {
+    return this._call.inputValues[2].value.toAddress();
+  }
+}
+
+export class ConstructorCall__Outputs {
+  _call: ConstructorCall;
+
+  constructor(call: ConstructorCall) {
+    this._call = call;
+  }
+}
+
+export class BurnCall extends ethereum.Call {
+  get inputs(): BurnCall__Inputs {
+    return new BurnCall__Inputs(this);
+  }
+
+  get outputs(): BurnCall__Outputs {
+    return new BurnCall__Outputs(this);
+  }
+}
+
+export class BurnCall__Inputs {
+  _call: BurnCall;
+
+  constructor(call: BurnCall) {
+    this._call = call;
+  }
+
+  get isAPE(): boolean {
+    return this._call.inputValues[0].value.toBoolean();
+  }
+
+  get vaultParams(): BurnCallVaultParamsStruct {
+    return changetype<BurnCallVaultParamsStruct>(
+      this._call.inputValues[1].value.toTuple(),
+    );
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[2].value.toBigInt();
+  }
+}
+
+export class BurnCall__Outputs {
+  _call: BurnCall;
+
+  constructor(call: BurnCall) {
+    this._call = call;
+  }
+
+  get value0(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
+export class BurnCallVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
+    return this[0].toAddress();
+  }
+
+  get collateralToken(): Address {
+    return this[1].toAddress();
+  }
+
+  get leverageTier(): i32 {
+    return this[2].toI32();
+  }
+}
+
+export class ClaimSIRCall extends ethereum.Call {
+  get inputs(): ClaimSIRCall__Inputs {
+    return new ClaimSIRCall__Inputs(this);
+  }
+
+  get outputs(): ClaimSIRCall__Outputs {
+    return new ClaimSIRCall__Outputs(this);
+  }
+}
+
+export class ClaimSIRCall__Inputs {
+  _call: ClaimSIRCall;
+
+  constructor(call: ClaimSIRCall) {
+    this._call = call;
+  }
+
+  get vaultId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+
+  get lper(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+}
+
+export class ClaimSIRCall__Outputs {
+  _call: ClaimSIRCall;
+
+  constructor(call: ClaimSIRCall) {
+    this._call = call;
+  }
+
+  get value0(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
+export class InitializeCall extends ethereum.Call {
+  get inputs(): InitializeCall__Inputs {
+    return new InitializeCall__Inputs(this);
+  }
+
+  get outputs(): InitializeCall__Outputs {
+    return new InitializeCall__Outputs(this);
+  }
+}
+
+export class InitializeCall__Inputs {
+  _call: InitializeCall;
+
+  constructor(call: InitializeCall) {
+    this._call = call;
+  }
+
+  get vaultParams(): InitializeCallVaultParamsStruct {
+    return changetype<InitializeCallVaultParamsStruct>(
+      this._call.inputValues[0].value.toTuple(),
+    );
+  }
+}
+
+export class InitializeCall__Outputs {
+  _call: InitializeCall;
+
+  constructor(call: InitializeCall) {
+    this._call = call;
+  }
+}
+
+export class InitializeCallVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
+    return this[0].toAddress();
+  }
+
+  get collateralToken(): Address {
+    return this[1].toAddress();
+  }
+
+  get leverageTier(): i32 {
+    return this[2].toI32();
+  }
+}
+
+export class MintCall extends ethereum.Call {
+  get inputs(): MintCall__Inputs {
+    return new MintCall__Inputs(this);
+  }
+
+  get outputs(): MintCall__Outputs {
+    return new MintCall__Outputs(this);
+  }
+}
+
+export class MintCall__Inputs {
+  _call: MintCall;
+
+  constructor(call: MintCall) {
+    this._call = call;
+  }
+
+  get isAPE(): boolean {
+    return this._call.inputValues[0].value.toBoolean();
+  }
+
+  get vaultParams(): MintCallVaultParamsStruct {
+    return changetype<MintCallVaultParamsStruct>(
+      this._call.inputValues[1].value.toTuple(),
+    );
+  }
+}
+
+export class MintCall__Outputs {
+  _call: MintCall;
+
+  constructor(call: MintCall) {
+    this._call = call;
+  }
+
+  get amount(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
+export class MintCallVaultParamsStruct extends ethereum.Tuple {
+  get debtToken(): Address {
+    return this[0].toAddress();
+  }
+
+  get collateralToken(): Address {
+    return this[1].toAddress();
+  }
+
+  get leverageTier(): i32 {
+    return this[2].toI32();
+  }
+}
+
+export class OnERC1155BatchReceivedCall extends ethereum.Call {
+  get inputs(): OnERC1155BatchReceivedCall__Inputs {
+    return new OnERC1155BatchReceivedCall__Inputs(this);
+  }
+
+  get outputs(): OnERC1155BatchReceivedCall__Outputs {
+    return new OnERC1155BatchReceivedCall__Outputs(this);
+  }
+}
+
+export class OnERC1155BatchReceivedCall__Inputs {
+  _call: OnERC1155BatchReceivedCall;
+
+  constructor(call: OnERC1155BatchReceivedCall) {
+    this._call = call;
+  }
+
+  get value0(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get value1(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get value2(): Array<BigInt> {
+    return this._call.inputValues[2].value.toBigIntArray();
+  }
+
+  get value3(): Array<BigInt> {
+    return this._call.inputValues[3].value.toBigIntArray();
+  }
+
+  get value4(): Bytes {
+    return this._call.inputValues[4].value.toBytes();
+  }
+}
+
+export class OnERC1155BatchReceivedCall__Outputs {
+  _call: OnERC1155BatchReceivedCall;
+
+  constructor(call: OnERC1155BatchReceivedCall) {
+    this._call = call;
+  }
+
+  get value0(): Bytes {
+    return this._call.outputValues[0].value.toBytes();
+  }
+}
+
+export class OnERC1155ReceivedCall extends ethereum.Call {
+  get inputs(): OnERC1155ReceivedCall__Inputs {
+    return new OnERC1155ReceivedCall__Inputs(this);
+  }
+
+  get outputs(): OnERC1155ReceivedCall__Outputs {
+    return new OnERC1155ReceivedCall__Outputs(this);
+  }
+}
+
+export class OnERC1155ReceivedCall__Inputs {
+  _call: OnERC1155ReceivedCall;
+
+  constructor(call: OnERC1155ReceivedCall) {
+    this._call = call;
+  }
+
+  get value0(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get value1(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get value2(): BigInt {
+    return this._call.inputValues[2].value.toBigInt();
+  }
+
+  get value3(): BigInt {
+    return this._call.inputValues[3].value.toBigInt();
+  }
+
+  get value4(): Bytes {
+    return this._call.inputValues[4].value.toBytes();
+  }
+}
+
+export class OnERC1155ReceivedCall__Outputs {
+  _call: OnERC1155ReceivedCall;
+
+  constructor(call: OnERC1155ReceivedCall) {
+    this._call = call;
+  }
+
+  get value0(): Bytes {
+    return this._call.outputValues[0].value.toBytes();
+  }
+}
+
+export class SafeBatchTransferFromCall extends ethereum.Call {
+  get inputs(): SafeBatchTransferFromCall__Inputs {
+    return new SafeBatchTransferFromCall__Inputs(this);
+  }
+
+  get outputs(): SafeBatchTransferFromCall__Outputs {
+    return new SafeBatchTransferFromCall__Outputs(this);
+  }
+}
+
+export class SafeBatchTransferFromCall__Inputs {
+  _call: SafeBatchTransferFromCall;
+
+  constructor(call: SafeBatchTransferFromCall) {
+    this._call = call;
+  }
+
+  get from(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get to(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get vaultIds(): Array<BigInt> {
+    return this._call.inputValues[2].value.toBigIntArray();
+  }
+
+  get amounts(): Array<BigInt> {
+    return this._call.inputValues[3].value.toBigIntArray();
+  }
+
+  get data(): Bytes {
+    return this._call.inputValues[4].value.toBytes();
+  }
+}
+
+export class SafeBatchTransferFromCall__Outputs {
+  _call: SafeBatchTransferFromCall;
+
+  constructor(call: SafeBatchTransferFromCall) {
+    this._call = call;
+  }
+}
+
+export class SafeTransferFromCall extends ethereum.Call {
+  get inputs(): SafeTransferFromCall__Inputs {
+    return new SafeTransferFromCall__Inputs(this);
+  }
+
+  get outputs(): SafeTransferFromCall__Outputs {
+    return new SafeTransferFromCall__Outputs(this);
+  }
+}
+
+export class SafeTransferFromCall__Inputs {
+  _call: SafeTransferFromCall;
+
+  constructor(call: SafeTransferFromCall) {
+    this._call = call;
+  }
+
+  get from(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get to(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get vaultId(): BigInt {
+    return this._call.inputValues[2].value.toBigInt();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[3].value.toBigInt();
+  }
+
+  get data(): Bytes {
+    return this._call.inputValues[4].value.toBytes();
+  }
+}
+
+export class SafeTransferFromCall__Outputs {
+  _call: SafeTransferFromCall;
+
+  constructor(call: SafeTransferFromCall) {
+    this._call = call;
+  }
+}
+
+export class SetApprovalForAllCall extends ethereum.Call {
+  get inputs(): SetApprovalForAllCall__Inputs {
+    return new SetApprovalForAllCall__Inputs(this);
+  }
+
+  get outputs(): SetApprovalForAllCall__Outputs {
+    return new SetApprovalForAllCall__Outputs(this);
+  }
+}
+
+export class SetApprovalForAllCall__Inputs {
+  _call: SetApprovalForAllCall;
+
+  constructor(call: SetApprovalForAllCall) {
+    this._call = call;
+  }
+
+  get operator(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get approved(): boolean {
+    return this._call.inputValues[1].value.toBoolean();
+  }
+}
+
+export class SetApprovalForAllCall__Outputs {
+  _call: SetApprovalForAllCall;
+
+  constructor(call: SetApprovalForAllCall) {
+    this._call = call;
+  }
+}
+
+export class UpdateSystemStateCall extends ethereum.Call {
+  get inputs(): UpdateSystemStateCall__Inputs {
+    return new UpdateSystemStateCall__Inputs(this);
+  }
+
+  get outputs(): UpdateSystemStateCall__Outputs {
+    return new UpdateSystemStateCall__Outputs(this);
+  }
+}
+
+export class UpdateSystemStateCall__Inputs {
+  _call: UpdateSystemStateCall;
+
+  constructor(call: UpdateSystemStateCall) {
+    this._call = call;
+  }
+
+  get baseFee(): i32 {
+    return this._call.inputValues[0].value.toI32();
+  }
+
+  get lpFee(): i32 {
+    return this._call.inputValues[1].value.toI32();
+  }
+
+  get mintingStopped(): boolean {
+    return this._call.inputValues[2].value.toBoolean();
+  }
+}
+
+export class UpdateSystemStateCall__Outputs {
+  _call: UpdateSystemStateCall;
+
+  constructor(call: UpdateSystemStateCall) {
+    this._call = call;
+  }
+}
+
+export class UpdateVaultsCall extends ethereum.Call {
+  get inputs(): UpdateVaultsCall__Inputs {
+    return new UpdateVaultsCall__Inputs(this);
+  }
+
+  get outputs(): UpdateVaultsCall__Outputs {
+    return new UpdateVaultsCall__Outputs(this);
+  }
+}
+
+export class UpdateVaultsCall__Inputs {
+  _call: UpdateVaultsCall;
+
+  constructor(call: UpdateVaultsCall) {
+    this._call = call;
+  }
+
+  get oldVaults(): Array<BigInt> {
+    return this._call.inputValues[0].value.toBigIntArray();
+  }
+
+  get newVaults(): Array<BigInt> {
+    return this._call.inputValues[1].value.toBigIntArray();
+  }
+
+  get newTaxes(): Array<i32> {
+    return this._call.inputValues[2].value.toI32Array();
+  }
+
+  get cumTax(): i32 {
+    return this._call.inputValues[3].value.toI32();
+  }
+}
+
+export class UpdateVaultsCall__Outputs {
+  _call: UpdateVaultsCall;
+
+  constructor(call: UpdateVaultsCall) {
+    this._call = call;
+  }
+}
+
+export class WithdrawFeesCall extends ethereum.Call {
+  get inputs(): WithdrawFeesCall__Inputs {
+    return new WithdrawFeesCall__Inputs(this);
+  }
+
+  get outputs(): WithdrawFeesCall__Outputs {
+    return new WithdrawFeesCall__Outputs(this);
+  }
+}
+
+export class WithdrawFeesCall__Inputs {
+  _call: WithdrawFeesCall;
+
+  constructor(call: WithdrawFeesCall) {
+    this._call = call;
+  }
+
+  get token(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class WithdrawFeesCall__Outputs {
+  _call: WithdrawFeesCall;
+
+  constructor(call: WithdrawFeesCall) {
+    this._call = call;
+  }
+
+  get totalFeesToStakers(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
+export class WithdrawToSaveSystemCall extends ethereum.Call {
+  get inputs(): WithdrawToSaveSystemCall__Inputs {
+    return new WithdrawToSaveSystemCall__Inputs(this);
+  }
+
+  get outputs(): WithdrawToSaveSystemCall__Outputs {
+    return new WithdrawToSaveSystemCall__Outputs(this);
+  }
+}
+
+export class WithdrawToSaveSystemCall__Inputs {
+  _call: WithdrawToSaveSystemCall;
+
+  constructor(call: WithdrawToSaveSystemCall) {
+    this._call = call;
+  }
+
+  get tokens(): Array<Address> {
+    return this._call.inputValues[0].value.toAddressArray();
+  }
+
+  get to(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+}
+
+export class WithdrawToSaveSystemCall__Outputs {
+  _call: WithdrawToSaveSystemCall;
+
+  constructor(call: WithdrawToSaveSystemCall) {
+    this._call = call;
+  }
+
+  get amounts(): Array<BigInt> {
+    return this._call.outputValues[0].value.toBigIntArray();
   }
 }
