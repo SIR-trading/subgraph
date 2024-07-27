@@ -21,7 +21,7 @@ function handleTransfer(
   amount: BigInt,
 ): void {
   const contract = Vault.bind(
-    Address.fromString("0x43dfd957bb91b568176e976a8d4e8ab4e94aebfd"),
+    Address.fromString("0x81f4f47aa3bBd154171C877b4d70F6C9EeCAb216"),
   );
   // address debtToken;
   // address collateralToken;
@@ -60,6 +60,7 @@ function handleTransfer(
     userPosition.leverageTier = leverageTier.toString();
     userPosition.debtSymbol = debtTokenContract.symbol();
     userPosition.collateralSymbol = collateralTokenContract.symbol();
+    userPosition.vautlId = vaultId.toString();
     userPosition.save();
   }
 }
