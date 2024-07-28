@@ -209,8 +209,8 @@ export class UserPosition extends Entity {
     this.set("APE", Value.fromString(value));
   }
 
-  get User(): Bytes {
-    let value = this.get("User");
+  get user(): Bytes {
+    let value = this.get("user");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -218,8 +218,8 @@ export class UserPosition extends Entity {
     }
   }
 
-  set User(value: Bytes) {
-    this.set("User", Value.fromBytes(value));
+  set user(value: Bytes) {
+    this.set("user", Value.fromBytes(value));
   }
 
   get collateralSymbol(): string {
@@ -287,8 +287,8 @@ export class UserPosition extends Entity {
     this.set("leverageTier", Value.fromString(value));
   }
 
-  get vautlId(): string {
-    let value = this.get("vautlId");
+  get vaultId(): string {
+    let value = this.get("vaultId");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -296,8 +296,8 @@ export class UserPosition extends Entity {
     }
   }
 
-  set vautlId(value: string) {
-    this.set("vautlId", Value.fromString(value));
+  set vaultId(value: string) {
+    this.set("vaultId", Value.fromString(value));
   }
 }
 
@@ -433,8 +433,8 @@ export class UserPositionTea extends Entity {
     this.set("leverageTier", Value.fromString(value));
   }
 
-  get vautlId(): string {
-    let value = this.get("vautlId");
+  get vaultId(): string {
+    let value = this.get("vaultId");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -442,7 +442,7 @@ export class UserPositionTea extends Entity {
     }
   }
 
-  set vautlId(value: string) {
-    this.set("vautlId", Value.fromString(value));
+  set vaultId(value: string) {
+    this.set("vaultId", Value.fromString(value));
   }
 }

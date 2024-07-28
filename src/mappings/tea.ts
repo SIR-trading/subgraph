@@ -60,7 +60,7 @@ function handleTransfer(
     userPosition.leverageTier = leverageTier.toString();
     userPosition.debtSymbol = debtTokenContract.symbol();
     userPosition.collateralSymbol = collateralTokenContract.symbol();
-    userPosition.vautlId = vaultId.toString();
+    userPosition.vaultId = vaultId.toString();
     userPosition.save();
   }
 }
