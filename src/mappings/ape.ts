@@ -25,9 +25,9 @@ export function handleTransferFrom(event: Transfer): void {
     toUP.save();
   } else {
     const newUP = new UserPosition(event.params.to.toHexString() + apeAddress);
-    newUP.User = event.params.to;
+    newUP.user = event.params.to;
     newUP.balance = event.params.amount;
-    newUP.vautlId = vaultId;
+    newUP.vaultId = vaultId;
     newUP.APE = apeAddress;
     newUP.collateralToken = collateralToken;
     newUP.debtToken = debtToken;
