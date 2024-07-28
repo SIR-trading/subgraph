@@ -1,4 +1,5 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
+import { Mint, Burn } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { APE } from "../../generated/templates";
@@ -37,4 +38,11 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.save();
     return;
   }
+}
+
+function handleMint(event: Mint): void {
+  event.params.isAPE;
+}
+function handleBurn(event: Burn): void {
+  event.params.isAPE;
 }

@@ -25,7 +25,7 @@ dataSources:
           handler: handleVaultInitialized
       file: ./src/mappings/vault.ts
   - kind: ethereum
-    name: Vault
+    name: Tea
     network: mainnet
     source:
       address: "0x81f4f47aa3bBd154171C877b4d70F6C9EeCAb216"
@@ -47,7 +47,35 @@ dataSources:
           handler: handleSingleTransfer
         - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
           handler: handleBatchTransfer
+        - event: Mint(indexed uint48,bool,uint144,uint144,uint144)
+          handler: handleMint
+        - event: Burn(indexed uint48,bool,uint144,uint144,uint144)
+          handler: handleBurn
       file: ./src/mappings/tea.ts
+  - kind: ethereum
+    name: Tvl
+    network: mainnet
+    source:
+      address: "0x81f4f47aa3bBd154171C877b4d70F6C9EeCAb216"
+      abi: Vault
+      startBlock: 19943272
+    mapping:
+      entities:
+        - Vault
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      abis:
+        - name: Vault
+          file: ./abis/Vault.json
+        - name: ERC20
+          file: ./abis/Erc20.json
+      eventHandlers:
+        - event: Mint(indexed uint48,bool,uint144,uint144,uint144)
+          handler: handleMint
+        - event: Burn(indexed uint48,bool,uint144,uint144,uint144)
+          handler: handleBurn
+      file: ./src/mappings/vault.ts
 templates:
   - name: APE
     kind: ethereum/contract
