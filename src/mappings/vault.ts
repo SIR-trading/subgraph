@@ -3,7 +3,7 @@ import { Mint, Burn } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { APE } from "../../generated/templates";
-import { DataSourceContext } from "@graphprotocol/graph-ts";
+import { BigInt, DataSourceContext, bigInt } from "@graphprotocol/graph-ts";
 
 export function handleVaultInitialized(event: VaultInitialized): void {
   const collateralTokenContract = ERC20.bind(event.params.collateralToken);
@@ -34,15 +34,34 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.collateralSymbol = collateralSymbol;
     vault.debtSymbol = debtSymbol;
     vault.vaultId = event.params.vaultId.toString();
-
+    vault.totalValueLocked = BigInt.fromI32(0);
     vault.save();
     return;
   }
 }
 
-function handleMint(event: Mint): void {
-  event.params.isAPE;
+export function handleMint(event: Mint): void {
+  const collateralIn = event.params.collateralIn;
+  const feeA = event.params.collateralFeeToLPers;
+  const feeB = event.params.collateralFeeToStakers;
+  const fee = feeA.plus(feeB);
+  const total = collateralIn.minus(fee);
+
+  let vault = Vault.load(event.params.vaultId.toHexString());
+  if (vault) {
+    const newLocked = vault.totalValueLocked.plus(total);
+    vault.totalValueLocked = newLocked;
+    vault.save();
+  }
 }
-function handleBurn(event: Burn): void {
-  event.params.isAPE;
+
+export function handleBurn(event: Burn): void {
+  const collateralOut = event.params.collateralWithdrawn;
+
+  let vault = Vault.load(event.params.vaultId.toHexString());
+  if (vault) {
+    const newLocked = vault.totalValueLocked.minus(collateralOut);
+    vault.totalValueLocked = newLocked;
+    vault.save();
+  }
 }

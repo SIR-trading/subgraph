@@ -1,4 +1,4 @@
-type Vault @entity(immutable: true) {
+type Vault @entity(immutable: false) {
   id: String!
   vaultId: String!
   collateralToken: String!
@@ -6,12 +6,13 @@ type Vault @entity(immutable: true) {
   collateralSymbol: String!
   debtSymbol: String!
   leverageTier: Int!
+  totalValueLocked: BigInt!
 }
 type UserPosition @entity(immutable: false) {
   id: String!
   balance: BigInt!
   APE: String!
-  User: Bytes!
+  user: Bytes!
   collateralSymbol: String!
   debtSymbol: String!
   collateralToken: String!
@@ -28,5 +29,5 @@ type UserPositionTea @entity(immutable: false) {
   collateralToken: Bytes!
   debtToken: Bytes!
   leverageTier: String!
-  vautlId: String!
+  vaultId: String!
 }

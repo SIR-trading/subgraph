@@ -47,10 +47,6 @@ dataSources:
           handler: handleSingleTransfer
         - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
           handler: handleBatchTransfer
-        - event: Mint(indexed uint48,bool,uint144,uint144,uint144)
-          handler: handleMint
-        - event: Burn(indexed uint48,bool,uint144,uint144,uint144)
-          handler: handleBurn
       file: ./src/mappings/tea.ts
   - kind: ethereum
     name: Tvl

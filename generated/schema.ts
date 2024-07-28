@@ -127,6 +127,19 @@ export class Vault extends Entity {
   set leverageTier(value: i32) {
     this.set("leverageTier", Value.fromI32(value));
   }
+
+  get totalValueLocked(): BigInt {
+    let value = this.get("totalValueLocked");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set totalValueLocked(value: BigInt) {
+    this.set("totalValueLocked", Value.fromBigInt(value));
+  }
 }
 
 export class UserPosition extends Entity {
