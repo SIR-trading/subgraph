@@ -3,7 +3,7 @@ import { Mint, Burn } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { APE } from "../../generated/templates";
-import { BigInt, DataSourceContext, bigInt } from "@graphprotocol/graph-ts";
+import { BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 
 export function handleVaultInitialized(event: VaultInitialized): void {
   const collateralTokenContract = ERC20.bind(event.params.collateralToken);
@@ -42,10 +42,8 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 
 export function handleMint(event: Mint): void {
   const collateralIn = event.params.collateralIn;
-  const feeA = event.params.collateralFeeToLPers;
-  const feeB = event.params.collateralFeeToStakers;
-  const fee = feeA.plus(feeB);
-  const total = collateralIn.minus(fee);
+  const fee = event.params.collateralFeeToLPers;
+  const total = collateralIn.plus(fee);
 
   let vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
@@ -56,8 +54,9 @@ export function handleMint(event: Mint): void {
 }
 
 export function handleBurn(event: Burn): void {
-  const collateralOut = event.params.collateralWithdrawn;
-
+  const collateralOut = event.params.collateralWithdrawn.plus(
+    event.params.collateralFeeToStakers,
+  );
   let vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
     const newLocked = vault.totalValueLocked.minus(collateralOut);
