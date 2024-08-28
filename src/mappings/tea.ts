@@ -21,7 +21,7 @@ function handleTransfer(
   amount: BigInt,
 ): void {
   const contract = Vault.bind(
-    Address.fromString("0x81f4f47aa3bBd154171C877b4d70F6C9EeCAb216"),
+    Address.fromString("0x76d05F58D14c0838EC630C8140eDC5aB7CD159Dc"),
   );
   // address debtToken;
   // address collateralToken;
