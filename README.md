@@ -4,5 +4,5 @@
    - `address` : The address of the contracts
    - `startBlock` : Block of the contract deployment or earlier, it helps index more efficiently since it avoids having to scan the blockchain since inception
    - `network` : E.g., mainnet, sepolia, etc. See https://thegraph.com/docs/en/developing/supported-networks/
-4. Go to `https://subgraphs.alchemy.com/onboarding`
+4. Go to https://subgraphs.alchemy.com/onboarding
 5. Follow instructions on `Deploy to CLI`
