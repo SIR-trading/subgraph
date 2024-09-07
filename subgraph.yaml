@@ -66,11 +66,15 @@ dataSources:
           file: ./abis/Vault.json
         - name: ERC20
           file: ./abis/Erc20.json
+        - name: Sir
+          file: ./abis/Sir.json
       eventHandlers:
         - event: Mint(indexed uint48,bool,uint144,uint144,uint144)
           handler: handleMint
         - event: Burn(indexed uint48,bool,uint144,uint144,uint144)
           handler: handleBurn
+        - event: VaultNewTax(indexed uint48,uint8,uint16)
+          handler: handleVaultTax
       file: ./src/mappings/vault.ts
 templates:
   - name: APE

@@ -140,6 +140,32 @@ export class Vault extends Entity {
   set totalValueLocked(value: BigInt) {
     this.set("totalValueLocked", Value.fromBigInt(value));
   }
+
+  get lockedLiquidity(): BigInt {
+    let value = this.get("lockedLiquidity");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set lockedLiquidity(value: BigInt) {
+    this.set("lockedLiquidity", Value.fromBigInt(value));
+  }
+
+  get taxAmount(): BigInt {
+    let value = this.get("taxAmount");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set taxAmount(value: BigInt) {
+    this.set("taxAmount", Value.fromBigInt(value));
+  }
 }
 
 export class UserPosition extends Entity {

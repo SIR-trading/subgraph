@@ -7,6 +7,8 @@ type Vault @entity(immutable: false) {
   debtSymbol: String!
   leverageTier: Int!
   totalValueLocked: BigInt!
+  lockedLiquidity: BigInt!
+  taxAmount: BigInt!
 }
 type UserPosition @entity(immutable: false) {
   id: String!

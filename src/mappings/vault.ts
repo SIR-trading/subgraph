@@ -1,10 +1,25 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { Mint, Burn } from "../../generated/Vault/Vault";
+import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
+import { Sir } from "../../generated/Tvl/Sir";
+import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
-import { BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
+import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 
+export function handleVaultTax(event: VaultNewTax): void {
+  const tax = BigInt.fromU64(event.params.tax);
+  const culmTax = BigInt.fromU64(event.params.cumTax);
+  const contract = Sir.bind(Address.fromString(""));
+  const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
+  const rate = tax.div(culmTax).times(issuanceRate);
+  let vault = Vault.load(event.params.vault.toHexString());
+  if (vault) {
+    vault.taxAmount = rate;
+    vault.save();
+  }
+}
+// POL [%] = vault.balanceOf(balanceOf(address(vault),vaultId)) / vault.totalSupply(vaultId) * 100
 export function handleVaultInitialized(event: VaultInitialized): void {
   const collateralTokenContract = ERC20.bind(event.params.collateralToken);
   const debtTokenContract = ERC20.bind(event.params.debtToken);
@@ -35,6 +50,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.debtSymbol = debtSymbol;
     vault.vaultId = event.params.vaultId.toString();
     vault.totalValueLocked = BigInt.fromI32(0);
+    vault.lockedLiquidity = BigInt.fromI32(0);
     vault.save();
     return;
   }
@@ -47,7 +63,14 @@ export function handleMint(event: Mint): void {
 
   let vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
+    const vaultContract = VaultContract.bind(event.address);
+    const lockedLiquidity = vaultContract.balanceOf(
+      event.address,
+      event.params.vaultId,
+    );
+
     const newLocked = vault.totalValueLocked.plus(total);
+    vault.lockedLiquidity = lockedLiquidity;
     vault.totalValueLocked = newLocked;
     vault.save();
   }
@@ -59,8 +82,14 @@ export function handleBurn(event: Burn): void {
   );
   let vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
+    const vaultContract = VaultContract.bind(event.address);
+    const lockedLiquidity = vaultContract.balanceOf(
+      event.address,
+      event.params.vaultId,
+    );
     const newLocked = vault.totalValueLocked.minus(collateralOut);
     vault.totalValueLocked = newLocked;
+    vault.lockedLiquidity = lockedLiquidity;
     vault.save();
   }
 }
