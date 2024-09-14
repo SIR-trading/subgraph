@@ -51,6 +51,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.vaultId = event.params.vaultId.toString();
     vault.totalValueLocked = BigInt.fromI32(0);
     vault.lockedLiquidity = BigInt.fromI32(0);
+    vault.taxAmount = BigInt.fromI32(0);
     vault.save();
     return;
   }
