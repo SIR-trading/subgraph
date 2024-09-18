@@ -10,7 +10,9 @@ import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 export function handleVaultTax(event: VaultNewTax): void {
   const tax = BigInt.fromU64(event.params.tax);
   const culmTax = BigInt.fromU64(event.params.cumTax);
-  const contract = Sir.bind(Address.fromString(""));
+  const contract = Sir.bind(
+    Address.fromString("0x3fc14d473E9967c81F03C669E928aC90e6306bDD"),
+  );
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
   const rate = tax.div(culmTax).times(issuanceRate);
   let vault = Vault.load(event.params.vault.toHexString());
