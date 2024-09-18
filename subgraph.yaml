@@ -4,11 +4,12 @@ schema:
 dataSources:
   - kind: ethereum
     name: VaultExternal
-    network: mainnet
+    network: sepolia
     source:
-      address: "0x76d05F58D14c0838EC630C8140eDC5aB7CD159Dc"
+      address: "0xd3390b0a568fECFE6A9D1e3c1ABcE6d4d09a4Cc4"
       abi: VaultExternal
-      startBlock: 19943272
+      startBlock: 6686300
+
     mapping:
       entities:
         - Vault
@@ -26,11 +27,11 @@ dataSources:
       file: ./src/mappings/vault.ts
   - kind: ethereum
     name: Tea
-    network: mainnet
+    network: sepolia
     source:
-      address: "0x76d05F58D14c0838EC630C8140eDC5aB7CD159Dc"
+      address: "0xd3390b0a568fECFE6A9D1e3c1ABcE6d4d09a4Cc4"
       abi: Vault
-      startBlock: 19943272
+      startBlock: 6686300
     mapping:
       entities:
         - Vault
@@ -50,11 +51,11 @@ dataSources:
       file: ./src/mappings/tea.ts
   - kind: ethereum
     name: Tvl
-    network: mainnet
+    network: sepolia
     source:
-      address: "0x76d05F58D14c0838EC630C8140eDC5aB7CD159Dc"
+      address: "0xd3390b0a568fECFE6A9D1e3c1ABcE6d4d09a4Cc4"
       abi: Vault
-      startBlock: 19943272
+      startBlock: 6686300
     mapping:
       entities:
         - Vault
@@ -79,7 +80,7 @@ dataSources:
 templates:
   - name: APE
     kind: ethereum/contract
-    network: mainnet
+    network: sepolia
     source:
       abi: APE
     mapping:
