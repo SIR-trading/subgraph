@@ -4,6 +4,7 @@ import {
   TransferBatch,
   TransferSingle,
 } from "../../generated/Vault/Vault";
+import { store } from "@graphprotocol/graph-ts";
 import { UserPositionTea } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 export function handleSingleTransfer(event: TransferSingle): void {
@@ -33,7 +34,11 @@ function handleTransfer(
 
   if (senderUserPosition) {
     senderUserPosition.balance = senderUserPosition.balance.minus(amount);
-    senderUserPosition.save();
+    if (senderUserPosition.balance.equals(BigInt.fromU64(0))) {
+      store.remove("UserPositionTea", senderUserPosition.id);
+    } else {
+      senderUserPosition.save();
+    }
   }
 
   const userPosition = UserPositionTea.load(

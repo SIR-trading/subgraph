@@ -1,6 +1,6 @@
 import { UserPosition } from "../../generated/schema";
 import { Transfer } from "../../generated/templates/APE/APE";
-import { dataSource } from "@graphprotocol/graph-ts";
+import { BigInt, dataSource, store } from "@graphprotocol/graph-ts";
 
 export function handleTransferFrom(event: Transfer): void {
   let context = dataSource.context();
@@ -17,7 +17,11 @@ export function handleTransferFrom(event: Transfer): void {
   );
   if (fromUP) {
     fromUP.balance = fromUP.balance.minus(event.params.amount);
-    fromUP.save();
+    if (fromUP.balance.equals(BigInt.fromI32(0))) {
+      store.remove("UserPosition", fromUP.id);
+    } else {
+      fromUP.save();
+    }
   }
 
   if (toUP) {
