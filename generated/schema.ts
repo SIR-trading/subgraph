@@ -128,8 +128,8 @@ export class Vault extends Entity {
     this.set("leverageTier", Value.fromI32(value));
   }
 
-  get totalValueLocked(): BigInt {
-    let value = this.get("totalValueLocked");
+  get totalApeLocked(): BigInt {
+    let value = this.get("totalApeLocked");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -137,8 +137,21 @@ export class Vault extends Entity {
     }
   }
 
-  set totalValueLocked(value: BigInt) {
-    this.set("totalValueLocked", Value.fromBigInt(value));
+  set totalApeLocked(value: BigInt) {
+    this.set("totalApeLocked", Value.fromBigInt(value));
+  }
+
+  get totalTeaLocked(): BigInt {
+    let value = this.get("totalTeaLocked");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set totalTeaLocked(value: BigInt) {
+    this.set("totalTeaLocked", Value.fromBigInt(value));
   }
 
   get lockedLiquidity(): BigInt {

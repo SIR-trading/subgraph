@@ -76,30 +76,40 @@ export class APE__burnResultNewReservesStruct extends ethereum.Tuple {
   }
 }
 
+export class APE__burnResultFeesStruct extends ethereum.Tuple {
+  get collateralInOrWithdrawn(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get collateralFeeToGentlemen(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get collateralFeeToProtocol(): BigInt {
+    return this[3].toBigInt();
+  }
+}
+
 export class APE__burnResult {
   value0: APE__burnResultNewReservesStruct;
-  value1: BigInt;
-  value2: BigInt;
-  value3: BigInt;
+  value1: APE__burnResultFeesStruct;
 
   constructor(
     value0: APE__burnResultNewReservesStruct,
-    value1: BigInt,
-    value2: BigInt,
-    value3: BigInt,
+    value1: APE__burnResultFeesStruct,
   ) {
     this.value0 = value0;
     this.value1 = value1;
-    this.value2 = value2;
-    this.value3 = value3;
   }
 
   toMap(): TypedMap<string, ethereum.Value> {
     let map = new TypedMap<string, ethereum.Value>();
     map.set("value0", ethereum.Value.fromTuple(this.value0));
-    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
-    map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
-    map.set("value3", ethereum.Value.fromUnsignedBigInt(this.value3));
+    map.set("value1", ethereum.Value.fromTuple(this.value1));
     return map;
   }
 
@@ -107,16 +117,8 @@ export class APE__burnResult {
     return this.value0;
   }
 
-  getCollectedFee(): BigInt {
+  getFees(): APE__burnResultFeesStruct {
     return this.value1;
-  }
-
-  getPolFee(): BigInt {
-    return this.value2;
-  }
-
-  getCollateralWidthdrawn(): BigInt {
-    return this.value3;
   }
 }
 
@@ -148,30 +150,44 @@ export class APE__mintResultNewReservesStruct extends ethereum.Tuple {
   }
 }
 
+export class APE__mintResultFeesStruct extends ethereum.Tuple {
+  get collateralInOrWithdrawn(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get collateralFeeToGentlemen(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get collateralFeeToProtocol(): BigInt {
+    return this[3].toBigInt();
+  }
+}
+
 export class APE__mintResult {
   value0: APE__mintResultNewReservesStruct;
-  value1: BigInt;
+  value1: APE__mintResultFeesStruct;
   value2: BigInt;
-  value3: BigInt;
 
   constructor(
     value0: APE__mintResultNewReservesStruct,
-    value1: BigInt,
+    value1: APE__mintResultFeesStruct,
     value2: BigInt,
-    value3: BigInt,
   ) {
     this.value0 = value0;
     this.value1 = value1;
     this.value2 = value2;
-    this.value3 = value3;
   }
 
   toMap(): TypedMap<string, ethereum.Value> {
     let map = new TypedMap<string, ethereum.Value>();
     map.set("value0", ethereum.Value.fromTuple(this.value0));
-    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
+    map.set("value1", ethereum.Value.fromTuple(this.value1));
     map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
-    map.set("value3", ethereum.Value.fromUnsignedBigInt(this.value3));
     return map;
   }
 
@@ -179,16 +195,12 @@ export class APE__mintResult {
     return this.value0;
   }
 
-  getCollectedFee(): BigInt {
+  getFees(): APE__mintResultFeesStruct {
     return this.value1;
   }
 
-  getPolFee(): BigInt {
-    return this.value2;
-  }
-
   getAmount(): BigInt {
-    return this.value3;
+    return this.value2;
   }
 }
 
@@ -225,44 +237,6 @@ export class APE extends ethereum.SmartContract {
     let result = super.tryCall(
       "DOMAIN_SEPARATOR",
       "DOMAIN_SEPARATOR():(bytes32)",
-      [],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
-  }
-
-  OWNER(): Address {
-    let result = super.call("OWNER", "OWNER():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_OWNER(): ethereum.CallResult<Address> {
-    let result = super.tryCall("OWNER", "OWNER():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
-  PERMIT_TYPEHASH(): Bytes {
-    let result = super.call(
-      "PERMIT_TYPEHASH",
-      "PERMIT_TYPEHASH():(bytes32)",
-      [],
-    );
-
-    return result[0].toBytes();
-  }
-
-  try_PERMIT_TYPEHASH(): ethereum.CallResult<Bytes> {
-    let result = super.tryCall(
-      "PERMIT_TYPEHASH",
-      "PERMIT_TYPEHASH():(bytes32)",
       [],
     );
     if (result.reverted) {
@@ -344,7 +318,7 @@ export class APE extends ethereum.SmartContract {
   ): APE__burnResult {
     let result = super.call(
       "burn",
-      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),uint144,uint144,uint144)",
+      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),(uint144,uint144,uint144,uint144))",
       [
         ethereum.Value.fromAddress(from),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -357,9 +331,7 @@ export class APE extends ethereum.SmartContract {
     return changetype<APE__burnResult>(
       new APE__burnResult(
         changetype<APE__burnResultNewReservesStruct>(result[0].toTuple()),
-        result[1].toBigInt(),
-        result[2].toBigInt(),
-        result[3].toBigInt(),
+        changetype<APE__burnResultFeesStruct>(result[1].toTuple()),
       ),
     );
   }
@@ -373,7 +345,7 @@ export class APE extends ethereum.SmartContract {
   ): ethereum.CallResult<APE__burnResult> {
     let result = super.tryCall(
       "burn",
-      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),uint144,uint144,uint144)",
+      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),(uint144,uint144,uint144,uint144))",
       [
         ethereum.Value.fromAddress(from),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -390,9 +362,7 @@ export class APE extends ethereum.SmartContract {
       changetype<APE__burnResult>(
         new APE__burnResult(
           changetype<APE__burnResultNewReservesStruct>(value[0].toTuple()),
-          value[1].toBigInt(),
-          value[2].toBigInt(),
-          value[3].toBigInt(),
+          changetype<APE__burnResultFeesStruct>(value[1].toTuple()),
         ),
       ),
     );
@@ -475,7 +445,7 @@ export class APE extends ethereum.SmartContract {
   ): APE__mintResult {
     let result = super.call(
       "mint",
-      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),uint144,uint144,uint256)",
+      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),(uint144,uint144,uint144,uint144),uint256)",
       [
         ethereum.Value.fromAddress(to),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -488,9 +458,8 @@ export class APE extends ethereum.SmartContract {
     return changetype<APE__mintResult>(
       new APE__mintResult(
         changetype<APE__mintResultNewReservesStruct>(result[0].toTuple()),
-        result[1].toBigInt(),
+        changetype<APE__mintResultFeesStruct>(result[1].toTuple()),
         result[2].toBigInt(),
-        result[3].toBigInt(),
       ),
     );
   }
@@ -504,7 +473,7 @@ export class APE extends ethereum.SmartContract {
   ): ethereum.CallResult<APE__mintResult> {
     let result = super.tryCall(
       "mint",
-      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),uint144,uint144,uint256)",
+      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),(uint144,uint144,uint144,uint144),uint256)",
       [
         ethereum.Value.fromAddress(to),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -521,9 +490,8 @@ export class APE extends ethereum.SmartContract {
       changetype<APE__mintResult>(
         new APE__mintResult(
           changetype<APE__mintResultNewReservesStruct>(value[0].toTuple()),
-          value[1].toBigInt(),
+          changetype<APE__mintResultFeesStruct>(value[1].toTuple()),
           value[2].toBigInt(),
-          value[3].toBigInt(),
         ),
       ),
     );
@@ -767,16 +735,10 @@ export class BurnCall__Outputs {
     );
   }
 
-  get collectedFee(): BigInt {
-    return this._call.outputValues[1].value.toBigInt();
-  }
-
-  get polFee(): BigInt {
-    return this._call.outputValues[2].value.toBigInt();
-  }
-
-  get collateralWidthdrawn(): BigInt {
-    return this._call.outputValues[3].value.toBigInt();
+  get fees(): BurnCallFeesStruct {
+    return changetype<BurnCallFeesStruct>(
+      this._call.outputValues[1].value.toTuple(),
+    );
   }
 }
 
@@ -805,6 +767,70 @@ export class BurnCallNewReservesStruct extends ethereum.Tuple {
 
   get tickPriceX42(): BigInt {
     return this[2].toBigInt();
+  }
+}
+
+export class BurnCallFeesStruct extends ethereum.Tuple {
+  get collateralInOrWithdrawn(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get collateralFeeToGentlemen(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get collateralFeeToProtocol(): BigInt {
+    return this[3].toBigInt();
+  }
+}
+
+export class InitializeCall extends ethereum.Call {
+  get inputs(): InitializeCall__Inputs {
+    return new InitializeCall__Inputs(this);
+  }
+
+  get outputs(): InitializeCall__Outputs {
+    return new InitializeCall__Outputs(this);
+  }
+}
+
+export class InitializeCall__Inputs {
+  _call: InitializeCall;
+
+  constructor(call: InitializeCall) {
+    this._call = call;
+  }
+
+  get name_(): string {
+    return this._call.inputValues[0].value.toString();
+  }
+
+  get symbol_(): string {
+    return this._call.inputValues[1].value.toString();
+  }
+
+  get decimals_(): i32 {
+    return this._call.inputValues[2].value.toI32();
+  }
+
+  get debtToken_(): Address {
+    return this._call.inputValues[3].value.toAddress();
+  }
+
+  get collateralToken_(): Address {
+    return this._call.inputValues[4].value.toAddress();
+  }
+}
+
+export class InitializeCall__Outputs {
+  _call: InitializeCall;
+
+  constructor(call: InitializeCall) {
+    this._call = call;
   }
 }
 
@@ -861,16 +887,14 @@ export class MintCall__Outputs {
     );
   }
 
-  get collectedFee(): BigInt {
-    return this._call.outputValues[1].value.toBigInt();
-  }
-
-  get polFee(): BigInt {
-    return this._call.outputValues[2].value.toBigInt();
+  get fees(): MintCallFeesStruct {
+    return changetype<MintCallFeesStruct>(
+      this._call.outputValues[1].value.toTuple(),
+    );
   }
 
   get amount(): BigInt {
-    return this._call.outputValues[3].value.toBigInt();
+    return this._call.outputValues[2].value.toBigInt();
   }
 }
 
@@ -899,6 +923,24 @@ export class MintCallNewReservesStruct extends ethereum.Tuple {
 
   get tickPriceX42(): BigInt {
     return this[2].toBigInt();
+  }
+}
+
+export class MintCallFeesStruct extends ethereum.Tuple {
+  get collateralInOrWithdrawn(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get collateralFeeToGentlemen(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get collateralFeeToProtocol(): BigInt {
+    return this[3].toBigInt();
   }
 }
 
