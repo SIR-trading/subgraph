@@ -6,7 +6,8 @@ type Vault @entity(immutable: false) {
   collateralSymbol: String!
   debtSymbol: String!
   leverageTier: Int!
-  totalValueLocked: BigInt!
+  totalApeLocked: BigInt!
+  totalTeaLocked: BigInt!
   lockedLiquidity: BigInt!
   taxAmount: BigInt!
 }
