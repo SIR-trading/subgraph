@@ -1,59 +1,44 @@
 [
   {
-    "inputs": [],
-    "name": "DepositTooLarge",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "LeverageTierOutOfRange",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "VaultAlreadyInitialized",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "VaultDoesNotExist",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
+    "type": "event",
+    "name": "VaultInitialized",
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
         "name": "debtToken",
-        "type": "address"
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       },
       {
-        "indexed": true,
-        "internalType": "address",
         "name": "collateralToken",
-        "type": "address"
-      },
-      {
+        "type": "address",
         "indexed": true,
-        "internalType": "int8",
+        "internalType": "address"
+      },
+      {
         "name": "leverageTier",
-        "type": "int8"
+        "type": "int8",
+        "indexed": true,
+        "internalType": "int8"
       },
       {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "vaultId",
-        "type": "uint256"
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       },
       {
+        "name": "ape",
+        "type": "address",
         "indexed": false,
-        "internalType": "address",
-        "name": "apeAddress",
-        "type": "address"
+        "internalType": "address"
       }
     ],
-    "name": "VaultInitialized",
-    "type": "event"
-  }
+    "anonymous": false
+  },
+  { "type": "error", "name": "DepositTooLarge", "inputs": [] },
+  { "type": "error", "name": "LeverageTierOutOfRange", "inputs": [] },
+  { "type": "error", "name": "VaultAlreadyInitialized", "inputs": [] },
+  { "type": "error", "name": "VaultDoesNotExist", "inputs": [] }
 ]
+
