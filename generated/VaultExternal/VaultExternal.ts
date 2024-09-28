@@ -39,7 +39,7 @@ export class VaultInitialized__Params {
     return this._event.parameters[3].value.toBigInt();
   }
 
-  get apeAddress(): Address {
+  get ape(): Address {
     return this._event.parameters[4].value.toAddress();
   }
 }

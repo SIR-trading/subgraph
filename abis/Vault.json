@@ -205,12 +205,17 @@
           },
           { "name": "leverageTier", "type": "int8", "internalType": "int8" }
         ]
+      },
+      {
+        "name": "collateralToDeposit",
+        "type": "uint144",
+        "internalType": "uint144"
       }
     ],
     "outputs": [
       { "name": "amount", "type": "uint256", "internalType": "uint256" }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -672,8 +677,8 @@
     "anonymous": false
   },
   { "type": "error", "name": "LengthMismatch", "inputs": [] },
+  { "type": "error", "name": "NotAWETHVault", "inputs": [] },
   { "type": "error", "name": "NotAuthorized", "inputs": [] },
   { "type": "error", "name": "TEAMaxSupplyExceeded", "inputs": [] },
-  { "type": "error", "name": "TF", "inputs": [] },
   { "type": "error", "name": "UnsafeRecipient", "inputs": [] }
 ]

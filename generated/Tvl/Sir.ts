@@ -857,6 +857,10 @@ export class BidCall__Inputs {
   get token(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
+
+  get amount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
 }
 
 export class BidCall__Outputs {

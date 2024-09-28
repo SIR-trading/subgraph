@@ -5,13 +5,19 @@ import {
   TransferSingle,
 } from "../../generated/Vault/Vault";
 import { store } from "@graphprotocol/graph-ts";
-import { UserPositionTea } from "../../generated/schema";
+import {
+  Test,
+  Vault as VaultSchema,
+  UserPositionTea,
+} from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
+import { vaultAddress, zeroAddress } from "../contracts";
 export function handleSingleTransfer(event: TransferSingle): void {
   const amount = event.params.amount;
   const to = event.params.to;
   const from = event.params.from;
   const vaultId = event.params.id;
+
   handleTransfer(vaultId, to, from, amount);
 }
 
@@ -21,12 +27,42 @@ function handleTransfer(
   from: Address,
   amount: BigInt,
 ): void {
-  const contract = Vault.bind(
-    Address.fromString("0xd3390b0a568fECFE6A9D1e3c1ABcE6d4d09a4Cc4"),
-  );
+  const contract = Vault.bind(Address.fromString(vaultAddress));
   // address debtToken;
   // address collateralToken;
   // int8 leverageTier;
+
+  if (to.equals(Address.fromString(vaultAddress))) {
+    const vault = VaultSchema.load(vaultId.toHexString());
+    if (vault) {
+      vault.lockedLiquidity = vault.lockedLiquidity.plus(amount);
+      vault.save();
+    }
+  }
+
+  if (from.equals(Address.fromString(vaultAddress))) {
+    const vault = VaultSchema.load(vaultId.toHexString());
+    if (vault) {
+      vault.lockedLiquidity = vault.lockedLiquidity.minus(amount);
+      vault.save();
+    }
+  }
+
+  if (from.equals(Address.fromString(zeroAddress))) {
+    const vault = VaultSchema.load(vaultId.toHexString());
+    if (vault) {
+      vault.totalTea = vault.totalTea.plus(amount);
+      vault.save();
+    }
+  }
+
+  if (to.equals(Address.fromString(zeroAddress))) {
+    const vault = VaultSchema.load(vaultId.toHexString());
+    if (vault) {
+      vault.totalTea = vault.totalTea.minus(amount);
+      vault.save();
+    }
+  }
 
   const senderUserPosition = UserPositionTea.load(
     from.toHexString() + vaultId.toHexString(),
@@ -35,6 +71,7 @@ function handleTransfer(
   if (senderUserPosition) {
     senderUserPosition.balance = senderUserPosition.balance.minus(amount);
     if (senderUserPosition.balance.equals(BigInt.fromU64(0))) {
+      //TODO make call to check if user has rewards
       store.remove("UserPositionTea", senderUserPosition.id);
     } else {
       senderUserPosition.save();
