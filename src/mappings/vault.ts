@@ -6,13 +6,12 @@ import { Sir } from "../../generated/Tvl/Sir";
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
+import { sirAddress } from "../contracts";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const tax = BigInt.fromU64(event.params.tax);
   const culmTax = BigInt.fromU64(event.params.cumTax);
-  const contract = Sir.bind(
-    Address.fromString("0x3fc14d473E9967c81F03C669E928aC90e6306bDD"),
-  );
+  const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
   const rate = tax.div(culmTax).times(issuanceRate);
   let vault = Vault.load(event.params.vault.toHexString());
@@ -51,64 +50,66 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.collateralSymbol = collateralSymbol;
     vault.debtSymbol = debtSymbol;
     vault.vaultId = event.params.vaultId.toString();
-    vault.totalApeLocked = BigInt.fromI32(0);
-
-    vault.totalTeaLocked = BigInt.fromI32(0);
+    vault.apeAddress = event.params.ape;
+    vault.totalValue = BigInt.fromI32(0);
+    vault.teaCollateral = BigInt.fromI32(0);
+    vault.apeCollateral = BigInt.fromI32(0);
     vault.lockedLiquidity = BigInt.fromI32(0);
     vault.taxAmount = BigInt.fromI32(0);
+    vault.totalTea = BigInt.fromI32(0);
     vault.save();
     return;
   }
 }
 
 export function handleMint(event: Mint): void {
-  const collateralIn = event.params.collateralIn;
+  const params = event.params;
   const fee = event.params.collateralFeeToLPers;
-  const total = collateralIn.plus(fee);
+  const total = params.collateralIn.plus(fee);
 
   let vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
-    const vaultContract = VaultContract.bind(event.address);
-    const lockedLiquidity = vaultContract.balanceOf(
-      event.address,
-      event.params.vaultId,
-    );
-    const newLocked = event.params.isAPE
-      ? vault.totalApeLocked.plus(total)
-      : vault.totalTeaLocked.plus(total);
-    vault.lockedLiquidity = lockedLiquidity;
     if (event.params.isAPE) {
-      vault.totalApeLocked = newLocked;
+      vault.apeCollateral = vault.apeCollateral.plus(params.collateralIn);
+
+      vault.teaCollateral = vault.teaCollateral.plus(
+        event.params.collateralFeeToLPers,
+      );
     } else {
-      vault.totalTeaLocked = newLocked;
+      vault.teaCollateral = vault.teaCollateral.plus(
+        params.collateralIn.plus(params.collateralFeeToLPers),
+      );
     }
+    vault.totalValue = vault.totalValue.plus(total);
     vault.save();
   }
 }
 
 export function handleBurn(event: Burn): void {
-  const collateralOut = event.params.collateralWithdrawn.plus(
-    event.params.collateralFeeToStakers,
+  const params = event.params;
+
+  const collateralOut = params.collateralWithdrawn.plus(
+    params.collateralFeeToStakers,
   );
+
   let vault = Vault.load(event.params.vaultId.toHexString());
+
   if (vault) {
-    const vaultContract = VaultContract.bind(event.address);
-    const lockedLiquidity = vaultContract.balanceOf(
-      event.address,
-      event.params.vaultId,
-    );
-    const newLocked = event.params.isAPE
-      ? vault.totalApeLocked.minus(collateralOut)
-      : vault.totalTeaLocked.minus(collateralOut);
-    vault.lockedLiquidity = lockedLiquidity;
     if (event.params.isAPE) {
-      vault.totalApeLocked = newLocked;
+      vault.apeCollateral = vault.apeCollateral.minus(
+        params.collateralWithdrawn.plus(
+          params.collateralFeeToStakers.plus(params.collateralFeeToLPers),
+        ),
+      );
+      vault.teaCollateral = vault.teaCollateral.plus(
+        params.collateralFeeToLPers,
+      );
     } else {
-      vault.totalTeaLocked = newLocked;
+      vault.teaCollateral = vault.teaCollateral.minus(
+        params.collateralWithdrawn.plus(params.collateralFeeToStakers),
+      );
     }
-    // const newLocked = vault.totalValueLocked.minus(collateralOut);
-    // vault.totalValueLocked = newLocked;
-    vault.lockedLiquidity = lockedLiquidity;
+    vault.totalValue = vault.totalValue.minus(collateralOut);
     vault.save();
   }
 }
