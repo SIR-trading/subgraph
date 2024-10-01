@@ -77,6 +77,28 @@ dataSources:
         - event: VaultNewTax(indexed uint48,uint8,uint16)
           handler: handleVaultTax
       file: ./src/mappings/vault.ts
+  - kind: ethereum
+    name: Claims
+    network: mainnet
+    source:
+      address: "0x8a6E9a8E0bB561f8cdAb1619ECc4585aaF126D73"
+      abi: Sir
+      startBlock: 20830200
+    mapping:
+      entities:
+        - Vault
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      abis:
+        - name: Vault
+          file: ./abis/Vault.json
+        - name: Sir
+          file: ./abis/Sir.json
+      eventHandlers:
+        - event: RewardsClaimed(indexed address,indexed uint256,uint80)
+          handler: handleClaim
+      file: ./src/mappings/tea.ts
 templates:
   - name: APE
     kind: ethereum/contract

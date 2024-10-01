@@ -34,6 +34,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     "collateralToken",
     event.params.collateralToken.toHexString(),
   );
+
   context.setString("debtSymbol", debtSymbol);
   context.setString("debtToken", event.params.debtToken.toHexString());
   context.setString("leverageTier", event.params.leverageTier.toString());

@@ -4,13 +4,11 @@ import {
   TransferBatch,
   TransferSingle,
 } from "../../generated/Vault/Vault";
+import { RewardsClaimed } from "../../generated/Claims/Sir";
 import { store } from "@graphprotocol/graph-ts";
-import {
-  Test,
-  Vault as VaultSchema,
-  UserPositionTea,
-} from "../../generated/schema";
+import { Vault as VaultSchema, UserPositionTea } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
+import { Vault as VaultContract } from "../../generated/Claims/Vault";
 import { vaultAddress, zeroAddress } from "../contracts";
 export function handleSingleTransfer(event: TransferSingle): void {
   const amount = event.params.amount;
@@ -21,6 +19,22 @@ export function handleSingleTransfer(event: TransferSingle): void {
   handleTransfer(vaultId, to, from, amount);
 }
 
+export function handleClaim(event: RewardsClaimed) {
+  const vaultId = event.params.vaultId;
+  const user = event.params.contributor;
+  const Vault = VaultContract.bind(Address.fromString(vaultAddress));
+  const TeaBal = Vault.balanceOf(user, vaultId);
+
+  const unClaimedRewards = Vault.unclaimedRewards(vaultId, user);
+
+  if (
+    TeaBal.equals(BigInt.fromI32(0)) &&
+    unClaimedRewards.equals(BigInt.fromI32(0))
+  ) {
+    // if Tea and Claimable are 0 remove position
+    store.remove("UserPositionTea", user.toHexString() + vaultId.toHexString());
+  }
+}
 function handleTransfer(
   vaultId: BigInt,
   to: Address,
@@ -67,11 +81,14 @@ function handleTransfer(
   const senderUserPosition = UserPositionTea.load(
     from.toHexString() + vaultId.toHexString(),
   );
+  const claimBalance = contract.unclaimedRewards(vaultId, from);
 
   if (senderUserPosition) {
     senderUserPosition.balance = senderUserPosition.balance.minus(amount);
-    if (senderUserPosition.balance.equals(BigInt.fromU64(0))) {
-      //TODO make call to check if user has rewards
+    if (
+      senderUserPosition.balance.equals(BigInt.fromU64(0)) &&
+      claimBalance.equals(BigInt.fromI32(0))
+    ) {
       store.remove("UserPositionTea", senderUserPosition.id);
     } else {
       senderUserPosition.save();
