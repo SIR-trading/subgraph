@@ -19,7 +19,7 @@ export function handleSingleTransfer(event: TransferSingle): void {
   handleTransfer(vaultId, to, from, amount);
 }
 
-export function handleClaim(event: RewardsClaimed) {
+export function handleClaim(event: RewardsClaimed): void {
   const vaultId = event.params.vaultId;
   const user = event.params.contributor;
   const Vault = VaultContract.bind(Address.fromString(vaultAddress));
@@ -35,6 +35,7 @@ export function handleClaim(event: RewardsClaimed) {
     store.remove("UserPositionTea", user.toHexString() + vaultId.toHexString());
   }
 }
+
 function handleTransfer(
   vaultId: BigInt,
   to: Address,
@@ -81,13 +82,13 @@ function handleTransfer(
   const senderUserPosition = UserPositionTea.load(
     from.toHexString() + vaultId.toHexString(),
   );
-  const claimBalance = contract.unclaimedRewards(vaultId, from);
+  const claimBalance = contract.try_unclaimedRewards(vaultId, from);
 
-  if (senderUserPosition) {
+  if (senderUserPosition && !claimBalance.reverted) {
     senderUserPosition.balance = senderUserPosition.balance.minus(amount);
     if (
       senderUserPosition.balance.equals(BigInt.fromU64(0)) &&
-      claimBalance.equals(BigInt.fromI32(0))
+      claimBalance.value.equals(BigInt.fromI32(0))
     ) {
       store.remove("UserPositionTea", senderUserPosition.id);
     } else {
