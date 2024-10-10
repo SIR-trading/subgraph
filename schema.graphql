@@ -13,6 +13,7 @@ type Vault @entity(immutable: false) {
   teaCollateral: BigInt!
   taxAmount: BigInt!
   apeAddress: Bytes!
+  apeDecimals: Int!
 }
 type Test @entity(immutable: true) {
   id: String!

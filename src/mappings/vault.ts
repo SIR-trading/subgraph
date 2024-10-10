@@ -26,6 +26,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   const debtTokenContract = ERC20.bind(event.params.debtToken);
   const debtSymbol = debtTokenContract.symbol();
   const collateralSymbol = collateralTokenContract.symbol();
+  const collateralDecimals = collateralTokenContract.decimals();
   let vault = Vault.load(event.params.vaultId.toHexString());
   let context = new DataSourceContext();
   context.setString("apeAddress", event.params.ape.toHexString());
@@ -48,6 +49,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.collateralToken = event.params.collateralToken.toHexString();
     vault.debtToken = event.params.debtToken.toHex();
     vault.leverageTier = event.params.leverageTier;
+    vault.apeDecimals = collateralDecimals;
     vault.collateralSymbol = collateralSymbol;
     vault.debtSymbol = debtSymbol;
     vault.vaultId = event.params.vaultId.toString();

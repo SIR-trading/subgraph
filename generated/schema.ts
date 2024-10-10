@@ -218,6 +218,19 @@ export class Vault extends Entity {
   set apeAddress(value: Bytes) {
     this.set("apeAddress", Value.fromBytes(value));
   }
+
+  get apeDecimals(): i32 {
+    let value = this.get("apeDecimals");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set apeDecimals(value: i32) {
+    this.set("apeDecimals", Value.fromI32(value));
+  }
 }
 
 export class Test extends Entity {
