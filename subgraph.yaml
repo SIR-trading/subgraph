@@ -6,7 +6,7 @@ dataSources:
     name: VaultExternal
     network: mainnet
     source:
-      address: "0x6B763F54D260aFF608CbbAeD8721c96992eC24Db"
+      address: "0x492844c46CEf2d751433739fc3409B7A4a5ba9A7"
       abi: VaultExternal
       startBlock: 20830200
 
@@ -29,7 +29,7 @@ dataSources:
     name: Tea
     network: mainnet
     source:
-      address: "0x6B763F54D260aFF608CbbAeD8721c96992eC24Db"
+      address: "0x492844c46CEf2d751433739fc3409B7A4a5ba9A7"
       abi: Vault
       startBlock: 20830200
     mapping:
@@ -53,7 +53,7 @@ dataSources:
     name: Tvl
     network: mainnet
     source:
-      address: "0x6B763F54D260aFF608CbbAeD8721c96992eC24Db"
+      address: "0x492844c46CEf2d751433739fc3409B7A4a5ba9A7"
       abi: Vault
       startBlock: 20830200
     mapping:
