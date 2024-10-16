@@ -36,6 +36,7 @@ type UserPositionTea @entity(immutable: false) {
   balance: BigInt!
   user: Bytes!
   collateralSymbol: String!
+  teaDecimals: Int!
   debtSymbol: String!
   collateralToken: Bytes!
   debtToken: Bytes!

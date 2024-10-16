@@ -105,7 +105,9 @@ function handleTransfer(
     userPosition.save();
   } else {
     const params = contract.paramsById(vaultId);
+
     const debtToken = params.debtToken;
+
     const collToken = params.collateralToken;
     const leverageTier = params.leverageTier;
     const collateralTokenContract = ERC20.bind(collToken);
@@ -118,6 +120,7 @@ function handleTransfer(
     userPosition.debtToken = debtToken;
     userPosition.collateralToken = collToken;
     userPosition.leverageTier = leverageTier.toString();
+    userPosition.teaDecimals = debtTokenContract.decimals();
     userPosition.debtSymbol = debtTokenContract.symbol();
     userPosition.collateralSymbol = collateralTokenContract.symbol();
     userPosition.vaultId = vaultId.toString();

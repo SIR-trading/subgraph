@@ -3,17 +3,16 @@ import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
-import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const tax = BigInt.fromU64(event.params.tax);
-  const culmTax = BigInt.fromU64(event.params.cumTax);
+  const cumulativeTax = BigInt.fromU64(event.params.cumTax);
   const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
-  const rate = tax.div(culmTax).times(issuanceRate);
+  const rate = tax.div(cumulativeTax).times(issuanceRate);
   let vault = Vault.load(event.params.vault.toHexString());
   if (vault) {
     vault.taxAmount = rate;
