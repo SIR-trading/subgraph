@@ -525,6 +525,19 @@ export class UserPositionTea extends Entity {
     this.set("collateralSymbol", Value.fromString(value));
   }
 
+  get teaDecimals(): i32 {
+    let value = this.get("teaDecimals");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set teaDecimals(value: i32) {
+    this.set("teaDecimals", Value.fromI32(value));
+  }
+
   get debtSymbol(): string {
     let value = this.get("debtSymbol");
     if (!value || value.kind == ValueKind.NULL) {
