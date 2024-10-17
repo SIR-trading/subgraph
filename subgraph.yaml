@@ -115,6 +115,8 @@ templates:
       abis:
         - name: APE
           file: ./abis/APE.json
+        - name: ERC20
+          file: ./abis/Erc20.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransferFrom
