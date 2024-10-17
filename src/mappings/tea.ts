@@ -120,7 +120,7 @@ function handleTransfer(
     userPosition.debtToken = debtToken;
     userPosition.collateralToken = collToken;
     userPosition.leverageTier = leverageTier.toString();
-    userPosition.teaDecimals = debtTokenContract.decimals();
+    userPosition.positionDecimals = debtTokenContract.decimals();
     userPosition.debtSymbol = debtTokenContract.symbol();
     userPosition.collateralSymbol = collateralTokenContract.symbol();
     userPosition.vaultId = vaultId.toString();

@@ -1,6 +1,8 @@
 import { UserPosition } from "../../generated/schema";
 import { Transfer } from "../../generated/templates/APE/APE";
-import { BigInt, dataSource, store } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource, store } from "@graphprotocol/graph-ts";
+
+import { ERC20 } from "../../generated/templates/APE/ERC20";
 
 export function handleTransferFrom(event: Transfer): void {
   let context = dataSource.context();
@@ -29,9 +31,12 @@ export function handleTransferFrom(event: Transfer): void {
     toUP.save();
   } else {
     const newUP = new UserPosition(event.params.to.toHexString() + apeAddress);
+    const debtTokenAddress = Address.fromString(debtToken);
+    const debtTokenContract = ERC20.bind(debtTokenAddress);
     newUP.user = event.params.to;
     newUP.balance = event.params.amount;
     newUP.vaultId = vaultId;
+    newUP.positionDecimals = debtTokenContract.decimals();
     newUP.APE = apeAddress;
     newUP.collateralToken = collateralToken;
     newUP.debtToken = debtToken;

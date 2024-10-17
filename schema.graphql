@@ -19,9 +19,11 @@ type Test @entity(immutable: true) {
   id: String!
   amount: BigInt!
 }
+# TODO CHANGE NAMES
 type UserPosition @entity(immutable: false) {
   id: String!
   balance: BigInt!
+  positionDecimals: Int!
   APE: String!
   user: Bytes!
   collateralSymbol: String!
@@ -33,10 +35,10 @@ type UserPosition @entity(immutable: false) {
 }
 type UserPositionTea @entity(immutable: false) {
   id: String!
+  positionDecimals: Int!
   balance: BigInt!
   user: Bytes!
   collateralSymbol: String!
-  teaDecimals: Int!
   debtSymbol: String!
   collateralToken: Bytes!
   debtToken: Bytes!
