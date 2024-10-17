@@ -340,6 +340,19 @@ export class UserPosition extends Entity {
     this.set("balance", Value.fromBigInt(value));
   }
 
+  get positionDecimals(): i32 {
+    let value = this.get("positionDecimals");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set positionDecimals(value: i32) {
+    this.set("positionDecimals", Value.fromI32(value));
+  }
+
   get APE(): string {
     let value = this.get("APE");
     if (!value || value.kind == ValueKind.NULL) {
@@ -486,6 +499,19 @@ export class UserPositionTea extends Entity {
     this.set("id", Value.fromString(value));
   }
 
+  get positionDecimals(): i32 {
+    let value = this.get("positionDecimals");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set positionDecimals(value: i32) {
+    this.set("positionDecimals", Value.fromI32(value));
+  }
+
   get balance(): BigInt {
     let value = this.get("balance");
     if (!value || value.kind == ValueKind.NULL) {
@@ -523,19 +549,6 @@ export class UserPositionTea extends Entity {
 
   set collateralSymbol(value: string) {
     this.set("collateralSymbol", Value.fromString(value));
-  }
-
-  get teaDecimals(): i32 {
-    let value = this.get("teaDecimals");
-    if (!value || value.kind == ValueKind.NULL) {
-      return 0;
-    } else {
-      return value.toI32();
-    }
-  }
-
-  set teaDecimals(value: i32) {
-    this.set("teaDecimals", Value.fromI32(value));
   }
 
   get debtSymbol(): string {
