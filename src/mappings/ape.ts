@@ -31,12 +31,12 @@ export function handleTransferFrom(event: Transfer): void {
     toUP.save();
   } else {
     const newUP = new UserPosition(event.params.to.toHexString() + apeAddress);
-    const debtTokenAddress = Address.fromString(debtToken);
-    const debtTokenContract = ERC20.bind(debtTokenAddress);
+    const collateralTokenAddress = Address.fromString(collateralToken);
+    const collateralTokenContract = ERC20.bind(collateralTokenAddress);
     newUP.user = event.params.to;
     newUP.balance = event.params.amount;
     newUP.vaultId = vaultId;
-    newUP.positionDecimals = debtTokenContract.decimals();
+    newUP.positionDecimals = collateralTokenContract.decimals();
     newUP.APE = apeAddress;
     newUP.collateralToken = collateralToken;
     newUP.debtToken = debtToken;

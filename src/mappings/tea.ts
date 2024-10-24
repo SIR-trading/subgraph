@@ -21,6 +21,7 @@ export function handleSingleTransfer(event: TransferSingle): void {
 
 export function handleClaim(event: RewardsClaimed): void {
   const vaultId = event.params.vaultId;
+
   const user = event.params.contributor;
   const Vault = VaultContract.bind(Address.fromString(vaultAddress));
   const TeaBal = Vault.balanceOf(user, vaultId);
@@ -120,7 +121,7 @@ function handleTransfer(
     userPosition.debtToken = debtToken;
     userPosition.collateralToken = collToken;
     userPosition.leverageTier = leverageTier.toString();
-    userPosition.positionDecimals = debtTokenContract.decimals();
+    userPosition.positionDecimals = collateralTokenContract.decimals();
     userPosition.debtSymbol = debtTokenContract.symbol();
     userPosition.collateralSymbol = collateralTokenContract.symbol();
     userPosition.vaultId = vaultId.toString();
