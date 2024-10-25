@@ -284,6 +284,58 @@ export class Test extends Entity {
   set amount(value: BigInt) {
     this.set("amount", Value.fromBigInt(value));
   }
+
+  get taxAmount(): BigInt {
+    let value = this.get("taxAmount");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set taxAmount(value: BigInt) {
+    this.set("taxAmount", Value.fromBigInt(value));
+  }
+
+  get cum(): BigInt {
+    let value = this.get("cum");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set cum(value: BigInt) {
+    this.set("cum", Value.fromBigInt(value));
+  }
+
+  get rate(): BigInt {
+    let value = this.get("rate");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set rate(value: BigInt) {
+    this.set("rate", Value.fromBigInt(value));
+  }
+
+  get issueRate(): BigInt {
+    let value = this.get("issueRate");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set issueRate(value: BigInt) {
+    this.set("issueRate", Value.fromBigInt(value));
+  }
 }
 
 export class UserPosition extends Entity {
