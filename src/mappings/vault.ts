@@ -15,6 +15,9 @@ export function handleVaultTax(event: VaultNewTax): void {
   const cumulativeTax = BigInt.fromU64(event.params.cumTax);
   const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
+  if (!cumulativeTax.gt(BigInt.fromI32(0))) {
+    return;
+  } // ensure no division by 0
   const rate = tax
     .div(cumulativeTax)
     .times(issuanceRate)
