@@ -96,6 +96,8 @@ dataSources:
         - name: Sir
           file: ./abis/Sir.json
       eventHandlers:
+        - event: DividendsPaid(uint96,uint80)
+          handler: handleDividendsPaid
         - event: RewardsClaimed(indexed address,indexed uint256,uint80)
           handler: handleClaim
       file: ./src/mappings/tea.ts

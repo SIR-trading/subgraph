@@ -4,9 +4,13 @@ import {
   TransferBatch,
   TransferSingle,
 } from "../../generated/Vault/Vault";
-import { RewardsClaimed } from "../../generated/Claims/Sir";
+import { RewardsClaimed, DividendsPaid } from "../../generated/Claims/Sir";
 import { store } from "@graphprotocol/graph-ts";
-import { Vault as VaultSchema, UserPositionTea } from "../../generated/schema";
+import {
+  Vault as VaultSchema,
+  UserPositionTea,
+  Dividends,
+} from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
 import { vaultAddress, zeroAddress } from "../contracts";
@@ -17,6 +21,18 @@ export function handleSingleTransfer(event: TransferSingle): void {
   const vaultId = event.params.id;
 
   handleTransfer(vaultId, to, from, amount);
+}
+
+export function handleDividendsPaid(event: DividendsPaid): void {
+  event.params.amountETH;
+  event.params.amountStakedSIR;
+  let dividendsEntity = Dividends.load("0");
+  if (!dividendsEntity) {
+    dividendsEntity = new Dividends("0");
+  }
+  dividendsEntity.ethAmount = event.params.amountETH;
+  dividendsEntity.stakedAmount = event.params.amountStakedSIR;
+  dividendsEntity.save();
 }
 
 export function handleClaim(event: RewardsClaimed): void {

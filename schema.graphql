@@ -45,3 +45,9 @@ type UserPositionTea @entity(immutable: false) {
   leverageTier: String!
   vaultId: String!
 }
+
+type Dividends @entity(immutable: false) {
+  id: String!
+  ethAmount: BigInt!
+  stakedAmount: BigInt!
+}
