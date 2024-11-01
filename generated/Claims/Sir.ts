@@ -152,6 +152,10 @@ export class DividendsPaid__Params {
   get amountETH(): BigInt {
     return this._event.parameters[0].value.toBigInt();
   }
+
+  get amountStakedSIR(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
 }
 
 export class RewardsClaimed extends ethereum.Event {
@@ -569,6 +573,29 @@ export class Sir extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  lPerMintAndStake(vaultId: BigInt): BigInt {
+    let result = super.call(
+      "lPerMintAndStake",
+      "lPerMintAndStake(uint256):(uint80)",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_lPerMintAndStake(vaultId: BigInt): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "lPerMintAndStake",
+      "lPerMintAndStake(uint256):(uint80)",
+      [ethereum.Value.fromUnsignedBigInt(vaultId)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   maxTotalSupply(): BigInt {
     let result = super.call("maxTotalSupply", "maxTotalSupply():(uint256)", []);
 
@@ -799,6 +826,36 @@ export class Sir extends ethereum.SmartContract {
   }
 }
 
+export class ConstructorCall extends ethereum.Call {
+  get inputs(): ConstructorCall__Inputs {
+    return new ConstructorCall__Inputs(this);
+  }
+
+  get outputs(): ConstructorCall__Outputs {
+    return new ConstructorCall__Outputs(this);
+  }
+}
+
+export class ConstructorCall__Inputs {
+  _call: ConstructorCall;
+
+  constructor(call: ConstructorCall) {
+    this._call = call;
+  }
+
+  get weth(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class ConstructorCall__Outputs {
+  _call: ConstructorCall;
+
+  constructor(call: ConstructorCall) {
+    this._call = call;
+  }
+}
+
 export class ApproveCall extends ethereum.Call {
   get inputs(): ApproveCall__Inputs {
     return new ApproveCall__Inputs(this);
@@ -1021,6 +1078,40 @@ export class LPerMintCall__Outputs {
   _call: LPerMintCall;
 
   constructor(call: LPerMintCall) {
+    this._call = call;
+  }
+
+  get rewards(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
+export class LPerMintAndStakeCall extends ethereum.Call {
+  get inputs(): LPerMintAndStakeCall__Inputs {
+    return new LPerMintAndStakeCall__Inputs(this);
+  }
+
+  get outputs(): LPerMintAndStakeCall__Outputs {
+    return new LPerMintAndStakeCall__Outputs(this);
+  }
+}
+
+export class LPerMintAndStakeCall__Inputs {
+  _call: LPerMintAndStakeCall;
+
+  constructor(call: LPerMintAndStakeCall) {
+    this._call = call;
+  }
+
+  get vaultId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class LPerMintAndStakeCall__Outputs {
+  _call: LPerMintAndStakeCall;
+
+  constructor(call: LPerMintAndStakeCall) {
     this._call = call;
   }
 
