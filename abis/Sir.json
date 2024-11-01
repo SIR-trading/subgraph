@@ -1,4 +1,11 @@
 [
+  {
+    "type": "constructor",
+    "inputs": [
+      { "name": "weth", "type": "address", "internalType": "address" }
+    ],
+    "stateMutability": "nonpayable"
+  },
   { "type": "receive", "stateMutability": "payable" },
   {
     "type": "function",
@@ -146,6 +153,17 @@
   {
     "type": "function",
     "name": "lPerMint",
+    "inputs": [
+      { "name": "vaultId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "rewards", "type": "uint80", "internalType": "uint80" }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "lPerMintAndStake",
     "inputs": [
       { "name": "vaultId", "type": "uint256", "internalType": "uint256" }
     ],
@@ -427,9 +445,15 @@
     "inputs": [
       {
         "name": "amountETH",
-        "type": "uint256",
+        "type": "uint96",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint96"
+      },
+      {
+        "name": "amountStakedSIR",
+        "type": "uint80",
+        "indexed": false,
+        "internalType": "uint80"
       }
     ],
     "anonymous": false
