@@ -1,10 +1,10 @@
 type Vault @entity(immutable: false) {
   id: String!
   vaultId: String!
-  collateralToken: String!
-  debtToken: String!
-  collateralSymbol: String!
-  debtSymbol: String!
+  collateralToken: String! @search(by: [term])
+  debtToken: String! @search(by: [term])
+  collateralSymbol: String! @search(by: [term])
+  debtSymbol: String! @search(by: [term])
   leverageTier: Int!
   totalValue: BigInt!
   lockedLiquidity: BigInt!
@@ -46,8 +46,9 @@ type UserPositionTea @entity(immutable: false) {
   vaultId: String!
 }
 
-type Dividends @entity(immutable: false) {
+type Dividends @entity(immutable: true) {
   id: String!
   ethAmount: BigInt!
   stakedAmount: BigInt!
+  timestamp: BigInt!
 }

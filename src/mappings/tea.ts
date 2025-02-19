@@ -24,12 +24,8 @@ export function handleSingleTransfer(event: TransferSingle): void {
 }
 
 export function handleDividendsPaid(event: DividendsPaid): void {
-  event.params.amountETH;
-  event.params.amountStakedSIR;
-  let dividendsEntity = Dividends.load("0");
-  if (!dividendsEntity) {
-    dividendsEntity = new Dividends("0");
-  }
+  const dividendsEntity = new Dividends(event.transaction.hash.toHex());
+  dividendsEntity.timestamp = event.block.timestamp;
   dividendsEntity.ethAmount = event.params.amountETH;
   dividendsEntity.stakedAmount = event.params.amountStakedSIR;
   dividendsEntity.save();
