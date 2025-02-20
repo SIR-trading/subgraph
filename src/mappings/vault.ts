@@ -15,7 +15,16 @@ export function handleVaultTax(event: VaultNewTax): void {
   const cumulativeTax = BigInt.fromU64(event.params.cumTax);
   const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
+  let vault = Vault.load(event.params.vault.toHexString());
   if (!cumulativeTax.gt(BigInt.fromI32(0))) {
+    if (vault) {
+      vault.taxAmount = BigInt.fromI32(0);
+      vault.save();
+    } else {
+      vault = new Vault(event.params.vault.toHexString());
+      vault.taxAmount = BigInt.fromI32(0);
+      vault.save();
+    }
     return;
   } // ensure no division by 0
   const rate = tax
@@ -23,8 +32,11 @@ export function handleVaultTax(event: VaultNewTax): void {
     .times(issuanceRate)
     .div(BigInt.fromU32(multiplier));
 
-  let vault = Vault.load(event.params.vault.toHexString());
   if (vault) {
+    vault.taxAmount = rate;
+    vault.save();
+  } else {
+    vault = new Vault(event.params.vault.toHexString());
     vault.taxAmount = rate;
     vault.save();
   }
