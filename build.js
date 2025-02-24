@@ -5,7 +5,16 @@ const subgraphTemplate = fs.readFileSync("subgraph.template.yaml", "utf-8");
 
 const replaced = subgraphTemplate
   .replaceAll("{{VAULT_ADDRESS}}", process.env.VAULT_ADDRESS)
-  .replaceAll("{{SIR_ADDRESS}}", process.env.SIR_ADDRESS);
+  .replaceAll("{{SIR_ADDRESS}}", process.env.SIR_ADDRESS)
+  .replaceAll("{{NETWORK}}", process.env.NETWORK)
+  .replaceAll(
+    "{{START_BLOCK}}",
+    process.env.NETWORK === "mainnet"
+      ? "20830200"
+      : process.env.NETWORK === "sepolia"
+      ? "7000000"
+      : "0"
+  );
 
 fs.writeFileSync("subgraph.yaml", replaced);
 fs.writeFileSync(

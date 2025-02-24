@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: VaultExternal
-    network: mainnet
+    network: {{NETWORK}}
     source:
       address: "{{VAULT_ADDRESS}}"
       abi: VaultExternal
-      startBlock: 20830200
+      startBlock: {{START_BLOCK}}
 
     mapping:
       entities:
@@ -27,11 +27,11 @@ dataSources:
       file: ./src/mappings/vault.ts
   - kind: ethereum
     name: Tea
-    network: mainnet
+    network: {{NETWORK}}
     source:
       address: "{{VAULT_ADDRESS}}"
       abi: Vault
-      startBlock: 20830200
+      startBlock: {{START_BLOCK}}
     mapping:
       entities:
         - Vault
@@ -51,11 +51,11 @@ dataSources:
       file: ./src/mappings/tea.ts
   - kind: ethereum
     name: Tvl
-    network: mainnet
+    network: {{NETWORK}}
     source:
       address: "{{VAULT_ADDRESS}}"
       abi: Vault
-      startBlock: 20830200
+      startBlock: {{START_BLOCK}}
     mapping:
       entities:
         - Vault
@@ -79,11 +79,11 @@ dataSources:
       file: ./src/mappings/vault.ts
   - kind: ethereum
     name: Claims
-    network: mainnet
+    network: {{NETWORK}}
     source:
       address: "{{SIR_ADDRESS}}"
       abi: Sir
-      startBlock: 20830200
+      startBlock: {{START_BLOCK}}
     mapping:
       entities:
         - Vault
@@ -104,7 +104,7 @@ dataSources:
 templates:
   - name: APE
     kind: ethereum/contract
-    network: mainnet
+    network: {{NETWORK}}
     source:
       abi: APE
     mapping:
