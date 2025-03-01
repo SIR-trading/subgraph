@@ -13,7 +13,7 @@ const replaced = subgraphTemplate
       ? "20830200"
       : process.env.NETWORK === "sepolia"
       ? "7000000"
-      : "0"
+      : "0",
   );
 
 fs.writeFileSync("subgraph.yaml", replaced);
