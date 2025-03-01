@@ -21,6 +21,8 @@ dataSources:
           file: ./abis/VaultExternal.json
         - name: ERC20
           file: ./abis/Erc20.json
+        - name: Quoter 
+          file: ./abis/Quoter.json
       eventHandlers:
         - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256,address)
           handler: handleVaultInitialized
@@ -69,6 +71,8 @@ dataSources:
           file: ./abis/Erc20.json
         - name: Sir
           file: ./abis/Sir.json
+        - name: Quoter 
+          file: ./abis/Quoter.json
       eventHandlers:
         - event: Mint(indexed uint48,bool,uint144,uint144,uint144)
           handler: handleMint
