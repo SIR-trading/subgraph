@@ -7,6 +7,7 @@ type Vault @entity(immutable: false) {
   debtSymbol: String! @search(by: [term])
   leverageTier: Int!
   totalValue: BigInt!
+  totalValueUsd: BigInt!
   lockedLiquidity: BigInt!
   totalTea: BigInt!
   apeCollateral: BigInt!

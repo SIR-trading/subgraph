@@ -141,6 +141,19 @@ export class Vault extends Entity {
     this.set("totalValue", Value.fromBigInt(value));
   }
 
+  get totalValueUsd(): BigInt {
+    let value = this.get("totalValueUsd");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set totalValueUsd(value: BigInt) {
+    this.set("totalValueUsd", Value.fromBigInt(value));
+  }
+
   get lockedLiquidity(): BigInt {
     let value = this.get("lockedLiquidity");
     if (!value || value.kind == ValueKind.NULL) {
