@@ -1,10 +1,19 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
 import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
-import { Test, Vault } from "../../generated/schema";
+import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
+import {
+  Quoter as QuoterContract,
+  Quoter__quoteExactInputSingleInputParamsStruct,
+} from "../../generated/VaultExternal/Quoter";
+import {
+  Address,
+  BigInt,
+  DataSourceContext,
+  ethereum,
+} from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 
 export function handleVaultTax(event: VaultNewTax): void {
@@ -49,7 +58,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   const collateralSymbol = collateralTokenContract.symbol();
   const collateralDecimals = collateralTokenContract.decimals();
   let vault = Vault.load(event.params.vaultId.toHexString());
-  let context = new DataSourceContext();
+  const context = new DataSourceContext();
   context.setString("apeAddress", event.params.ape.toHexString());
   context.setString("collateralSymbol", collateralSymbol);
   context.setString(
@@ -75,6 +84,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.debtSymbol = debtSymbol;
     vault.vaultId = event.params.vaultId.toString();
     vault.apeAddress = event.params.ape;
+    vault.totalValueUsd = BigInt.fromI32(0);
     vault.totalValue = BigInt.fromI32(0);
     vault.teaCollateral = BigInt.fromI32(0);
     vault.apeCollateral = BigInt.fromI32(0);
@@ -91,7 +101,7 @@ export function handleMint(event: Mint): void {
   const fee = event.params.collateralFeeToLPers;
   const total = params.collateralIn.plus(fee);
 
-  let vault = Vault.load(event.params.vaultId.toHexString());
+  const vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
     if (event.params.isAPE) {
       vault.apeCollateral = vault.apeCollateral.plus(params.collateralIn);
@@ -105,6 +115,7 @@ export function handleMint(event: Mint): void {
       );
     }
     vault.totalValue = vault.totalValue.plus(total);
+    vault.totalValueUsd = getVaultUsdValue(vault);
     vault.save();
   }
 }
@@ -116,7 +127,7 @@ export function handleBurn(event: Burn): void {
     params.collateralFeeToStakers,
   );
 
-  let vault = Vault.load(event.params.vaultId.toHexString());
+  const vault = Vault.load(event.params.vaultId.toHexString());
 
   if (vault) {
     if (event.params.isAPE) {
@@ -134,6 +145,48 @@ export function handleBurn(event: Burn): void {
       );
     }
     vault.totalValue = vault.totalValue.minus(collateralOut);
+    vault.totalValueUsd = getVaultUsdValue(vault);
     vault.save();
   }
 }
+
+function getVaultUsdValue(Vault: Vault): BigInt {
+  const quoter = QuoterContract.bind(
+    Address.fromString("0x5e55c9e631fae526cd4b0526c4818d6e0a9ef0e3"),
+  );
+  const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+  if (Address.fromString(Vault.collateralToken).equals(USDC)) {
+    return Vault.totalValue;
+  }
+  const params = new Quoter__quoteExactInputSingleInputParamsStruct();
+  params.push(ethereum.Value.fromAddress(USDC));
+  params.push(
+    ethereum.Value.fromAddress(Address.fromString(Vault.collateralToken)),
+  );
+  const decimals = ERC20.bind(
+    Address.fromString(Vault.collateralToken),
+  ).decimals();
+
+  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(10 * 10 ** 6)));
+  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(3000)));
+  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0)));
+  const quote = quoter.try_quoteExactInputSingle(params);
+  if (quote.reverted) {
+    return BigInt.fromI32(0);
+  }
+  const usdc = quote.value.value0;
+  const d = u8(decimals) + u8(1);
+  const oneTokenOfUsdc = BigInt.fromI32(10).pow(u8(d)).div(usdc);
+  const e = u8(decimals) - u8(6);
+  const result = Vault.totalValue
+    .times(oneTokenOfUsdc)
+    .div(BigInt.fromI32(10).pow(u8(e)));
+  return result;
+}
+// Tuple([Address, Address, Uint(256), Uint(24), Uint(160)])
+
+// tokenIn: USDC,
+// tokenOut: token,
+// amountIn: parseUnits("1000", 6),
+// fee: 3000,
+// sqrtPriceLimitX96: 0n,
