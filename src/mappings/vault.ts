@@ -14,7 +14,7 @@ import {
   DataSourceContext,
   ethereum,
 } from "@graphprotocol/graph-ts";
-import { sirAddress } from "../contracts";
+import { sirAddress, vaultAddress } from "../contracts";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
@@ -85,15 +85,8 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.vaultId = event.params.vaultId.toString();
     vault.apeAddress = event.params.ape;
     vault.totalValueUsd = BigInt.fromI32(0);
-    if (
-      Address.fromString(vault.collateralToken).equals(
-        Address.fromString(sirAddress),
-      )
-    ) {
-      vault.sortKey = BigInt.fromI32(10).pow(20);
-    } else {
-      vault.sortKey = BigInt.fromI32(0);
-    }
+    vault.totalVolumeUsd = BigInt.fromI32(0);
+    vault.sortKey = BigInt.fromI32(0);
     vault.totalValue = BigInt.fromI32(0);
     vault.teaCollateral = BigInt.fromI32(0);
     vault.apeCollateral = BigInt.fromI32(0);
@@ -124,11 +117,13 @@ export function handleMint(event: Mint): void {
       );
     }
     vault.totalValue = vault.totalValue.plus(total);
+
     vault.totalValueUsd = getVaultUsdValue(vault);
+    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
       vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
     } else {
-      vault.sortKey = vault.totalValueUsd;
+      vault.sortKey = vault.totalVolumeUsd;
     }
     vault.save();
   }
@@ -160,10 +155,12 @@ export function handleBurn(event: Burn): void {
     }
     vault.totalValue = vault.totalValue.minus(collateralOut);
     vault.totalValueUsd = getVaultUsdValue(vault);
+
+    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
     } else {
-      vault.sortKey = vault.totalValueUsd;
+      vault.sortKey = vault.totalVolumeUsd;
     }
     vault.save();
   }
@@ -190,15 +187,27 @@ function getVaultUsdValue(Vault: Vault): BigInt {
   params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(3000)));
   params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0)));
   const quote = quoter.try_quoteExactInputSingle(params);
-  if (quote.reverted) {
+  if (
+    quote.reverted &&
+    !Address.fromString(Vault.collateralToken).equals(
+      Address.fromString(sirAddress),
+    )
+  ) {
     return BigInt.fromI32(0);
   }
-  const usdc = quote.value.value0;
+  let usdc = BigInt.fromI32(6000);
+  const sirDecimals = BigInt.fromI32(10).pow(u8(12));
+  usdc = usdc.times(sirDecimals);
+  if (!quote.reverted) {
+    usdc = quote.value.value0;
+  }
   const d = u8(decimals) + u8(1);
-  const oneTokenOfUsdc = BigInt.fromI32(10).pow(u8(d)).div(usdc);
+  const oneTokenOfUsdc = BigInt.fromI32(10)
+    .pow(u8(d + 10))
+    .div(usdc);
   const e = u8(decimals) - u8(6);
   const result = Vault.totalValue
     .times(oneTokenOfUsdc)
-    .div(BigInt.fromI32(10).pow(u8(e)));
+    .div(BigInt.fromI32(10).pow(u8(e + 10)));
   return result;
 }
