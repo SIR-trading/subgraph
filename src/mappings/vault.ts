@@ -90,7 +90,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
         Address.fromString(sirAddress),
       )
     ) {
-      vault.sortKey = BigInt.fromI32(10).pow(10);
+      vault.sortKey = BigInt.fromI32(10).pow(20);
     } else {
       vault.sortKey = BigInt.fromI32(0);
     }
@@ -130,7 +130,7 @@ export function handleMint(event: Mint): void {
         Address.fromString(sirAddress),
       )
     ) {
-      vault.sortKey = BigInt.fromI32(10).pow(10).plus(vault.totalValue);
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValue);
     } else {
       vault.sortKey = vault.totalValueUsd;
     }
@@ -169,7 +169,7 @@ export function handleBurn(event: Burn): void {
         Address.fromString(sirAddress),
       )
     ) {
-      vault.sortKey = BigInt.fromI32(10).pow(10).plus(vault.totalValue);
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValue);
     } else {
       vault.sortKey = vault.totalValueUsd;
     }
