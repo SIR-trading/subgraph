@@ -85,15 +85,8 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.vaultId = event.params.vaultId.toString();
     vault.apeAddress = event.params.ape;
     vault.totalValueUsd = BigInt.fromI32(0);
-    if (
-      Address.fromString(vault.collateralToken).equals(
-        Address.fromString(sirAddress),
-      )
-    ) {
-      vault.sortKey = BigInt.fromI32(10).pow(20);
-    } else {
-      vault.sortKey = BigInt.fromI32(0);
-    }
+    vault.totalVolumeUsd = BigInt.fromI32(0);
+    vault.sortKey = BigInt.fromI32(0);
     vault.totalValue = BigInt.fromI32(0);
     vault.teaCollateral = BigInt.fromI32(0);
     vault.apeCollateral = BigInt.fromI32(0);
@@ -124,11 +117,13 @@ export function handleMint(event: Mint): void {
       );
     }
     vault.totalValue = vault.totalValue.plus(total);
+
     vault.totalValueUsd = getVaultUsdValue(vault);
+    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
       vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
     } else {
-      vault.sortKey = vault.totalValueUsd;
+      vault.sortKey = vault.totalVolumeUsd;
     }
     vault.save();
   }
@@ -160,10 +155,12 @@ export function handleBurn(event: Burn): void {
     }
     vault.totalValue = vault.totalValue.minus(collateralOut);
     vault.totalValueUsd = getVaultUsdValue(vault);
+
+    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
     } else {
-      vault.sortKey = vault.totalValueUsd;
+      vault.sortKey = vault.totalVolumeUsd;
     }
     vault.save();
   }

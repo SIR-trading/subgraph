@@ -8,6 +8,7 @@ type Vault @entity(immutable: false) {
   leverageTier: Int!
   totalValue: BigInt!
   totalValueUsd: BigInt!
+  totalVolumeUsd: BigInt!
   sortKey: BigInt!
   lockedLiquidity: BigInt!
   totalTea: BigInt!
