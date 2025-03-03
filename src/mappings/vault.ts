@@ -85,6 +85,15 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     vault.vaultId = event.params.vaultId.toString();
     vault.apeAddress = event.params.ape;
     vault.totalValueUsd = BigInt.fromI32(0);
+    if (
+      Address.fromString(vault.collateralToken).equals(
+        Address.fromString(sirAddress),
+      )
+    ) {
+      vault.sortKey = BigInt.fromI32(10).pow(20);
+    } else {
+      vault.sortKey = BigInt.fromI32(0);
+    }
     vault.totalValue = BigInt.fromI32(0);
     vault.teaCollateral = BigInt.fromI32(0);
     vault.apeCollateral = BigInt.fromI32(0);
@@ -116,6 +125,11 @@ export function handleMint(event: Mint): void {
     }
     vault.totalValue = vault.totalValue.plus(total);
     vault.totalValueUsd = getVaultUsdValue(vault);
+    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
+    } else {
+      vault.sortKey = vault.totalValueUsd;
+    }
     vault.save();
   }
 }
@@ -146,6 +160,11 @@ export function handleBurn(event: Burn): void {
     }
     vault.totalValue = vault.totalValue.minus(collateralOut);
     vault.totalValueUsd = getVaultUsdValue(vault);
+    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
+    } else {
+      vault.sortKey = vault.totalValueUsd;
+    }
     vault.save();
   }
 }
@@ -183,10 +202,3 @@ function getVaultUsdValue(Vault: Vault): BigInt {
     .div(BigInt.fromI32(10).pow(u8(e)));
   return result;
 }
-// Tuple([Address, Address, Uint(256), Uint(24), Uint(160)])
-
-// tokenIn: USDC,
-// tokenOut: token,
-// amountIn: parseUnits("1000", 6),
-// fee: 3000,
-// sqrtPriceLimitX96: 0n,
