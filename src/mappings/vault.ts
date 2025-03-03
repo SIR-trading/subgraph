@@ -14,7 +14,7 @@ import {
   DataSourceContext,
   ethereum,
 } from "@graphprotocol/graph-ts";
-import { sirAddress } from "../contracts";
+import { sirAddress, vaultAddress } from "../contracts";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
@@ -187,15 +187,27 @@ function getVaultUsdValue(Vault: Vault): BigInt {
   params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(3000)));
   params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0)));
   const quote = quoter.try_quoteExactInputSingle(params);
-  if (quote.reverted) {
+  if (
+    quote.reverted &&
+    !Address.fromString(Vault.collateralToken).equals(
+      Address.fromString(sirAddress),
+    )
+  ) {
     return BigInt.fromI32(0);
   }
-  const usdc = quote.value.value0;
+  let usdc = BigInt.fromI32(6000);
+  const sirDecimals = BigInt.fromI32(10).pow(u8(12));
+  usdc = usdc.times(sirDecimals);
+  if (!quote.reverted) {
+    usdc = quote.value.value0;
+  }
   const d = u8(decimals) + u8(1);
-  const oneTokenOfUsdc = BigInt.fromI32(10).pow(u8(d)).div(usdc);
+  const oneTokenOfUsdc = BigInt.fromI32(10)
+    .pow(u8(d + 10))
+    .div(usdc);
   const e = u8(decimals) - u8(6);
   const result = Vault.totalValue
     .times(oneTokenOfUsdc)
-    .div(BigInt.fromI32(10).pow(u8(e)));
+    .div(BigInt.fromI32(10).pow(u8(e + 10)));
   return result;
 }
