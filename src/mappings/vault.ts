@@ -125,12 +125,8 @@ export function handleMint(event: Mint): void {
     }
     vault.totalValue = vault.totalValue.plus(total);
     vault.totalValueUsd = getVaultUsdValue(vault);
-    if (
-      Address.fromString(vault.collateralToken).equals(
-        Address.fromString(sirAddress),
-      )
-    ) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValue);
+    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
     } else {
       vault.sortKey = vault.totalValueUsd;
     }
@@ -164,12 +160,8 @@ export function handleBurn(event: Burn): void {
     }
     vault.totalValue = vault.totalValue.minus(collateralOut);
     vault.totalValueUsd = getVaultUsdValue(vault);
-    if (
-      Address.fromString(vault.collateralToken).equals(
-        Address.fromString(sirAddress),
-      )
-    ) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValue);
+    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
     } else {
       vault.sortKey = vault.totalValueUsd;
     }
