@@ -1,4 +1,7 @@
-import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
+import {
+  VaultExternal,
+  VaultInitialized,
+} from "../../generated/VaultExternal/VaultExternal";
 import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
@@ -166,34 +169,28 @@ export function handleBurn(event: Burn): void {
   }
 }
 
+const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+const WETH = Address.fromString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 function getVaultUsdValue(Vault: Vault): BigInt {
-  const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
-  const WETH = Address.fromString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
   if (Address.fromString(Vault.collateralToken).equals(USDC)) {
     return Vault.totalValue;
   }
-  const quoteUsdcPrice = quoteToken(WETH, USDC, 3000);
   if (Address.fromString(Vault.collateralToken).equals(WETH)) {
+    const quoteUsdcPrice = quoteToken(WETH, USDC, 3000);
     return Vault.totalValue
       .times(quoteUsdcPrice.value)
       .div(BigInt.fromI32(10).pow(18));
   } else {
-    let quoteColl = quoteToken(
+    const decimals = ERC20.bind(
       Address.fromString(Vault.collateralToken),
-      WETH,
-      3000,
-    );
-    if (quoteColl.value.equals(BigInt.fromI32(0))) {
-      // if quote fails try with higher fee
-      quoteColl = quoteToken(
-        Address.fromString(Vault.collateralToken),
-        WETH,
-        10_000,
-      );
+    ).decimals();
+    const priceFromUsdc = getUsdcPrice(Vault, u8(decimals));
+    if (priceFromUsdc.equals(BigInt.fromI32(0))) {
+      // maybe there is not usdc/collateral pool
+      // try WETH instead
+      return getUsdPriceFromWeth(Vault);
     }
-    return quoteColl.value
-      .times(quoteUsdcPrice.value)
-      .div(BigInt.fromI32(10).pow(18));
+    return priceFromUsdc;
   }
 }
 class QuoteResult {
@@ -229,4 +226,37 @@ function quoteToken(
   } else {
     return new QuoteResult(quote.value.value0, decimals);
   }
+}
+function getUsdPriceFromWeth(Vault: Vault): BigInt {
+  const quoteUsdcPrice = quoteToken(WETH, USDC, 3000);
+  let quoteColl = quoteToken(
+    Address.fromString(Vault.collateralToken),
+    WETH,
+    3000,
+  );
+  if (quoteColl.value.equals(BigInt.fromI32(0))) {
+    // if quote fails try with higher fee
+    quoteColl = quoteToken(
+      Address.fromString(Vault.collateralToken),
+      WETH,
+      10_000,
+    );
+  }
+  return quoteColl.value
+    .times(quoteUsdcPrice.value)
+    .div(BigInt.fromI32(10).pow(18));
+}
+function getUsdcPrice(Vault: Vault, collateralDecimals: u8): BigInt {
+  const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+  const CollateralAddress = Address.fromString(Vault.collateralToken);
+  const collateralPriceUsd = quoteToken(CollateralAddress, USDC, 3000);
+  if (collateralPriceUsd.value.equals(BigInt.fromI32(0))) {
+    return BigInt.fromI32(0);
+  }
+  // ======
+  const totalValueUsd = Vault.totalValue
+    .times(collateralPriceUsd.value)
+    .div(BigInt.fromI32(10).pow(collateralDecimals));
+  // =======
+  return totalValueUsd;
 }
