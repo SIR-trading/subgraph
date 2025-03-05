@@ -14,7 +14,7 @@ import {
   DataSourceContext,
   ethereum,
 } from "@graphprotocol/graph-ts";
-import { sirAddress, vaultAddress } from "../contracts";
+import { sirAddress } from "../contracts";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
@@ -121,7 +121,7 @@ export function handleMint(event: Mint): void {
     vault.totalValueUsd = getVaultUsdValue(vault);
     vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalValueUsd);
+      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
     } else {
       vault.sortKey = vault.totalVolumeUsd;
     }
@@ -167,47 +167,66 @@ export function handleBurn(event: Burn): void {
 }
 
 function getVaultUsdValue(Vault: Vault): BigInt {
-  const quoter = QuoterContract.bind(
-    Address.fromString("0x5e55c9e631fae526cd4b0526c4818d6e0a9ef0e3"),
-  );
   const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+  const WETH = Address.fromString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
   if (Address.fromString(Vault.collateralToken).equals(USDC)) {
     return Vault.totalValue;
   }
-  const params = new Quoter__quoteExactInputSingleInputParamsStruct();
-  params.push(ethereum.Value.fromAddress(USDC));
-  params.push(
-    ethereum.Value.fromAddress(Address.fromString(Vault.collateralToken)),
+  const quoteUsdcPrice = quoteToken(WETH, USDC, 3000);
+  if (Address.fromString(Vault.collateralToken).equals(WETH)) {
+    return Vault.totalValue
+      .times(quoteUsdcPrice.value)
+      .div(BigInt.fromI32(10).pow(18));
+  } else {
+    let quoteColl = quoteToken(
+      Address.fromString(Vault.collateralToken),
+      WETH,
+      3000,
+    );
+    if (quoteColl.value.equals(BigInt.fromI32(0))) {
+      // if quote fails try with higher fee
+      quoteColl = quoteToken(
+        Address.fromString(Vault.collateralToken),
+        WETH,
+        10_000,
+      );
+    }
+    return quoteColl.value
+      .times(quoteUsdcPrice.value)
+      .div(BigInt.fromI32(10).pow(18));
+  }
+}
+class QuoteResult {
+  public value: BigInt;
+  public tokenInDecimals: i32;
+  constructor(value: BigInt, tokenInDecimals: i32) {
+    this.value = value;
+    this.tokenInDecimals = tokenInDecimals;
+  }
+}
+function quoteToken(
+  tokenIn: Address,
+  tokenOut: Address,
+  fee: i32,
+): QuoteResult {
+  const quoter = QuoterContract.bind(
+    Address.fromString("0x5e55c9e631fae526cd4b0526c4818d6e0a9ef0e3"),
   );
-  const decimals = ERC20.bind(
-    Address.fromString(Vault.collateralToken),
-  ).decimals();
+  const params = new Quoter__quoteExactInputSingleInputParamsStruct();
+  params.push(ethereum.Value.fromAddress(tokenIn));
+  params.push(ethereum.Value.fromAddress(tokenOut));
 
-  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(10 * 10 ** 6)));
-  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(3000)));
+  const decimals = ERC20.bind(tokenIn).decimals();
+
+  params.push(
+    ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(10).pow(u8(decimals))),
+  );
+  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(fee)));
   params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0)));
   const quote = quoter.try_quoteExactInputSingle(params);
-  if (
-    quote.reverted &&
-    !Address.fromString(Vault.collateralToken).equals(
-      Address.fromString(sirAddress),
-    )
-  ) {
-    return BigInt.fromI32(0);
+  if (quote.reverted) {
+    return new QuoteResult(BigInt.fromI32(0), decimals);
+  } else {
+    return new QuoteResult(quote.value.value0, decimals);
   }
-  let usdc = BigInt.fromI32(6000);
-  const sirDecimals = BigInt.fromI32(10).pow(u8(12));
-  usdc = usdc.times(sirDecimals);
-  if (!quote.reverted) {
-    usdc = quote.value.value0;
-  }
-  const d = u8(decimals) + u8(1);
-  const oneTokenOfUsdc = BigInt.fromI32(10)
-    .pow(u8(d + 10))
-    .div(usdc);
-  const e = u8(decimals) - u8(6);
-  const result = Vault.totalValue
-    .times(oneTokenOfUsdc)
-    .div(BigInt.fromI32(10).pow(u8(e + 10)));
-  return result;
 }
