@@ -1,7 +1,5 @@
-import {
-  VaultExternal,
-  VaultInitialized,
-} from "../../generated/VaultExternal/VaultExternal";
+import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
+import { quoterAddress, wethAddress, usdcAddress } from "../contracts";
 import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
@@ -169,8 +167,8 @@ export function handleBurn(event: Burn): void {
   }
 }
 
-const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
-const WETH = Address.fromString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+const USDC = Address.fromString(usdcAddress);
+const WETH = Address.fromString(wethAddress);
 function getVaultUsdValue(Vault: Vault): BigInt {
   if (Address.fromString(Vault.collateralToken).equals(USDC)) {
     return Vault.totalValue;
@@ -206,9 +204,9 @@ function quoteToken(
   tokenOut: Address,
   fee: i32,
 ): QuoteResult {
-  const quoter = QuoterContract.bind(
-    Address.fromString("0x5e55c9e631fae526cd4b0526c4818d6e0a9ef0e3"),
-  );
+  if (tokenIn.equals(tokenOut)) {
+  }
+  const quoter = QuoterContract.bind(Address.fromString(quoterAddress));
   const params = new Quoter__quoteExactInputSingleInputParamsStruct();
   params.push(ethereum.Value.fromAddress(tokenIn));
   params.push(ethereum.Value.fromAddress(tokenOut));

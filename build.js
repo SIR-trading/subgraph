@@ -23,6 +23,9 @@ fs.writeFileSync(
 export const vaultAddress = "${process.env.VAULT_ADDRESS}";
 export const sirAddress = "${process.env.SIR_ADDRESS}";
 export const zeroAddress = "0x0000000000000000000000000000000000000000";
+export const quoterAddress = "${process.env.QUOTER_ADDRESS}";
+export const usdcAddress = "${process.env.USDC_ADDRESS}";
+export const wethAddress = "${process.env.USDC_ADDRESS}";
 `,
 );
 console.log("src/contracts.ts and subgraph.yaml generated successfully.");
