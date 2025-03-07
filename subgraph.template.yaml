@@ -45,6 +45,8 @@ dataSources:
           file: ./abis/Vault.json
         - name: ERC20
           file: ./abis/Erc20.json
+        - name: Quoter 
+          file: ./abis/Quoter.json
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleSingleTransfer
@@ -99,6 +101,10 @@ dataSources:
           file: ./abis/Vault.json
         - name: Sir
           file: ./abis/Sir.json
+        - name: ERC20
+          file: ./abis/Erc20.json
+        - name: Quoter 
+          file: ./abis/Quoter.json
       eventHandlers:
         - event: DividendsPaid(uint96,uint80)
           handler: handleDividendsPaid
