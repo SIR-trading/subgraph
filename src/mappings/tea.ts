@@ -13,7 +13,8 @@ import {
 } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
-import { vaultAddress, zeroAddress } from "../contracts";
+import { sirAddress, vaultAddress, zeroAddress } from "../contracts";
+import { getUsdPriceWeth } from "../helpers";
 export function handleSingleTransfer(event: TransferSingle): void {
   const amount = event.params.amount;
   const to = event.params.to;
@@ -25,9 +26,11 @@ export function handleSingleTransfer(event: TransferSingle): void {
 
 export function handleDividendsPaid(event: DividendsPaid): void {
   const dividendsEntity = new Dividends(event.transaction.hash.toHex());
+  const sirUsdPrice = getUsdPriceWeth(sirAddress);
   dividendsEntity.timestamp = event.block.timestamp;
   dividendsEntity.ethAmount = event.params.amountETH;
   dividendsEntity.stakedAmount = event.params.amountStakedSIR;
+  dividendsEntity.sirUsdPrice = sirUsdPrice;
   dividendsEntity.save();
 }
 
