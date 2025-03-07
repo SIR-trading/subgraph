@@ -1,21 +1,12 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { quoterAddress, wethAddress, usdcAddress } from "../contracts";
 import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
-import {
-  Quoter as QuoterContract,
-  Quoter__quoteExactInputSingleInputParamsStruct,
-} from "../../generated/VaultExternal/Quoter";
-import {
-  Address,
-  BigInt,
-  DataSourceContext,
-  ethereum,
-} from "@graphprotocol/graph-ts";
+import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
+import { USDC, WETH, getUsdPriceWeth, quoteToken } from "../helpers";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
@@ -167,8 +158,6 @@ export function handleBurn(event: Burn): void {
   }
 }
 
-const USDC = Address.fromString(usdcAddress);
-const WETH = Address.fromString(wethAddress);
 function getVaultUsdValue(Vault: Vault): BigInt {
   if (Address.fromString(Vault.collateralToken).equals(USDC)) {
     return Vault.totalValue;
@@ -186,63 +175,13 @@ function getVaultUsdValue(Vault: Vault): BigInt {
     if (priceFromUsdc.equals(BigInt.fromI32(0))) {
       // maybe there is not usdc/collateral pool
       // try WETH instead
-      return getUsdPriceFromWeth(Vault);
+      return getUsdPriceFromWethVault(Vault);
     }
     return priceFromUsdc;
   }
 }
-class QuoteResult {
-  public value: BigInt;
-  public tokenInDecimals: i32;
-  constructor(value: BigInt, tokenInDecimals: i32) {
-    this.value = value;
-    this.tokenInDecimals = tokenInDecimals;
-  }
-}
-function quoteToken(
-  tokenIn: Address,
-  tokenOut: Address,
-  fee: i32,
-): QuoteResult {
-  if (tokenIn.equals(tokenOut)) {
-  }
-  const quoter = QuoterContract.bind(Address.fromString(quoterAddress));
-  const params = new Quoter__quoteExactInputSingleInputParamsStruct();
-  params.push(ethereum.Value.fromAddress(tokenIn));
-  params.push(ethereum.Value.fromAddress(tokenOut));
-
-  const decimals = ERC20.bind(tokenIn).decimals();
-
-  params.push(
-    ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(10).pow(u8(decimals))),
-  );
-  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(fee)));
-  params.push(ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0)));
-  const quote = quoter.try_quoteExactInputSingle(params);
-  if (quote.reverted) {
-    return new QuoteResult(BigInt.fromI32(0), decimals);
-  } else {
-    return new QuoteResult(quote.value.value0, decimals);
-  }
-}
-function getUsdPriceFromWeth(Vault: Vault): BigInt {
-  const quoteUsdcPrice = quoteToken(WETH, USDC, 3000);
-  let quoteColl = quoteToken(
-    Address.fromString(Vault.collateralToken),
-    WETH,
-    3000,
-  );
-  if (quoteColl.value.equals(BigInt.fromI32(0))) {
-    // if quote fails try with higher fee
-    quoteColl = quoteToken(
-      Address.fromString(Vault.collateralToken),
-      WETH,
-      10_000,
-    );
-  }
-  return quoteColl.value
-    .times(quoteUsdcPrice.value)
-    .div(BigInt.fromI32(10).pow(18));
+function getUsdPriceFromWethVault(vault: Vault): BigInt {
+  return getUsdPriceWeth(vault.collateralToken);
 }
 function getUsdcPrice(Vault: Vault, collateralDecimals: u8): BigInt {
   const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
