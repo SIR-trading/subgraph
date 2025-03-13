@@ -111,6 +111,34 @@ dataSources:
         - event: RewardsClaimed(indexed address,indexed uint256,uint80)
           handler: handleClaim
       file: ./src/mappings/tea.ts
+  - kind: ethereum
+    name: Auctions
+    network: {{NETWORK}}
+    source:
+      address: "{{SIR_ADDRESS}}"
+      abi: Sir
+      startBlock: {{START_BLOCK}}
+    mapping:
+      entities:
+        - Vault
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      abis:
+        - name: Vault
+          file: ./abis/Vault.json
+        - name: Sir
+          file: ./abis/Sir.json
+        - name: ERC20
+          file: ./abis/Erc20.json
+        - name: Quoter 
+          file: ./abis/Quoter.json
+      eventHandlers:
+        - event: AuctionStarted(indexed address,uint256)
+          handler: handleAuctionStarted
+        - event: BidReceived(indexed address,indexed address,uint96,uint96)
+          handler: handleBidReceived
+      file: ./src/mappings/auction.ts
 templates:
   - name: APE
     kind: ethereum/contract
