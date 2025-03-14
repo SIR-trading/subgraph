@@ -57,4 +57,6 @@ export function handleBidReceived(event: BidReceived): void {
     participants.bid = event.params.newBid;
     participants.save();
   }
+
+  auction.save();
 }
