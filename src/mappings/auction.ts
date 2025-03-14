@@ -1,14 +1,14 @@
 import { store } from "@graphprotocol/graph-ts";
 import { AuctionStarted, BidReceived } from "../../generated/Auctions/Sir";
 import {
-  Auctions,
-  AuctionsParticipants,
+  Auction,
+  AuctionsParticipant,
   AuctionsHistory,
 } from "../../generated/schema";
 
 export function handleAuctionStarted(event: AuctionStarted): void {
   const auctionId = event.params.token.toHex();
-  let auction = Auctions.load(auctionId);
+  let auction = Auction.load(auctionId);
   if (auction) {
     const pastAuctionId = auctionId + "-" + auction.startTime.toString();
     const pastAuction = new AuctionsHistory(pastAuctionId);
@@ -22,12 +22,12 @@ export function handleAuctionStarted(event: AuctionStarted): void {
 
     const participants = auction.participants.load();
     participants.forEach((participant) => {
-      store.remove("AuctionsParticipants", participant.id);
+      store.remove("AuctionsParticipant", participant.id);
     });
     auction = null;
   }
 
-  auction = new Auctions(auctionId);
+  auction = new Auction(auctionId);
   auction.token = event.params.token;
   auction.startTime = event.block.timestamp;
   auction.amount = event.params.feesToBeAuctioned;
@@ -36,10 +36,10 @@ export function handleAuctionStarted(event: AuctionStarted): void {
 }
 
 export function handleBidReceived(event: BidReceived): void {
-  const auction = Auctions.load(event.params.token.toHex());
+  const auction = Auction.load(event.params.token.toHex());
   const userID = event.params.token.toHex() + "-" + event.params.bidder.toHex();
 
-  const participants = AuctionsParticipants.load(userID);
+  const participants = AuctionsParticipant.load(userID);
   if (auction == null) {
     return;
   }
@@ -48,7 +48,7 @@ export function handleBidReceived(event: BidReceived): void {
   auction.highestBidder = event.params.bidder;
 
   if (participants == null) {
-    const participants = new AuctionsParticipants(userID);
+    const participants = new AuctionsParticipant(userID);
     participants.auctionId = auction.id;
     participants.user = event.params.bidder;
     participants.bid = event.params.newBid;

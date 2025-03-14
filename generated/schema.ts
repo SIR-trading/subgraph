@@ -748,7 +748,7 @@ export class Dividends extends Entity {
   }
 }
 
-export class Auctions extends Entity {
+export class Auction extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
@@ -756,22 +756,22 @@ export class Auctions extends Entity {
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save Auctions entity without an ID");
+    assert(id != null, "Cannot save Auction entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Auctions must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Auction must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Auctions", id.toString(), this);
+      store.set("Auction", id.toString(), this);
     }
   }
 
-  static loadInBlock(id: string): Auctions | null {
-    return changetype<Auctions | null>(store.get_in_block("Auctions", id));
+  static loadInBlock(id: string): Auction | null {
+    return changetype<Auction | null>(store.get_in_block("Auction", id));
   }
 
-  static load(id: string): Auctions | null {
-    return changetype<Auctions | null>(store.get("Auctions", id));
+  static load(id: string): Auction | null {
+    return changetype<Auction | null>(store.get("Auction", id));
   }
 
   get id(): string {
@@ -860,16 +860,16 @@ export class Auctions extends Entity {
     this.set("startTime", Value.fromBigInt(value));
   }
 
-  get participants(): AuctionsParticipantsLoader {
-    return new AuctionsParticipantsLoader(
-      "Auctions",
+  get participants(): AuctionsParticipantLoader {
+    return new AuctionsParticipantLoader(
+      "Auction",
       this.get("id")!.toString(),
       "participants",
     );
   }
 }
 
-export class AuctionsParticipants extends Entity {
+export class AuctionsParticipant extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
@@ -877,25 +877,25 @@ export class AuctionsParticipants extends Entity {
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save AuctionsParticipants entity without an ID");
+    assert(id != null, "Cannot save AuctionsParticipant entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type AuctionsParticipants must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type AuctionsParticipant must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("AuctionsParticipants", id.toString(), this);
+      store.set("AuctionsParticipant", id.toString(), this);
     }
   }
 
-  static loadInBlock(id: string): AuctionsParticipants | null {
-    return changetype<AuctionsParticipants | null>(
-      store.get_in_block("AuctionsParticipants", id),
+  static loadInBlock(id: string): AuctionsParticipant | null {
+    return changetype<AuctionsParticipant | null>(
+      store.get_in_block("AuctionsParticipant", id),
     );
   }
 
-  static load(id: string): AuctionsParticipants | null {
-    return changetype<AuctionsParticipants | null>(
-      store.get("AuctionsParticipants", id),
+  static load(id: string): AuctionsParticipant | null {
+    return changetype<AuctionsParticipant | null>(
+      store.get("AuctionsParticipant", id),
     );
   }
 
@@ -1067,7 +1067,7 @@ export class AuctionsHistory extends Entity {
   }
 }
 
-export class AuctionsParticipantsLoader extends Entity {
+export class AuctionsParticipantLoader extends Entity {
   _entity: string;
   _field: string;
   _id: string;
@@ -1079,8 +1079,8 @@ export class AuctionsParticipantsLoader extends Entity {
     this._field = field;
   }
 
-  load(): AuctionsParticipants[] {
+  load(): AuctionsParticipant[] {
     let value = store.loadRelated(this._entity, this._id, this._field);
-    return changetype<AuctionsParticipants[]>(value);
+    return changetype<AuctionsParticipant[]>(value);
   }
 }
