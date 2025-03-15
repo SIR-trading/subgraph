@@ -75,12 +75,16 @@ export class AuctionedTokensSentToWinner__Params {
     return this._event.parameters[0].value.toAddress();
   }
 
-  get token(): Address {
+  get beneficiary(): Address {
     return this._event.parameters[1].value.toAddress();
   }
 
+  get token(): Address {
+    return this._event.parameters[2].value.toAddress();
+  }
+
   get reward(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
+    return this._event.parameters[3].value.toBigInt();
   }
 }
 

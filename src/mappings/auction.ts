@@ -1,5 +1,9 @@
-import { store } from "@graphprotocol/graph-ts";
-import { AuctionStarted, BidReceived } from "../../generated/Auctions/Sir";
+import { Address, BigInt, store } from "@graphprotocol/graph-ts";
+import {
+  AuctionedTokensSentToWinner,
+  AuctionStarted,
+  BidReceived,
+} from "../../generated/Auctions/Sir";
 import {
   Auction,
   AuctionsParticipant,
@@ -31,6 +35,8 @@ export function handleAuctionStarted(event: AuctionStarted): void {
   auction.token = event.params.token;
   auction.startTime = event.block.timestamp;
   auction.amount = event.params.feesToBeAuctioned;
+  auction.highestBid = BigInt.zero();
+  auction.highestBidder = Address.empty();
 
   auction.save();
 }
@@ -59,4 +65,30 @@ export function handleBidReceived(event: BidReceived): void {
   }
 
   auction.save();
+}
+
+export function handleAuctionedClaimed(
+  event: AuctionedTokensSentToWinner
+): void {
+  const auctionId = event.params.token.toHex();
+  const auction = Auction.load(auctionId);
+
+  if (auction) {
+    const pastAuctionId = auctionId + "-" + auction.startTime.toString();
+    const pastAuction = new AuctionsHistory(pastAuctionId);
+    pastAuction.token = auction.token;
+    pastAuction.startTime = auction.startTime;
+    pastAuction.amount = auction.amount;
+    pastAuction.highestBid = auction.highestBid;
+    pastAuction.highestBidder = auction.highestBidder;
+
+    pastAuction.save();
+
+    const participants = auction.participants.load();
+    participants.forEach((participant) => {
+      store.remove("AuctionsParticipant", participant.id);
+    });
+
+    store.remove("Auction", auctionId);
+  }
 }

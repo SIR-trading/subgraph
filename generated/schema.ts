@@ -813,38 +813,30 @@ export class Auction extends Entity {
     this.set("amount", Value.fromBigInt(value));
   }
 
-  get highestBid(): BigInt | null {
+  get highestBid(): BigInt {
     let value = this.get("highestBid");
     if (!value || value.kind == ValueKind.NULL) {
-      return null;
+      throw new Error("Cannot return null for a required field.");
     } else {
       return value.toBigInt();
     }
   }
 
-  set highestBid(value: BigInt | null) {
-    if (!value) {
-      this.unset("highestBid");
-    } else {
-      this.set("highestBid", Value.fromBigInt(<BigInt>value));
-    }
+  set highestBid(value: BigInt) {
+    this.set("highestBid", Value.fromBigInt(value));
   }
 
-  get highestBidder(): Bytes | null {
+  get highestBidder(): Bytes {
     let value = this.get("highestBidder");
     if (!value || value.kind == ValueKind.NULL) {
-      return null;
+      throw new Error("Cannot return null for a required field.");
     } else {
       return value.toBytes();
     }
   }
 
-  set highestBidder(value: Bytes | null) {
-    if (!value) {
-      this.unset("highestBidder");
-    } else {
-      this.set("highestBidder", Value.fromBytes(<Bytes>value));
-    }
+  set highestBidder(value: Bytes) {
+    this.set("highestBidder", Value.fromBytes(value));
   }
 
   get startTime(): BigInt {
@@ -1019,38 +1011,30 @@ export class AuctionsHistory extends Entity {
     this.set("amount", Value.fromBigInt(value));
   }
 
-  get highestBid(): BigInt | null {
+  get highestBid(): BigInt {
     let value = this.get("highestBid");
     if (!value || value.kind == ValueKind.NULL) {
-      return null;
+      throw new Error("Cannot return null for a required field.");
     } else {
       return value.toBigInt();
     }
   }
 
-  set highestBid(value: BigInt | null) {
-    if (!value) {
-      this.unset("highestBid");
-    } else {
-      this.set("highestBid", Value.fromBigInt(<BigInt>value));
-    }
+  set highestBid(value: BigInt) {
+    this.set("highestBid", Value.fromBigInt(value));
   }
 
-  get highestBidder(): Bytes | null {
+  get highestBidder(): Bytes {
     let value = this.get("highestBidder");
     if (!value || value.kind == ValueKind.NULL) {
-      return null;
+      throw new Error("Cannot return null for a required field.");
     } else {
       return value.toBytes();
     }
   }
 
-  set highestBidder(value: Bytes | null) {
-    if (!value) {
-      this.unset("highestBidder");
-    } else {
-      this.set("highestBidder", Value.fromBytes(<Bytes>value));
-    }
+  set highestBidder(value: Bytes) {
+    this.set("highestBidder", Value.fromBytes(value));
   }
 
   get startTime(): BigInt {

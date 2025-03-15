@@ -375,6 +375,12 @@
         "internalType": "address"
       },
       {
+        "name": "beneficiary",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
         "name": "token",
         "type": "address",
         "indexed": true,

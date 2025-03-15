@@ -61,8 +61,8 @@ type Auction @entity(immutable: false) {
   id: String!
   token: Bytes!
   amount: BigInt!
-  highestBid: BigInt
-  highestBidder: Bytes
+  highestBid: BigInt!
+  highestBidder: Bytes!
   startTime: BigInt!
   participants: [AuctionsParticipant!] @derivedFrom(field: "auctionId")
 }
@@ -78,7 +78,7 @@ type AuctionsHistory @entity(immutable: true) {
   id: String!
   token: Bytes!
   amount: BigInt!
-  highestBid: BigInt
-  highestBidder: Bytes
+  highestBid: BigInt!
+  highestBidder: Bytes!
   startTime: BigInt!
 }
