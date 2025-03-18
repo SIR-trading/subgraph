@@ -74,21 +74,6 @@ export function handleAuctionedClaimed(
   const auction = Auction.load(auctionId);
 
   if (auction) {
-    const pastAuctionId = auctionId + "-" + auction.startTime.toString();
-    const pastAuction = new AuctionsHistory(pastAuctionId);
-    pastAuction.token = auction.token;
-    pastAuction.startTime = auction.startTime;
-    pastAuction.amount = auction.amount;
-    pastAuction.highestBid = auction.highestBid;
-    pastAuction.highestBidder = auction.highestBidder;
-
-    pastAuction.save();
-
-    const participants = auction.participants.load();
-    participants.forEach((participant) => {
-      store.remove("AuctionsParticipant", participant.id);
-    });
-
-    store.remove("Auction", auctionId);
+    auction.highestBid = BigInt.zero();
   }
 }
