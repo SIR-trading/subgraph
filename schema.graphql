@@ -64,6 +64,7 @@ type Auction @entity(immutable: false) {
   highestBid: BigInt!
   highestBidder: Bytes!
   startTime: BigInt!
+  isClaimed: Boolean!
   participants: [AuctionsParticipant!] @derivedFrom(field: "auctionId")
 }
 

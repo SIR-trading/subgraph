@@ -37,6 +37,7 @@ export function handleAuctionStarted(event: AuctionStarted): void {
   auction.amount = event.params.feesToBeAuctioned;
   auction.highestBid = BigInt.zero();
   auction.highestBidder = Address.empty();
+  auction.isClaimed = false;
 
   auction.save();
 }
@@ -74,7 +75,7 @@ export function handleAuctionedClaimed(
   const auction = Auction.load(auctionId);
 
   if (auction) {
-    auction.highestBid = BigInt.zero();
+    auction.isClaimed = true;
     auction.save();
   }
 }

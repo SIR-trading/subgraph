@@ -852,6 +852,19 @@ export class Auction extends Entity {
     this.set("startTime", Value.fromBigInt(value));
   }
 
+  get isClaimed(): boolean {
+    let value = this.get("isClaimed");
+    if (!value || value.kind == ValueKind.NULL) {
+      return false;
+    } else {
+      return value.toBoolean();
+    }
+  }
+
+  set isClaimed(value: boolean) {
+    this.set("isClaimed", Value.fromBoolean(value));
+  }
+
   get participants(): AuctionsParticipantLoader {
     return new AuctionsParticipantLoader(
       "Auction",
