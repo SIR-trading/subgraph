@@ -75,5 +75,6 @@ export function handleAuctionedClaimed(
 
   if (auction) {
     auction.highestBid = BigInt.zero();
+    auction.save();
   }
 }
