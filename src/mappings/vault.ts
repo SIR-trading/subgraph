@@ -7,6 +7,7 @@ import { APE } from "../../generated/templates";
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 import { USDC, WETH, getUsdPriceWeth, quoteToken } from "../helpers";
+import { ReservesChanged } from "../../generated/Claims/Vault";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
@@ -90,74 +91,30 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   }
 }
 
-export function handleMint(event: Mint): void {
-  const params = event.params;
-  const fee = event.params.collateralFeeToLPers;
-  const total = params.collateralIn.plus(fee);
-
+export function handleReservesChanged(event: ReservesChanged): void {
   const vault = Vault.load(event.params.vaultId.toHexString());
-  if (vault) {
-    if (event.params.isAPE) {
-      vault.apeCollateral = vault.apeCollateral.plus(params.collateralIn);
-
-      vault.teaCollateral = vault.teaCollateral.plus(
-        event.params.collateralFeeToLPers,
-      );
-    } else {
-      vault.teaCollateral = vault.teaCollateral.plus(
-        params.collateralIn.plus(params.collateralFeeToLPers),
-      );
-    }
-    vault.totalValue = vault.totalValue.plus(total);
-
-    vault.totalValueUsd = getVaultUsdValue(vault);
-    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
-    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
-    } else {
-      vault.sortKey = vault.totalVolumeUsd;
-    }
-    vault.save();
+  if (!vault) {
+    return;
   }
+  vault.totalValue = event.params.reserveLPers.plus(event.params.reserveApes);
+  const oldVaultUsd = vault.totalValueUsd;
+  const vaultUsdValue = getVaultUsdValue(vault);
+
+  const change = vaultUsdValue.minus(oldVaultUsd).abs();
+  vault.totalValueUsd = vaultUsdValue;
+  vault.totalVolumeUsd = vault.totalVolumeUsd.plus(change);
+  if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+    vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
+  } else {
+    vault.sortKey = vault.totalVolumeUsd;
+  }
+  vault.apeCollateral = event.params.reserveApes;
+  vault.teaCollateral = event.params.reserveLPers;
+  vault.save();
 }
 
-export function handleBurn(event: Burn): void {
-  const params = event.params;
-
-  const collateralOut = params.collateralWithdrawn.plus(
-    params.collateralFeeToStakers,
-  );
-
-  const vault = Vault.load(event.params.vaultId.toHexString());
-
-  if (vault) {
-    if (event.params.isAPE) {
-      vault.apeCollateral = vault.apeCollateral.minus(
-        params.collateralWithdrawn.plus(
-          params.collateralFeeToStakers.plus(params.collateralFeeToLPers),
-        ),
-      );
-      vault.teaCollateral = vault.teaCollateral.plus(
-        params.collateralFeeToLPers,
-      );
-    } else {
-      vault.teaCollateral = vault.teaCollateral.minus(
-        params.collateralWithdrawn.plus(params.collateralFeeToStakers),
-      );
-    }
-    vault.totalValue = vault.totalValue.minus(collateralOut);
-    vault.totalValueUsd = getVaultUsdValue(vault);
-
-    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
-    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
-    } else {
-      vault.sortKey = vault.totalVolumeUsd;
-    }
-    vault.save();
-  }
-}
-
+// calculates Vaults usd value using Vault.totalValue
+// * Uses USDC or WETH(backup)/USDC pool to calculate USDC value
 function getVaultUsdValue(Vault: Vault): BigInt {
   if (Address.fromString(Vault.collateralToken).equals(USDC)) {
     return Vault.totalValue;
@@ -197,3 +154,72 @@ function getUsdcPrice(Vault: Vault, collateralDecimals: u8): BigInt {
   // =======
   return totalValueUsd;
 }
+
+// deprecated
+// export function handleMint(event: Mint): void {
+//   const params = event.params;
+//   const fee = event.params.collateralFeeToLPers;
+//   const total = params.collateralIn.plus(fee);
+//
+//   const vault = Vault.load(event.params.vaultId.toHexString());
+//   if (vault) {
+//     if (event.params.isAPE) {
+//       vault.apeCollateral = vault.apeCollateral.plus(params.collateralIn);
+//
+//       vault.teaCollateral = vault.teaCollateral.plus(
+//         event.params.collateralFeeToLPers,
+//       );
+//     } else {
+//       vault.teaCollateral = vault.teaCollateral.plus(
+//         params.collateralIn.plus(params.collateralFeeToLPers),
+//       );
+//     }
+//     vault.totalValue = vault.totalValue.plus(total);
+//
+//     vault.totalValueUsd = getVaultUsdValue(vault);
+//     vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
+//     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+//       vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
+//     } else {
+//       vault.sortKey = vault.totalVolumeUsd;
+//     }
+//     vault.save();
+//   }
+// }
+// deprecated
+// export function handleBurn(event: Burn): void {
+//   const params = event.params;
+//
+//   const collateralOut = params.collateralWithdrawn.plus(
+//     params.collateralFeeToStakers,
+//   );
+//
+//   const vault = Vault.load(event.params.vaultId.toHexString());
+//
+//   if (vault) {
+//     if (event.params.isAPE) {
+//       vault.apeCollateral = vault.apeCollateral.minus(
+//         params.collateralWithdrawn.plus(
+//           params.collateralFeeToStakers.plus(params.collateralFeeToLPers),
+//         ),
+//       );
+//       vault.teaCollateral = vault.teaCollateral.plus(
+//         params.collateralFeeToLPers,
+//       );
+//     } else {
+//       vault.teaCollateral = vault.teaCollateral.minus(
+//         params.collateralWithdrawn.plus(params.collateralFeeToStakers),
+//       );
+//     }
+//     vault.totalValue = vault.totalValue.minus(collateralOut);
+//     vault.totalValueUsd = getVaultUsdValue(vault);
+//
+//     vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
+//     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
+//       vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
+//     } else {
+//       vault.sortKey = vault.totalVolumeUsd;
+//     }
+//     vault.save();
+//   }
+// }
