@@ -36,16 +36,16 @@ export class ApprovalForAll__Params {
   }
 }
 
-export class Burn extends ethereum.Event {
-  get params(): Burn__Params {
-    return new Burn__Params(this);
+export class ReservesChanged extends ethereum.Event {
+  get params(): ReservesChanged__Params {
+    return new ReservesChanged__Params(this);
   }
 }
 
-export class Burn__Params {
-  _event: Burn;
+export class ReservesChanged__Params {
+  _event: ReservesChanged;
 
-  constructor(event: Burn) {
+  constructor(event: ReservesChanged) {
     this._event = event;
   }
 
@@ -57,71 +57,15 @@ export class Burn__Params {
     return this._event.parameters[1].value.toBoolean();
   }
 
-  get collateralWithdrawn(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
+  get isMint(): boolean {
+    return this._event.parameters[2].value.toBoolean();
   }
 
-  get collateralFeeToStakers(): BigInt {
+  get reserveLPers(): BigInt {
     return this._event.parameters[3].value.toBigInt();
   }
 
-  get collateralFeeToLPers(): BigInt {
-    return this._event.parameters[4].value.toBigInt();
-  }
-}
-
-export class FeesToStakers extends ethereum.Event {
-  get params(): FeesToStakers__Params {
-    return new FeesToStakers__Params(this);
-  }
-}
-
-export class FeesToStakers__Params {
-  _event: FeesToStakers;
-
-  constructor(event: FeesToStakers) {
-    this._event = event;
-  }
-
-  get collateralToken(): Address {
-    return this._event.parameters[0].value.toAddress();
-  }
-
-  get totalFeesToStakers(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
-  }
-}
-
-export class Mint extends ethereum.Event {
-  get params(): Mint__Params {
-    return new Mint__Params(this);
-  }
-}
-
-export class Mint__Params {
-  _event: Mint;
-
-  constructor(event: Mint) {
-    this._event = event;
-  }
-
-  get vaultId(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
-  }
-
-  get isAPE(): boolean {
-    return this._event.parameters[1].value.toBoolean();
-  }
-
-  get collateralIn(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-
-  get collateralFeeToStakers(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
-  }
-
-  get collateralFeeToLPers(): BigInt {
+  get reserveApes(): BigInt {
     return this._event.parameters[4].value.toBigInt();
   }
 }
@@ -256,16 +200,6 @@ export class Vault__burnInputVaultParamsStruct extends ethereum.Tuple {
   }
 }
 
-export class Vault__collateralStatesResultValue0Struct extends ethereum.Tuple {
-  get totalFeesToStakers(): BigInt {
-    return this[0].toBigInt();
-  }
-
-  get total(): BigInt {
-    return this[1].toBigInt();
-  }
-}
-
 export class Vault__getReservesResultValue0Struct extends ethereum.Tuple {
   get reserveApes(): BigInt {
     return this[0].toBigInt();
@@ -308,13 +242,17 @@ export class Vault__paramsByIdResultValue0Struct extends ethereum.Tuple {
   }
 }
 
-export class Vault__systemParamsResultValue0Struct extends ethereum.Tuple {
-  get baseFee(): i32 {
-    return this[0].toI32();
+export class Vault__systemParamsResultSystemParams_Struct extends ethereum.Tuple {
+  get baseFee(): Vault__systemParamsResultSystemParams_BaseFeeStruct {
+    return changetype<Vault__systemParamsResultSystemParams_BaseFeeStruct>(
+      this[0].toTuple(),
+    );
   }
 
-  get lpFee(): i32 {
-    return this[1].toI32();
+  get lpFee(): Vault__systemParamsResultSystemParams_LpFeeStruct {
+    return changetype<Vault__systemParamsResultSystemParams_LpFeeStruct>(
+      this[1].toTuple(),
+    );
   }
 
   get mintingStopped(): boolean {
@@ -323,6 +261,34 @@ export class Vault__systemParamsResultValue0Struct extends ethereum.Tuple {
 
   get cumulativeTax(): i32 {
     return this[3].toI32();
+  }
+}
+
+export class Vault__systemParamsResultSystemParams_BaseFeeStruct extends ethereum.Tuple {
+  get fee(): i32 {
+    return this[0].toI32();
+  }
+
+  get feeNew(): i32 {
+    return this[1].toI32();
+  }
+
+  get timestampUpdate(): BigInt {
+    return this[2].toBigInt();
+  }
+}
+
+export class Vault__systemParamsResultSystemParams_LpFeeStruct extends ethereum.Tuple {
+  get fee(): i32 {
+    return this[0].toI32();
+  }
+
+  get feeNew(): i32 {
+    return this[1].toI32();
+  }
+
+  get timestampUpdate(): BigInt {
+    return this[2].toBigInt();
   }
 }
 
@@ -357,6 +323,78 @@ export class Vault__vaultStatesInputVaultParamsStruct extends ethereum.Tuple {
 export class Vault extends ethereum.SmartContract {
   static bind(address: Address): Vault {
     return new Vault("Vault", address);
+  }
+
+  APE_IMPLEMENTATION(): Address {
+    let result = super.call(
+      "APE_IMPLEMENTATION",
+      "APE_IMPLEMENTATION():(address)",
+      [],
+    );
+
+    return result[0].toAddress();
+  }
+
+  try_APE_IMPLEMENTATION(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "APE_IMPLEMENTATION",
+      "APE_IMPLEMENTATION():(address)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  ORACLE(): Address {
+    let result = super.call("ORACLE", "ORACLE():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_ORACLE(): ethereum.CallResult<Address> {
+    let result = super.tryCall("ORACLE", "ORACLE():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  SIR(): Address {
+    let result = super.call("SIR", "SIR():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_SIR(): ethereum.CallResult<Address> {
+    let result = super.tryCall("SIR", "SIR():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  SYSTEM_CONTROL(): Address {
+    let result = super.call("SYSTEM_CONTROL", "SYSTEM_CONTROL():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_SYSTEM_CONTROL(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "SYSTEM_CONTROL",
+      "SYSTEM_CONTROL():(address)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
   TIMESTAMP_ISSUANCE_START(): BigInt {
@@ -453,14 +491,16 @@ export class Vault extends ethereum.SmartContract {
     isAPE: boolean,
     vaultParams: Vault__burnInputVaultParamsStruct,
     amount: BigInt,
+    deadline: BigInt,
   ): BigInt {
     let result = super.call(
       "burn",
-      "burn(bool,(address,address,int8),uint256):(uint144)",
+      "burn(bool,(address,address,int8),uint256,uint40):(uint144)",
       [
         ethereum.Value.fromBoolean(isAPE),
         ethereum.Value.fromTuple(vaultParams),
         ethereum.Value.fromUnsignedBigInt(amount),
+        ethereum.Value.fromUnsignedBigInt(deadline),
       ],
     );
 
@@ -471,14 +511,16 @@ export class Vault extends ethereum.SmartContract {
     isAPE: boolean,
     vaultParams: Vault__burnInputVaultParamsStruct,
     amount: BigInt,
+    deadline: BigInt,
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "burn",
-      "burn(bool,(address,address,int8),uint256):(uint144)",
+      "burn(bool,(address,address,int8),uint256,uint40):(uint144)",
       [
         ethereum.Value.fromBoolean(isAPE),
         ethereum.Value.fromTuple(vaultParams),
         ethereum.Value.fromUnsignedBigInt(amount),
+        ethereum.Value.fromUnsignedBigInt(deadline),
       ],
     );
     if (result.reverted) {
@@ -511,35 +553,6 @@ export class Vault extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  collateralStates(token: Address): Vault__collateralStatesResultValue0Struct {
-    let result = super.call(
-      "collateralStates",
-      "collateralStates(address):((uint112,uint144))",
-      [ethereum.Value.fromAddress(token)],
-    );
-
-    return changetype<Vault__collateralStatesResultValue0Struct>(
-      result[0].toTuple(),
-    );
-  }
-
-  try_collateralStates(
-    token: Address,
-  ): ethereum.CallResult<Vault__collateralStatesResultValue0Struct> {
-    let result = super.tryCall(
-      "collateralStates",
-      "collateralStates(address):((uint112,uint144))",
-      [ethereum.Value.fromAddress(token)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      changetype<Vault__collateralStatesResultValue0Struct>(value[0].toTuple()),
-    );
   }
 
   cumulativeSIRPerTEA(vaultId: BigInt): BigInt {
@@ -691,22 +704,22 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  systemParams(): Vault__systemParamsResultValue0Struct {
+  systemParams(): Vault__systemParamsResultSystemParams_Struct {
     let result = super.call(
       "systemParams",
-      "systemParams():((uint16,uint16,bool,uint16))",
+      "systemParams():(((uint16,uint16,uint40),(uint16,uint16,uint40),bool,uint16))",
       [],
     );
 
-    return changetype<Vault__systemParamsResultValue0Struct>(
+    return changetype<Vault__systemParamsResultSystemParams_Struct>(
       result[0].toTuple(),
     );
   }
 
-  try_systemParams(): ethereum.CallResult<Vault__systemParamsResultValue0Struct> {
+  try_systemParams(): ethereum.CallResult<Vault__systemParamsResultSystemParams_Struct> {
     let result = super.tryCall(
       "systemParams",
-      "systemParams():((uint16,uint16,bool,uint16))",
+      "systemParams():(((uint16,uint16,uint40),(uint16,uint16,uint40),bool,uint16))",
       [],
     );
     if (result.reverted) {
@@ -714,8 +727,33 @@ export class Vault extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Vault__systemParamsResultValue0Struct>(value[0].toTuple()),
+      changetype<Vault__systemParamsResultSystemParams_Struct>(
+        value[0].toTuple(),
+      ),
     );
+  }
+
+  totalReserves(collateral: Address): BigInt {
+    let result = super.call(
+      "totalReserves",
+      "totalReserves(address):(uint256)",
+      [ethereum.Value.fromAddress(collateral)],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_totalReserves(collateral: Address): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "totalReserves",
+      "totalReserves(address):(uint256)",
+      [ethereum.Value.fromAddress(collateral)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   totalSupply(vaultId: BigInt): BigInt {
@@ -841,7 +879,7 @@ export class Vault extends ethereum.SmartContract {
   }
 
   withdrawFees(token: Address): BigInt {
-    let result = super.call("withdrawFees", "withdrawFees(address):(uint112)", [
+    let result = super.call("withdrawFees", "withdrawFees(address):(uint256)", [
       ethereum.Value.fromAddress(token),
     ]);
 
@@ -851,7 +889,7 @@ export class Vault extends ethereum.SmartContract {
   try_withdrawFees(token: Address): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "withdrawFees",
-      "withdrawFees(address):(uint112)",
+      "withdrawFees(address):(uint256)",
       [ethereum.Value.fromAddress(token)],
     );
     if (result.reverted) {
@@ -920,6 +958,10 @@ export class ConstructorCall__Inputs {
   get apeImplementation(): Address {
     return this._call.inputValues[3].value.toAddress();
   }
+
+  get weth(): Address {
+    return this._call.inputValues[4].value.toAddress();
+  }
 }
 
 export class ConstructorCall__Outputs {
@@ -959,6 +1001,10 @@ export class BurnCall__Inputs {
 
   get amount(): BigInt {
     return this._call.inputValues[2].value.toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this._call.inputValues[3].value.toBigInt();
   }
 }
 
@@ -1099,8 +1145,16 @@ export class MintCall__Inputs {
     );
   }
 
-  get collateralToDeposit(): BigInt {
+  get amountToDeposit(): BigInt {
     return this._call.inputValues[2].value.toBigInt();
+  }
+
+  get collateralToDepositMin(): BigInt {
+    return this._call.inputValues[3].value.toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this._call.inputValues[4].value.toBigInt();
   }
 }
 
@@ -1252,6 +1306,44 @@ export class SetApprovalForAllCall__Outputs {
   _call: SetApprovalForAllCall;
 
   constructor(call: SetApprovalForAllCall) {
+    this._call = call;
+  }
+}
+
+export class UniswapV3SwapCallbackCall extends ethereum.Call {
+  get inputs(): UniswapV3SwapCallbackCall__Inputs {
+    return new UniswapV3SwapCallbackCall__Inputs(this);
+  }
+
+  get outputs(): UniswapV3SwapCallbackCall__Outputs {
+    return new UniswapV3SwapCallbackCall__Outputs(this);
+  }
+}
+
+export class UniswapV3SwapCallbackCall__Inputs {
+  _call: UniswapV3SwapCallbackCall;
+
+  constructor(call: UniswapV3SwapCallbackCall) {
+    this._call = call;
+  }
+
+  get amount0Delta(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+
+  get amount1Delta(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+
+  get data(): Bytes {
+    return this._call.inputValues[2].value.toBytes();
+  }
+}
+
+export class UniswapV3SwapCallbackCall__Outputs {
+  _call: UniswapV3SwapCallbackCall;
+
+  constructor(call: UniswapV3SwapCallbackCall) {
     this._call = call;
   }
 }
