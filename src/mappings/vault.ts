@@ -104,20 +104,13 @@ export function handleReservesChanged(event: ReservesChanged): void {
 
 export function handleMint(event: ReservesChanged): void {
   const params = event.params;
-  const fee = event.params.reserveLPers;
-  const total = params.reserveApes.plus(fee);
+  const total = params.reserveApes.plus(params.reserveLPers);
 
   const vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
-    if (event.params.isAPE) {
-      vault.apeCollateral = vault.apeCollateral.plus(params.reserveApes);
+    vault.apeCollateral = vault.apeCollateral.plus(params.reserveApes);
+    vault.teaCollateral = vault.teaCollateral.plus(params.reserveLPers);
 
-      vault.teaCollateral = vault.teaCollateral.plus(event.params.reserveLPers);
-    } else {
-      vault.teaCollateral = vault.teaCollateral.plus(
-        params.reserveApes.plus(params.reserveLPers)
-      );
-    }
     vault.totalValue = vault.totalValue.plus(total);
 
     vault.totalValueUsd = getVaultUsdValue(vault);
@@ -133,26 +126,18 @@ export function handleMint(event: ReservesChanged): void {
 
 export function handleBurn(event: ReservesChanged): void {
   const params = event.params;
-
   const collateralOut = params.reserveApes.plus(params.reserveLPers);
 
   const vault = Vault.load(event.params.vaultId.toHexString());
 
   if (vault) {
-    if (event.params.isAPE) {
-      vault.apeCollateral = vault.apeCollateral.minus(
-        params.reserveApes.plus(params.reserveLPers.plus(params.reserveLPers))
-      );
-      vault.teaCollateral = vault.teaCollateral.plus(params.reserveLPers);
-    } else {
-      vault.teaCollateral = vault.teaCollateral.minus(
-        params.reserveApes.plus(params.reserveLPers)
-      );
-    }
+    vault.apeCollateral = vault.apeCollateral.plus(params.reserveApes);
+    vault.teaCollateral = vault.teaCollateral.plus(params.reserveLPers);
+
     vault.totalValue = vault.totalValue.minus(collateralOut);
     vault.totalValueUsd = getVaultUsdValue(vault);
-
     vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
+
     if (vault.taxAmount.gt(BigInt.fromI32(0))) {
       vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
     } else {
