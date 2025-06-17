@@ -12,8 +12,8 @@ const replaced = subgraphTemplate
     process.env.NETWORK === "mainnet"
       ? "20830200"
       : process.env.NETWORK === "sepolia"
-      ? "7000000"
-      : "0",
+      ? "8511891"
+      : "0"
   );
 
 fs.writeFileSync("subgraph.yaml", replaced);

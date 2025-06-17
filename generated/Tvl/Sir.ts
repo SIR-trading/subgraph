@@ -75,12 +75,16 @@ export class AuctionedTokensSentToWinner__Params {
     return this._event.parameters[0].value.toAddress();
   }
 
-  get token(): Address {
+  get beneficiary(): Address {
     return this._event.parameters[1].value.toAddress();
   }
 
+  get token(): Address {
+    return this._event.parameters[2].value.toAddress();
+  }
+
   get reward(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
+    return this._event.parameters[3].value.toBigInt();
   }
 }
 
@@ -268,13 +272,28 @@ export class Sir__auctionsResultValue0Struct extends ethereum.Tuple {
   }
 }
 
-export class Sir__stakersParamsResultValue0Struct extends ethereum.Tuple {
-  get stake(): BigInt {
-    return this[0].toBigInt();
+export class Sir__stakeOfResult {
+  value0: BigInt;
+  value1: BigInt;
+
+  constructor(value0: BigInt, value1: BigInt) {
+    this.value0 = value0;
+    this.value1 = value1;
   }
 
-  get cumulativeETHPerSIRx80(): BigInt {
-    return this[1].toBigInt();
+  toMap(): TypedMap<string, ethereum.Value> {
+    let map = new TypedMap<string, ethereum.Value>();
+    map.set("value0", ethereum.Value.fromUnsignedBigInt(this.value0));
+    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
+    return map;
+  }
+
+  getUnlockedStake(): BigInt {
+    return this.value0;
+  }
+
+  getLockedStake(): BigInt {
+    return this.value1;
   }
 }
 
@@ -342,6 +361,44 @@ export class Sir extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  STAKING_VAULT(): Address {
+    let result = super.call("STAKING_VAULT", "STAKING_VAULT():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_STAKING_VAULT(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "STAKING_VAULT",
+      "STAKING_VAULT():(address)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  SYSTEM_CONTROL(): Address {
+    let result = super.call("SYSTEM_CONTROL", "SYSTEM_CONTROL():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_SYSTEM_CONTROL(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "SYSTEM_CONTROL",
+      "SYSTEM_CONTROL():(address)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
   allowance(param0: Address, param1: Address): BigInt {
@@ -495,6 +552,29 @@ export class Sir extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  contributorMintAndStake(): BigInt {
+    let result = super.call(
+      "contributorMintAndStake",
+      "contributorMintAndStake():(uint80)",
+      [],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_contributorMintAndStake(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "contributorMintAndStake",
+      "contributorMintAndStake():(uint80)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   contributorUnclaimedSIR(contributor: Address): BigInt {
     let result = super.call(
       "contributorUnclaimedSIR",
@@ -535,35 +615,16 @@ export class Sir extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toI32());
   }
 
-  dividends(staker: Address): BigInt {
-    let result = super.call("dividends", "dividends(address):(uint96)", [
-      ethereum.Value.fromAddress(staker),
-    ]);
-
-    return result[0].toBigInt();
-  }
-
-  try_dividends(staker: Address): ethereum.CallResult<BigInt> {
-    let result = super.tryCall("dividends", "dividends(address):(uint96)", [
-      ethereum.Value.fromAddress(staker),
-    ]);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  lPerMint(vaultId: BigInt): BigInt {
-    let result = super.call("lPerMint", "lPerMint(uint256):(uint80)", [
+  lperMint(vaultId: BigInt): BigInt {
+    let result = super.call("lperMint", "lperMint(uint256):(uint80)", [
       ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
 
     return result[0].toBigInt();
   }
 
-  try_lPerMint(vaultId: BigInt): ethereum.CallResult<BigInt> {
-    let result = super.tryCall("lPerMint", "lPerMint(uint256):(uint80)", [
+  try_lperMint(vaultId: BigInt): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("lperMint", "lperMint(uint256):(uint80)", [
       ethereum.Value.fromUnsignedBigInt(vaultId),
     ]);
     if (result.reverted) {
@@ -573,20 +634,20 @@ export class Sir extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  lPerMintAndStake(vaultId: BigInt): BigInt {
+  lperMintAndStake(vaultId: BigInt): BigInt {
     let result = super.call(
-      "lPerMintAndStake",
-      "lPerMintAndStake(uint256):(uint80)",
+      "lperMintAndStake",
+      "lperMintAndStake(uint256):(uint80)",
       [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
 
     return result[0].toBigInt();
   }
 
-  try_lPerMintAndStake(vaultId: BigInt): ethereum.CallResult<BigInt> {
+  try_lperMintAndStake(vaultId: BigInt): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "lPerMintAndStake",
-      "lPerMintAndStake(uint256):(uint80)",
+      "lperMintAndStake",
+      "lperMintAndStake(uint256):(uint80)",
       [ethereum.Value.fromUnsignedBigInt(vaultId)],
     );
     if (result.reverted) {
@@ -649,32 +710,24 @@ export class Sir extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  stakersParams(staker: Address): Sir__stakersParamsResultValue0Struct {
-    let result = super.call(
-      "stakersParams",
-      "stakersParams(address):((uint80,uint176))",
-      [ethereum.Value.fromAddress(staker)],
-    );
+  stakeOf(staker: Address): Sir__stakeOfResult {
+    let result = super.call("stakeOf", "stakeOf(address):(uint80,uint80)", [
+      ethereum.Value.fromAddress(staker),
+    ]);
 
-    return changetype<Sir__stakersParamsResultValue0Struct>(
-      result[0].toTuple(),
-    );
+    return new Sir__stakeOfResult(result[0].toBigInt(), result[1].toBigInt());
   }
 
-  try_stakersParams(
-    staker: Address,
-  ): ethereum.CallResult<Sir__stakersParamsResultValue0Struct> {
-    let result = super.tryCall(
-      "stakersParams",
-      "stakersParams(address):((uint80,uint176))",
-      [ethereum.Value.fromAddress(staker)],
-    );
+  try_stakeOf(staker: Address): ethereum.CallResult<Sir__stakeOfResult> {
+    let result = super.tryCall("stakeOf", "stakeOf(address):(uint80,uint80)", [
+      ethereum.Value.fromAddress(staker),
+    ]);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Sir__stakersParamsResultValue0Struct>(value[0].toTuple()),
+      new Sir__stakeOfResult(value[0].toBigInt(), value[1].toBigInt()),
     );
   }
 
@@ -706,29 +759,6 @@ export class Sir extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toString());
-  }
-
-  totalBalanceOf(account: Address): BigInt {
-    let result = super.call(
-      "totalBalanceOf",
-      "totalBalanceOf(address):(uint256)",
-      [ethereum.Value.fromAddress(account)],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_totalBalanceOf(account: Address): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "totalBalanceOf",
-      "totalBalanceOf(address):(uint256)",
-      [ethereum.Value.fromAddress(account)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   totalSupply(): BigInt {
@@ -802,6 +832,29 @@ export class Sir extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
+  unclaimedDividends(staker: Address): BigInt {
+    let result = super.call(
+      "unclaimedDividends",
+      "unclaimedDividends(address):(uint96)",
+      [ethereum.Value.fromAddress(staker)],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_unclaimedDividends(staker: Address): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "unclaimedDividends",
+      "unclaimedDividends(address):(uint96)",
+      [ethereum.Value.fromAddress(staker)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   unstakeAndClaim(amount: BigInt): BigInt {
     let result = super.call(
       "unstakeAndClaim",
@@ -824,6 +877,21 @@ export class Sir extends ethereum.SmartContract {
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
+
+  vault(): Address {
+    let result = super.call("vault", "vault():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_vault(): ethereum.CallResult<Address> {
+    let result = super.tryCall("vault", "vault():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
 }
 
 export class ConstructorCall extends ethereum.Call {
@@ -843,8 +911,16 @@ export class ConstructorCall__Inputs {
     this._call = call;
   }
 
-  get weth(): Address {
+  get contributors(): Address {
     return this._call.inputValues[0].value.toAddress();
+  }
+
+  get weth(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get systemControl(): Address {
+    return this._call.inputValues[2].value.toAddress();
   }
 }
 
@@ -852,6 +928,36 @@ export class ConstructorCall__Outputs {
   _call: ConstructorCall;
 
   constructor(call: ConstructorCall) {
+    this._call = call;
+  }
+}
+
+export class AllowMintingCall extends ethereum.Call {
+  get inputs(): AllowMintingCall__Inputs {
+    return new AllowMintingCall__Inputs(this);
+  }
+
+  get outputs(): AllowMintingCall__Outputs {
+    return new AllowMintingCall__Outputs(this);
+  }
+}
+
+export class AllowMintingCall__Inputs {
+  _call: AllowMintingCall;
+
+  constructor(call: AllowMintingCall) {
+    this._call = call;
+  }
+
+  get mintingOfSIRHalted_(): boolean {
+    return this._call.inputValues[0].value.toBoolean();
+  }
+}
+
+export class AllowMintingCall__Outputs {
+  _call: AllowMintingCall;
+
+  constructor(call: AllowMintingCall) {
     this._call = call;
   }
 }
@@ -1022,6 +1128,70 @@ export class ContributorMintCall__Outputs {
   }
 }
 
+export class ContributorMintAndStakeCall extends ethereum.Call {
+  get inputs(): ContributorMintAndStakeCall__Inputs {
+    return new ContributorMintAndStakeCall__Inputs(this);
+  }
+
+  get outputs(): ContributorMintAndStakeCall__Outputs {
+    return new ContributorMintAndStakeCall__Outputs(this);
+  }
+}
+
+export class ContributorMintAndStakeCall__Inputs {
+  _call: ContributorMintAndStakeCall;
+
+  constructor(call: ContributorMintAndStakeCall) {
+    this._call = call;
+  }
+}
+
+export class ContributorMintAndStakeCall__Outputs {
+  _call: ContributorMintAndStakeCall;
+
+  constructor(call: ContributorMintAndStakeCall) {
+    this._call = call;
+  }
+
+  get rewards(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
+export class GetAuctionLotCall extends ethereum.Call {
+  get inputs(): GetAuctionLotCall__Inputs {
+    return new GetAuctionLotCall__Inputs(this);
+  }
+
+  get outputs(): GetAuctionLotCall__Outputs {
+    return new GetAuctionLotCall__Outputs(this);
+  }
+}
+
+export class GetAuctionLotCall__Inputs {
+  _call: GetAuctionLotCall;
+
+  constructor(call: GetAuctionLotCall) {
+    this._call = call;
+  }
+
+  get token(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get beneficiary(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+}
+
+export class GetAuctionLotCall__Outputs {
+  _call: GetAuctionLotCall;
+
+  constructor(call: GetAuctionLotCall) {
+    this._call = call;
+  }
+}
+
 export class InitializeCall extends ethereum.Call {
   get inputs(): InitializeCall__Inputs {
     return new InitializeCall__Inputs(this);
@@ -1052,20 +1222,20 @@ export class InitializeCall__Outputs {
   }
 }
 
-export class LPerMintCall extends ethereum.Call {
-  get inputs(): LPerMintCall__Inputs {
-    return new LPerMintCall__Inputs(this);
+export class LperMintCall extends ethereum.Call {
+  get inputs(): LperMintCall__Inputs {
+    return new LperMintCall__Inputs(this);
   }
 
-  get outputs(): LPerMintCall__Outputs {
-    return new LPerMintCall__Outputs(this);
+  get outputs(): LperMintCall__Outputs {
+    return new LperMintCall__Outputs(this);
   }
 }
 
-export class LPerMintCall__Inputs {
-  _call: LPerMintCall;
+export class LperMintCall__Inputs {
+  _call: LperMintCall;
 
-  constructor(call: LPerMintCall) {
+  constructor(call: LperMintCall) {
     this._call = call;
   }
 
@@ -1074,10 +1244,10 @@ export class LPerMintCall__Inputs {
   }
 }
 
-export class LPerMintCall__Outputs {
-  _call: LPerMintCall;
+export class LperMintCall__Outputs {
+  _call: LperMintCall;
 
-  constructor(call: LPerMintCall) {
+  constructor(call: LperMintCall) {
     this._call = call;
   }
 
@@ -1086,20 +1256,20 @@ export class LPerMintCall__Outputs {
   }
 }
 
-export class LPerMintAndStakeCall extends ethereum.Call {
-  get inputs(): LPerMintAndStakeCall__Inputs {
-    return new LPerMintAndStakeCall__Inputs(this);
+export class LperMintAndStakeCall extends ethereum.Call {
+  get inputs(): LperMintAndStakeCall__Inputs {
+    return new LperMintAndStakeCall__Inputs(this);
   }
 
-  get outputs(): LPerMintAndStakeCall__Outputs {
-    return new LPerMintAndStakeCall__Outputs(this);
+  get outputs(): LperMintAndStakeCall__Outputs {
+    return new LperMintAndStakeCall__Outputs(this);
   }
 }
 
-export class LPerMintAndStakeCall__Inputs {
-  _call: LPerMintAndStakeCall;
+export class LperMintAndStakeCall__Inputs {
+  _call: LperMintAndStakeCall;
 
-  constructor(call: LPerMintAndStakeCall) {
+  constructor(call: LperMintAndStakeCall) {
     this._call = call;
   }
 
@@ -1108,45 +1278,15 @@ export class LPerMintAndStakeCall__Inputs {
   }
 }
 
-export class LPerMintAndStakeCall__Outputs {
-  _call: LPerMintAndStakeCall;
+export class LperMintAndStakeCall__Outputs {
+  _call: LperMintAndStakeCall;
 
-  constructor(call: LPerMintAndStakeCall) {
+  constructor(call: LperMintAndStakeCall) {
     this._call = call;
   }
 
   get rewards(): BigInt {
     return this._call.outputValues[0].value.toBigInt();
-  }
-}
-
-export class PayAuctionWinnerCall extends ethereum.Call {
-  get inputs(): PayAuctionWinnerCall__Inputs {
-    return new PayAuctionWinnerCall__Inputs(this);
-  }
-
-  get outputs(): PayAuctionWinnerCall__Outputs {
-    return new PayAuctionWinnerCall__Outputs(this);
-  }
-}
-
-export class PayAuctionWinnerCall__Inputs {
-  _call: PayAuctionWinnerCall;
-
-  constructor(call: PayAuctionWinnerCall) {
-    this._call = call;
-  }
-
-  get token(): Address {
-    return this._call.inputValues[0].value.toAddress();
-  }
-}
-
-export class PayAuctionWinnerCall__Outputs {
-  _call: PayAuctionWinnerCall;
-
-  constructor(call: PayAuctionWinnerCall) {
-    this._call = call;
   }
 }
 

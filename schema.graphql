@@ -56,3 +56,30 @@ type Dividends @entity(immutable: true) {
   stakedAmount: BigInt!
   timestamp: BigInt!
 }
+
+type Auction @entity(immutable: false) {
+  id: String!
+  token: Bytes!
+  amount: BigInt!
+  highestBid: BigInt!
+  highestBidder: Bytes!
+  startTime: BigInt!
+  isClaimed: Boolean!
+  participants: [AuctionsParticipant!] @derivedFrom(field: "auctionId")
+}
+
+type AuctionsParticipant @entity(immutable: false) {
+  id: String!
+  auctionId: Auction! @link
+  user: Bytes!
+  bid: BigInt!
+}
+
+type AuctionsHistory @entity(immutable: true) {
+  id: String!
+  token: Bytes!
+  amount: BigInt!
+  highestBid: BigInt!
+  highestBidder: Bytes!
+  startTime: BigInt!
+}

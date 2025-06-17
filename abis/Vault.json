@@ -9,9 +9,40 @@
         "name": "apeImplementation",
         "type": "address",
         "internalType": "address"
-      }
+      },
+      { "name": "weth", "type": "address", "internalType": "address" }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "APE_IMPLEMENTATION",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ORACLE",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "address", "internalType": "contract Oracle" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SIR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SYSTEM_CONTROL",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -61,7 +92,8 @@
           { "name": "leverageTier", "type": "int8", "internalType": "int8" }
         ]
       },
-      { "name": "amount", "type": "uint256", "internalType": "uint256" }
+      { "name": "amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "deadline", "type": "uint40", "internalType": "uint40" }
     ],
     "outputs": [{ "name": "", "type": "uint144", "internalType": "uint144" }],
     "stateMutability": "nonpayable"
@@ -75,29 +107,6 @@
     ],
     "outputs": [{ "name": "", "type": "uint80", "internalType": "uint80" }],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "collateralStates",
-    "inputs": [
-      { "name": "token", "type": "address", "internalType": "address" }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "tuple",
-        "internalType": "struct SirStructs.CollateralState",
-        "components": [
-          {
-            "name": "totalFeesToStakers",
-            "type": "uint112",
-            "internalType": "uint112"
-          },
-          { "name": "total", "type": "uint144", "internalType": "uint144" }
-        ]
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -207,10 +216,16 @@
         ]
       },
       {
-        "name": "collateralToDeposit",
+        "name": "amountToDeposit",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "collateralToDepositMin",
         "type": "uint144",
         "internalType": "uint144"
-      }
+      },
+      { "name": "deadline", "type": "uint40", "internalType": "uint40" }
     ],
     "outputs": [
       { "name": "amount", "type": "uint256", "internalType": "uint256" }
@@ -299,12 +314,38 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "",
+        "name": "systemParams_",
         "type": "tuple",
         "internalType": "struct SirStructs.SystemParameters",
         "components": [
-          { "name": "baseFee", "type": "uint16", "internalType": "uint16" },
-          { "name": "lpFee", "type": "uint16", "internalType": "uint16" },
+          {
+            "name": "baseFee",
+            "type": "tuple",
+            "internalType": "struct SirStructs.FeeStructure",
+            "components": [
+              { "name": "fee", "type": "uint16", "internalType": "uint16" },
+              { "name": "feeNew", "type": "uint16", "internalType": "uint16" },
+              {
+                "name": "timestampUpdate",
+                "type": "uint40",
+                "internalType": "uint40"
+              }
+            ]
+          },
+          {
+            "name": "lpFee",
+            "type": "tuple",
+            "internalType": "struct SirStructs.FeeStructure",
+            "components": [
+              { "name": "fee", "type": "uint16", "internalType": "uint16" },
+              { "name": "feeNew", "type": "uint16", "internalType": "uint16" },
+              {
+                "name": "timestampUpdate",
+                "type": "uint40",
+                "internalType": "uint40"
+              }
+            ]
+          },
           { "name": "mintingStopped", "type": "bool", "internalType": "bool" },
           {
             "name": "cumulativeTax",
@@ -314,6 +355,15 @@
         ]
       }
     ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalReserves",
+    "inputs": [
+      { "name": "collateral", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
@@ -334,6 +384,17 @@
     ],
     "outputs": [{ "name": "", "type": "uint80", "internalType": "uint80" }],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "uniswapV3SwapCallback",
+    "inputs": [
+      { "name": "amount0Delta", "type": "int256", "internalType": "int256" },
+      { "name": "amount1Delta", "type": "int256", "internalType": "int256" },
+      { "name": "data", "type": "bytes", "internalType": "bytes" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -422,8 +483,8 @@
     "outputs": [
       {
         "name": "totalFeesToStakers",
-        "type": "uint112",
-        "internalType": "uint112"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -467,7 +528,7 @@
   },
   {
     "type": "event",
-    "name": "Burn",
+    "name": "ReservesChanged",
     "inputs": [
       {
         "name": "vaultId",
@@ -482,75 +543,19 @@
         "internalType": "bool"
       },
       {
-        "name": "collateralWithdrawn",
-        "type": "uint144",
-        "indexed": false,
-        "internalType": "uint144"
-      },
-      {
-        "name": "collateralFeeToStakers",
-        "type": "uint144",
-        "indexed": false,
-        "internalType": "uint144"
-      },
-      {
-        "name": "collateralFeeToLPers",
-        "type": "uint144",
-        "indexed": false,
-        "internalType": "uint144"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "FeesToStakers",
-    "inputs": [
-      {
-        "name": "collateralToken",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "totalFeesToStakers",
-        "type": "uint112",
-        "indexed": false,
-        "internalType": "uint112"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Mint",
-    "inputs": [
-      {
-        "name": "vaultId",
-        "type": "uint48",
-        "indexed": true,
-        "internalType": "uint48"
-      },
-      {
-        "name": "isAPE",
+        "name": "isMint",
         "type": "bool",
         "indexed": false,
         "internalType": "bool"
       },
       {
-        "name": "collateralIn",
+        "name": "reserveLPers",
         "type": "uint144",
         "indexed": false,
         "internalType": "uint144"
       },
       {
-        "name": "collateralFeeToStakers",
-        "type": "uint144",
-        "indexed": false,
-        "internalType": "uint144"
-      },
-      {
-        "name": "collateralFeeToLPers",
+        "name": "reserveApes",
         "type": "uint144",
         "indexed": false,
         "internalType": "uint144"
@@ -676,9 +681,20 @@
     ],
     "anonymous": false
   },
+  { "type": "error", "name": "AmountTooLow", "inputs": [] },
+  { "type": "error", "name": "DeadlineExceeded", "inputs": [] },
+  { "type": "error", "name": "ExcessiveDeposit", "inputs": [] },
+  {
+    "type": "error",
+    "name": "InsufficientCollateralReceivedFromUniswap",
+    "inputs": []
+  },
+  { "type": "error", "name": "InsufficientDeposit", "inputs": [] },
   { "type": "error", "name": "LengthMismatch", "inputs": [] },
+  { "type": "error", "name": "Locked", "inputs": [] },
   { "type": "error", "name": "NotAWETHVault", "inputs": [] },
   { "type": "error", "name": "NotAuthorized", "inputs": [] },
   { "type": "error", "name": "TEAMaxSupplyExceeded", "inputs": [] },
+  { "type": "error", "name": "TransferToZeroAddress", "inputs": [] },
   { "type": "error", "name": "UnsafeRecipient", "inputs": [] }
 ]

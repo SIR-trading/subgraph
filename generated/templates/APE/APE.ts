@@ -85,12 +85,8 @@ export class APE__burnResultFeesStruct extends ethereum.Tuple {
     return this[1].toBigInt();
   }
 
-  get collateralFeeToGentlemen(): BigInt {
+  get collateralFeeToLPers(): BigInt {
     return this[2].toBigInt();
-  }
-
-  get collateralFeeToProtocol(): BigInt {
-    return this[3].toBigInt();
   }
 }
 
@@ -159,12 +155,8 @@ export class APE__mintResultFeesStruct extends ethereum.Tuple {
     return this[1].toBigInt();
   }
 
-  get collateralFeeToGentlemen(): BigInt {
+  get collateralFeeToLPers(): BigInt {
     return this[2].toBigInt();
-  }
-
-  get collateralFeeToProtocol(): BigInt {
-    return this[3].toBigInt();
   }
 }
 
@@ -318,7 +310,7 @@ export class APE extends ethereum.SmartContract {
   ): APE__burnResult {
     let result = super.call(
       "burn",
-      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),(uint144,uint144,uint144,uint144))",
+      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),(uint144,uint144,uint144))",
       [
         ethereum.Value.fromAddress(from),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -345,7 +337,7 @@ export class APE extends ethereum.SmartContract {
   ): ethereum.CallResult<APE__burnResult> {
     let result = super.tryCall(
       "burn",
-      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),(uint144,uint144,uint144,uint144))",
+      "burn(address,uint16,uint8,(uint144,uint144,int64),uint256):((uint144,uint144,int64),(uint144,uint144,uint144))",
       [
         ethereum.Value.fromAddress(from),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -421,6 +413,70 @@ export class APE extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toI32());
   }
 
+  decreaseAllowance(spender: Address, amount: BigInt): boolean {
+    let result = super.call(
+      "decreaseAllowance",
+      "decreaseAllowance(address,uint256):(bool)",
+      [
+        ethereum.Value.fromAddress(spender),
+        ethereum.Value.fromUnsignedBigInt(amount),
+      ],
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_decreaseAllowance(
+    spender: Address,
+    amount: BigInt,
+  ): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "decreaseAllowance",
+      "decreaseAllowance(address,uint256):(bool)",
+      [
+        ethereum.Value.fromAddress(spender),
+        ethereum.Value.fromUnsignedBigInt(amount),
+      ],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  increaseAllowance(spender: Address, amount: BigInt): boolean {
+    let result = super.call(
+      "increaseAllowance",
+      "increaseAllowance(address,uint256):(bool)",
+      [
+        ethereum.Value.fromAddress(spender),
+        ethereum.Value.fromUnsignedBigInt(amount),
+      ],
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_increaseAllowance(
+    spender: Address,
+    amount: BigInt,
+  ): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "increaseAllowance",
+      "increaseAllowance(address,uint256):(bool)",
+      [
+        ethereum.Value.fromAddress(spender),
+        ethereum.Value.fromUnsignedBigInt(amount),
+      ],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
   leverageTier(): i32 {
     let result = super.call("leverageTier", "leverageTier():(int8)", []);
 
@@ -445,7 +501,7 @@ export class APE extends ethereum.SmartContract {
   ): APE__mintResult {
     let result = super.call(
       "mint",
-      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),(uint144,uint144,uint144,uint144),uint256)",
+      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),(uint144,uint144,uint144),uint256)",
       [
         ethereum.Value.fromAddress(to),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -473,7 +529,7 @@ export class APE extends ethereum.SmartContract {
   ): ethereum.CallResult<APE__mintResult> {
     let result = super.tryCall(
       "mint",
-      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),(uint144,uint144,uint144,uint144),uint256)",
+      "mint(address,uint16,uint8,(uint144,uint144,int64),uint144):((uint144,uint144,int64),(uint144,uint144,uint144),uint256)",
       [
         ethereum.Value.fromAddress(to),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(baseFee)),
@@ -779,12 +835,84 @@ export class BurnCallFeesStruct extends ethereum.Tuple {
     return this[1].toBigInt();
   }
 
-  get collateralFeeToGentlemen(): BigInt {
+  get collateralFeeToLPers(): BigInt {
     return this[2].toBigInt();
   }
+}
 
-  get collateralFeeToProtocol(): BigInt {
-    return this[3].toBigInt();
+export class DecreaseAllowanceCall extends ethereum.Call {
+  get inputs(): DecreaseAllowanceCall__Inputs {
+    return new DecreaseAllowanceCall__Inputs(this);
+  }
+
+  get outputs(): DecreaseAllowanceCall__Outputs {
+    return new DecreaseAllowanceCall__Outputs(this);
+  }
+}
+
+export class DecreaseAllowanceCall__Inputs {
+  _call: DecreaseAllowanceCall;
+
+  constructor(call: DecreaseAllowanceCall) {
+    this._call = call;
+  }
+
+  get spender(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+}
+
+export class DecreaseAllowanceCall__Outputs {
+  _call: DecreaseAllowanceCall;
+
+  constructor(call: DecreaseAllowanceCall) {
+    this._call = call;
+  }
+
+  get value0(): boolean {
+    return this._call.outputValues[0].value.toBoolean();
+  }
+}
+
+export class IncreaseAllowanceCall extends ethereum.Call {
+  get inputs(): IncreaseAllowanceCall__Inputs {
+    return new IncreaseAllowanceCall__Inputs(this);
+  }
+
+  get outputs(): IncreaseAllowanceCall__Outputs {
+    return new IncreaseAllowanceCall__Outputs(this);
+  }
+}
+
+export class IncreaseAllowanceCall__Inputs {
+  _call: IncreaseAllowanceCall;
+
+  constructor(call: IncreaseAllowanceCall) {
+    this._call = call;
+  }
+
+  get spender(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+}
+
+export class IncreaseAllowanceCall__Outputs {
+  _call: IncreaseAllowanceCall;
+
+  constructor(call: IncreaseAllowanceCall) {
+    this._call = call;
+  }
+
+  get value0(): boolean {
+    return this._call.outputValues[0].value.toBoolean();
   }
 }
 
@@ -935,12 +1063,8 @@ export class MintCallFeesStruct extends ethereum.Tuple {
     return this[1].toBigInt();
   }
 
-  get collateralFeeToGentlemen(): BigInt {
+  get collateralFeeToLPers(): BigInt {
     return this[2].toBigInt();
-  }
-
-  get collateralFeeToProtocol(): BigInt {
-    return this[3].toBigInt();
   }
 }
 
