@@ -1,5 +1,5 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { Mint, Burn, VaultNewTax } from "../../generated/Vault/Vault";
+import { VaultNewTax } from "../../generated/Vault/Vault";
 import { Vault } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
@@ -7,11 +7,12 @@ import { APE } from "../../generated/templates";
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 import { USDC, WETH, getUsdPriceWeth, quoteToken } from "../helpers";
+import { ReservesChanged } from "../../generated/Claims/Vault";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
   const tax = BigInt.fromU64(event.params.tax).times(
-    BigInt.fromU32(multiplier),
+    BigInt.fromU32(multiplier)
   );
   const cumulativeTax = BigInt.fromU64(event.params.cumTax);
   const contract = Sir.bind(Address.fromString(sirAddress));
@@ -55,7 +56,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   context.setString("collateralSymbol", collateralSymbol);
   context.setString(
     "collateralToken",
-    event.params.collateralToken.toHexString(),
+    event.params.collateralToken.toHexString()
   );
 
   context.setString("debtSymbol", debtSymbol);
@@ -90,22 +91,31 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   }
 }
 
-export function handleMint(event: Mint): void {
+export function handleReservesChanged(event: ReservesChanged): void {
   const params = event.params;
-  const fee = event.params.collateralFeeToLPers;
-  const total = params.collateralIn.plus(fee);
+  const isMint = params.isMint;
+
+  if (isMint) {
+    handleMint(event);
+  } else {
+    handleBurn(event);
+  }
+}
+
+export function handleMint(event: ReservesChanged): void {
+  const params = event.params;
+  const fee = event.params.reserveLPers;
+  const total = params.reserveApes.plus(fee);
 
   const vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
     if (event.params.isAPE) {
-      vault.apeCollateral = vault.apeCollateral.plus(params.collateralIn);
+      vault.apeCollateral = vault.apeCollateral.plus(params.reserveApes);
 
-      vault.teaCollateral = vault.teaCollateral.plus(
-        event.params.collateralFeeToLPers,
-      );
+      vault.teaCollateral = vault.teaCollateral.plus(event.params.reserveLPers);
     } else {
       vault.teaCollateral = vault.teaCollateral.plus(
-        params.collateralIn.plus(params.collateralFeeToLPers),
+        params.reserveApes.plus(params.reserveLPers)
       );
     }
     vault.totalValue = vault.totalValue.plus(total);
@@ -121,28 +131,22 @@ export function handleMint(event: Mint): void {
   }
 }
 
-export function handleBurn(event: Burn): void {
+export function handleBurn(event: ReservesChanged): void {
   const params = event.params;
 
-  const collateralOut = params.collateralWithdrawn.plus(
-    params.collateralFeeToStakers,
-  );
+  const collateralOut = params.reserveApes.plus(params.reserveLPers);
 
   const vault = Vault.load(event.params.vaultId.toHexString());
 
   if (vault) {
     if (event.params.isAPE) {
       vault.apeCollateral = vault.apeCollateral.minus(
-        params.collateralWithdrawn.plus(
-          params.collateralFeeToStakers.plus(params.collateralFeeToLPers),
-        ),
+        params.reserveApes.plus(params.reserveLPers.plus(params.reserveLPers))
       );
-      vault.teaCollateral = vault.teaCollateral.plus(
-        params.collateralFeeToLPers,
-      );
+      vault.teaCollateral = vault.teaCollateral.plus(params.reserveLPers);
     } else {
       vault.teaCollateral = vault.teaCollateral.minus(
-        params.collateralWithdrawn.plus(params.collateralFeeToStakers),
+        params.reserveApes.plus(params.reserveLPers)
       );
     }
     vault.totalValue = vault.totalValue.minus(collateralOut);

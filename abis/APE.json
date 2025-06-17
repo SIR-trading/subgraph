@@ -96,12 +96,7 @@
             "internalType": "uint144"
           },
           {
-            "name": "collateralFeeToGentlemen",
-            "type": "uint144",
-            "internalType": "uint144"
-          },
-          {
-            "name": "collateralFeeToProtocol",
+            "name": "collateralFeeToLPers",
             "type": "uint144",
             "internalType": "uint144"
           }
@@ -130,6 +125,26 @@
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "decreaseAllowance",
+    "inputs": [
+      { "name": "spender", "type": "address", "internalType": "address" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "increaseAllowance",
+    "inputs": [
+      { "name": "spender", "type": "address", "internalType": "address" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -221,12 +236,7 @@
             "internalType": "uint144"
           },
           {
-            "name": "collateralFeeToGentlemen",
-            "type": "uint144",
-            "internalType": "uint144"
-          },
-          {
-            "name": "collateralFeeToProtocol",
+            "name": "collateralFeeToLPers",
             "type": "uint144",
             "internalType": "uint144"
           }
@@ -351,6 +361,6 @@
     "anonymous": false
   },
   { "type": "error", "name": "InvalidSigner", "inputs": [] },
-  { "type": "error", "name": "PermitDeadlineExpired", "inputs": [] }
+  { "type": "error", "name": "PermitDeadlineExpired", "inputs": [] },
+  { "type": "error", "name": "TransferToZeroAddress", "inputs": [] }
 ]
-

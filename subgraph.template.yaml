@@ -76,10 +76,8 @@ dataSources:
         - name: Quoter 
           file: ./abis/Quoter.json
       eventHandlers:
-        - event: Mint(indexed uint48,bool,uint144,uint144,uint144)
-          handler: handleMint
-        - event: Burn(indexed uint48,bool,uint144,uint144,uint144)
-          handler: handleBurn
+        - event: ReservesChanged(indexed uint48,bool,bool,uint144,uint144)
+          handler: handleReservesChanged
         - event: VaultNewTax(indexed uint48,uint8,uint16)
           handler: handleVaultTax
       file: ./src/mappings/vault.ts
