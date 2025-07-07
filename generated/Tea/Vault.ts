@@ -36,6 +36,90 @@ export class ApprovalForAll__Params {
   }
 }
 
+export class Burn extends ethereum.Event {
+  get params(): Burn__Params {
+    return new Burn__Params(this);
+  }
+}
+
+export class Burn__Params {
+  _event: Burn;
+
+  constructor(event: Burn) {
+    this._event = event;
+  }
+
+  get vaultId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get burner(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get isAPE(): boolean {
+    return this._event.parameters[2].value.toBoolean();
+  }
+
+  get tokenIn(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get collateralWithdrawn(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
+  }
+
+  get collateralFeeToLPers(): BigInt {
+    return this._event.parameters[6].value.toBigInt();
+  }
+}
+
+export class Mint extends ethereum.Event {
+  get params(): Mint__Params {
+    return new Mint__Params(this);
+  }
+}
+
+export class Mint__Params {
+  _event: Mint;
+
+  constructor(event: Mint) {
+    this._event = event;
+  }
+
+  get vaultId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get minter(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get isAPE(): boolean {
+    return this._event.parameters[2].value.toBoolean();
+  }
+
+  get collateralIn(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get collateralFeeToStakers(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
+  }
+
+  get collateralFeeToLPers(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
+  }
+
+  get tokenOut(): BigInt {
+    return this._event.parameters[6].value.toBigInt();
+  }
+}
+
 export class ReservesChanged extends ethereum.Event {
   get params(): ReservesChanged__Params {
     return new ReservesChanged__Params(this);
@@ -53,20 +137,12 @@ export class ReservesChanged__Params {
     return this._event.parameters[0].value.toBigInt();
   }
 
-  get isAPE(): boolean {
-    return this._event.parameters[1].value.toBoolean();
-  }
-
-  get isMint(): boolean {
-    return this._event.parameters[2].value.toBoolean();
-  }
-
   get reserveLPers(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
+    return this._event.parameters[1].value.toBigInt();
   }
 
   get reserveApes(): BigInt {
-    return this._event.parameters[4].value.toBigInt();
+    return this._event.parameters[2].value.toBigInt();
   }
 }
 

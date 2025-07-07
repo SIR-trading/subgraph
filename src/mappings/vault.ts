@@ -1,20 +1,24 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { VaultNewTax } from "../../generated/Vault/Vault";
-import { Vault } from "../../generated/schema";
+import { ApePosition, Vault, ClosedApePosition } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 import { USDC, WETH, getUsdPriceWeth, quoteToken } from "../helpers";
-import { ReservesChanged } from "../../generated/Claims/Vault";
+import {
+  Burn,
+  Mint,
+  ReservesChanged,
+  VaultNewTax,
+} from "../../generated/Claims/Vault";
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
   const tax = BigInt.fromU64(event.params.tax).times(
     BigInt.fromU32(multiplier)
   );
-  const cumulativeTax = BigInt.fromU64(event.params.cumTax);
+  const cumulativeTax = BigInt.fromU64(event.params.cumulativeTax);
   const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
   let vault = Vault.load(event.params.vault.toHexString());
@@ -93,25 +97,14 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 
 export function handleReservesChanged(event: ReservesChanged): void {
   const params = event.params;
-  const isMint = params.isMint;
-
-  if (isMint) {
-    handleMint(event);
-  } else {
-    handleBurn(event);
-  }
-}
-
-export function handleMint(event: ReservesChanged): void {
-  const params = event.params;
   const total = params.reserveApes.plus(params.reserveLPers);
 
   const vault = Vault.load(event.params.vaultId.toHexString());
   if (vault) {
-    vault.apeCollateral = vault.apeCollateral.plus(params.reserveApes);
-    vault.teaCollateral = vault.teaCollateral.plus(params.reserveLPers);
+    vault.apeCollateral = params.reserveApes;
+    vault.teaCollateral = params.reserveLPers;
 
-    vault.totalValue = vault.totalValue.plus(total);
+    vault.totalValue = total;
 
     vault.totalValueUsd = getVaultUsdValue(vault);
     vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
@@ -124,26 +117,108 @@ export function handleMint(event: ReservesChanged): void {
   }
 }
 
-export function handleBurn(event: ReservesChanged): void {
-  const params = event.params;
-  const collateralOut = params.reserveApes.plus(params.reserveLPers);
-
+export function handleMint(event: Mint): void {
   const vault = Vault.load(event.params.vaultId.toHexString());
+  const user = event.params.minter.toHexString();
+  if (!vault) {
+    return;
+  }
 
-  if (vault) {
-    vault.apeCollateral = vault.apeCollateral.plus(params.reserveApes);
-    vault.teaCollateral = vault.teaCollateral.plus(params.reserveLPers);
+  const apePositionId = user + "-" + event.params.vaultId.toHexString();
 
-    vault.totalValue = vault.totalValue.minus(collateralOut);
-    vault.totalValueUsd = getVaultUsdValue(vault);
-    vault.totalVolumeUsd = vault.totalVolumeUsd.plus(getVaultUsdValue(vault));
+  let apePosition = ApePosition.load(apePositionId);
+  if (!apePosition) {
+    apePosition = new ApePosition(apePositionId);
+    apePosition.vaultId = event.params.vaultId.toHexString();
+    apePosition.user = event.params.minter;
+    apePosition.collateralTotal = BigInt.fromI32(0);
+    apePosition.dollarTotal = BigInt.fromI32(0);
+    apePosition.apeBalance = BigInt.fromI32(0);
+  }
 
-    if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-      vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
-    } else {
-      vault.sortKey = vault.totalVolumeUsd;
+  const collateralDeposited = event.params.collateralIn.plus(
+    event.params.collateralFeeToLPers.plus(event.params.collateralFeeToStakers)
+  );
+
+  const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken);
+
+  const dollarCollateralDeposited =
+    collateralDeposited.times(collateralPriceUsd);
+
+  // Current APE position update
+  apePosition.collateralTotal =
+    apePosition.collateralTotal.plus(collateralDeposited);
+  apePosition.dollarTotal = apePosition.dollarTotal.plus(
+    dollarCollateralDeposited
+  );
+  apePosition.apeBalance = apePosition.apeBalance.plus(event.params.tokenOut);
+
+  apePosition.save();
+}
+
+export function handleBurn(event: Burn): void {
+  const vault = Vault.load(event.params.vaultId.toHexString());
+  const user = event.params.burner.toHexString();
+  if (!vault) {
+    return;
+  }
+  const apePositionId = user + "-" + event.params.vaultId.toHexString();
+  const apePosition = ApePosition.load(apePositionId);
+  if (!apePosition) {
+    return;
+  }
+
+  const closedApePosition = new ClosedApePosition(
+    event.transaction.hash.toHexString()
+  );
+
+  closedApePosition.vaultId = event.params.vaultId.toHexString();
+  closedApePosition.user = event.params.burner;
+
+  const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken);
+
+  // Closed APE position update
+  closedApePosition.collateralDeposited = apePosition.collateralTotal
+    .times(event.params.tokenIn)
+    .div(apePosition.apeBalance);
+  closedApePosition.dollarDeposited = apePosition.dollarTotal
+    .times(event.params.tokenIn)
+    .div(apePosition.apeBalance);
+  closedApePosition.collateralWithdrawn = event.params.collateralWithdrawn;
+  closedApePosition.dollarWithdrawn =
+    closedApePosition.collateralWithdrawn.times(collateralPriceUsd);
+  closedApePosition.timestamp = event.block.timestamp;
+
+  // Current APE position update
+  apePosition.collateralTotal = apePosition.collateralTotal.minus(
+    closedApePosition.collateralDeposited
+  );
+  apePosition.dollarTotal = apePosition.dollarTotal.minus(
+    closedApePosition.dollarDeposited
+  );
+  apePosition.apeBalance = apePosition.apeBalance.minus(event.params.tokenIn);
+
+  closedApePosition.priceAtBurn = collateralPriceUsd;
+
+  apePosition.save();
+  closedApePosition.save();
+}
+
+function getCollateralUsdPrice(_token: string): BigInt {
+  const token = Address.fromString(_token);
+  if (token.equals(USDC)) {
+    return BigInt.fromI32(1).times(BigInt.fromI32(10).pow(18));
+  }
+  if (token.equals(WETH)) {
+    return quoteToken(WETH, USDC, 3000).value;
+  } else {
+    const priceFromUsdc = quoteToken(token, USDC, 3000);
+    if (priceFromUsdc.value.equals(BigInt.fromI32(0))) {
+      // maybe there is not usdc/collateral pool
+      // try WETH instead
+      return getUsdPriceWeth(_token);
     }
-    vault.save();
+    return priceFromUsdc.value;
   }
 }
 
@@ -158,7 +233,7 @@ function getVaultUsdValue(Vault: Vault): BigInt {
       .div(BigInt.fromI32(10).pow(18));
   } else {
     const decimals = ERC20.bind(
-      Address.fromString(Vault.collateralToken),
+      Address.fromString(Vault.collateralToken)
     ).decimals();
     const priceFromUsdc = getUsdcPrice(Vault, u8(decimals));
     if (priceFromUsdc.equals(BigInt.fromI32(0))) {
