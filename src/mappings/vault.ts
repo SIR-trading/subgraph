@@ -190,6 +190,9 @@ export function handleBurn(event: Burn): void {
     .times(collateralPriceUsd)
     .div(BigInt.fromI32(10).pow(u8(6))); // remove USDC decimals
   closedApePosition.timestamp = event.block.timestamp;
+  closedApePosition.decimal = ERC20.bind(
+    Address.fromString(vault.collateralToken)
+  ).decimals();
 
   // Current APE position update
   apePosition.collateralTotal = apePosition.collateralTotal.minus(

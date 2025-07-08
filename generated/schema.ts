@@ -1304,6 +1304,19 @@ export class ClosedApePosition extends Entity {
   set timestamp(value: BigInt) {
     this.set("timestamp", Value.fromBigInt(value));
   }
+
+  get decimal(): i32 {
+    let value = this.get("decimal");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set decimal(value: i32) {
+    this.set("decimal", Value.fromI32(value));
+  }
 }
 
 export class AuctionsParticipantLoader extends Entity {
