@@ -102,5 +102,4 @@ type ClosedApePosition @entity(immutable: true) {
   collateralWithdrawn: BigInt!
   dollarWithdrawn: BigInt!
   timestamp: BigInt!
-  priceAtBurn: BigInt! # Demo purpose, to be removed later
 }

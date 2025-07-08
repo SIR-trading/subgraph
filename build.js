@@ -12,7 +12,7 @@ const replaced = subgraphTemplate
     process.env.NETWORK === "mainnet"
       ? "20830200"
       : process.env.NETWORK === "sepolia"
-      ? "8511891"
+      ? "8619003"
       : "0"
   );
 

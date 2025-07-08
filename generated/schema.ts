@@ -1304,19 +1304,6 @@ export class ClosedApePosition extends Entity {
   set timestamp(value: BigInt) {
     this.set("timestamp", Value.fromBigInt(value));
   }
-
-  get priceAtBurn(): BigInt {
-    let value = this.get("priceAtBurn");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set priceAtBurn(value: BigInt) {
-    this.set("priceAtBurn", Value.fromBigInt(value));
-  }
 }
 
 export class AuctionsParticipantLoader extends Entity {

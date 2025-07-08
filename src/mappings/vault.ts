@@ -142,8 +142,9 @@ export function handleMint(event: Mint): void {
 
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken);
 
-  const dollarCollateralDeposited =
-    collateralDeposited.times(collateralPriceUsd);
+  const dollarCollateralDeposited = collateralDeposited
+    .times(collateralPriceUsd)
+    .div(BigInt.fromI32(10).pow(u8(6))); // remove USDC decimals
 
   // Current APE position update
   apePosition.collateralTotal =
@@ -185,8 +186,9 @@ export function handleBurn(event: Burn): void {
     .times(event.params.tokenIn)
     .div(apePosition.apeBalance);
   closedApePosition.collateralWithdrawn = event.params.collateralWithdrawn;
-  closedApePosition.dollarWithdrawn =
-    closedApePosition.collateralWithdrawn.times(collateralPriceUsd);
+  closedApePosition.dollarWithdrawn = closedApePosition.collateralWithdrawn
+    .times(collateralPriceUsd)
+    .div(BigInt.fromI32(10).pow(u8(6))); // remove USDC decimals
   closedApePosition.timestamp = event.block.timestamp;
 
   // Current APE position update
@@ -198,8 +200,6 @@ export function handleBurn(event: Burn): void {
   );
   apePosition.apeBalance = apePosition.apeBalance.minus(event.params.tokenIn);
 
-  closedApePosition.priceAtBurn = collateralPriceUsd;
-
   apePosition.save();
   closedApePosition.save();
 }
@@ -207,7 +207,7 @@ export function handleBurn(event: Burn): void {
 function getCollateralUsdPrice(_token: string): BigInt {
   const token = Address.fromString(_token);
   if (token.equals(USDC)) {
-    return BigInt.fromI32(1).times(BigInt.fromI32(10).pow(18));
+    return BigInt.fromI32(1).times(BigInt.fromI32(10).pow(6));
   }
   if (token.equals(WETH)) {
     return quoteToken(WETH, USDC, 3000).value;
