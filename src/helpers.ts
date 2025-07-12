@@ -2,6 +2,45 @@ import { Address, BigInt, BigDecimal, ethereum } from "@graphprotocol/graph-ts";
 import { usdcAddress, wethAddress, uniswapV3FactoryAddress } from "./contracts";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
 
+// Price cache to avoid redundant calculations within the same block
+class PriceCache {
+  private blockNumber: BigInt;
+  private prices: Map<string, BigDecimal>;
+
+  constructor() {
+    this.blockNumber = BigInt.fromI32(0);
+    this.prices = new Map<string, BigDecimal>();
+  }
+
+  get(tokenAddress: Address, currentBlock: BigInt): BigDecimal | null {
+    if (!this.blockNumber.equals(currentBlock)) {
+      this.clear();
+      this.blockNumber = currentBlock;
+      return null;
+    }
+    
+    const key = tokenAddress.toHexString();
+    return this.prices.has(key) ? this.prices.get(key) : null;
+  }
+
+  set(tokenAddress: Address, price: BigDecimal, currentBlock: BigInt): void {
+    if (!this.blockNumber.equals(currentBlock)) {
+      this.clear();
+      this.blockNumber = currentBlock;
+    }
+    
+    const key = tokenAddress.toHexString();
+    this.prices.set(key, price);
+  }
+
+  private clear(): void {
+    this.prices = new Map<string, BigDecimal>();
+  }
+}
+
+// Global price cache instance
+const priceCache = new PriceCache();
+
 // Uniswap V3 Factory interface
 class UniswapV3Factory extends ethereum.SmartContract {
   static bind(address: Address): UniswapV3Factory {
@@ -112,26 +151,40 @@ export const USDC = Address.fromString(usdcAddress);
 export const WETH = Address.fromString(wethAddress);
 export const UNISWAP_V3_FACTORY = Address.fromString(uniswapV3FactoryAddress);
 
-export function getTokenUsdPrice(tokenAddress: Address): BigDecimal {
+export function getTokenUsdPrice(tokenAddress: Address, blockNumber: BigInt | null = null): BigDecimal {
+  // Use cached price if available for the current block
+  if (blockNumber) {
+    const cachedPrice = priceCache.get(tokenAddress, blockNumber);
+    if (cachedPrice !== null) {
+      return cachedPrice;
+    }
+  }
+
+  let price: BigDecimal;
+  
   if (tokenAddress.equals(USDC)) {
-    return BigDecimal.fromString("1");
+    price = BigDecimal.fromString("1");
+  } else if (tokenAddress.equals(WETH)) {
+    price = getBestPoolPrice(WETH, USDC);
+  } else {
+    // Try direct USDC pair first
+    const directPrice = getBestPoolPrice(tokenAddress, USDC);
+    if (directPrice.gt(BigDecimal.fromString("0"))) {
+      price = directPrice;
+    } else {
+      // Fallback to WETH route
+      const wethToUsdcPrice = getBestPoolPrice(WETH, USDC);
+      const tokenToWethPrice = getBestPoolPrice(tokenAddress, WETH);
+      price = tokenToWethPrice.times(wethToUsdcPrice);
+    }
   }
   
-  if (tokenAddress.equals(WETH)) {
-    return getBestPoolPrice(WETH, USDC);
+  // Cache the price if block number is provided
+  if (blockNumber) {
+    priceCache.set(tokenAddress, price, blockNumber);
   }
   
-  // Try direct USDC pair first
-  const directPrice = getBestPoolPrice(tokenAddress, USDC);
-  if (directPrice.gt(BigDecimal.fromString("0"))) {
-    return directPrice;
-  }
-  
-  // Fallback to WETH route
-  const wethToUsdcPrice = getBestPoolPrice(WETH, USDC);
-  const tokenToWethPrice = getBestPoolPrice(tokenAddress, WETH);
-  
-  return tokenToWethPrice.times(wethToUsdcPrice);
+  return price;
 }
 
 /**
@@ -142,10 +195,6 @@ export function getBestPoolPrice(
   tokenIn: Address,
   tokenOut: Address,
 ): BigDecimal {
-  if (tokenIn.equals(tokenOut)) {
-    return BigDecimal.fromString("1");
-  }
-  
   const factory = UniswapV3Factory.bind(UNISWAP_V3_FACTORY);
   
   // Common Uniswap V3 fee tiers in order of typical liquidity
@@ -248,4 +297,35 @@ export function priceToScaledBigInt(price: BigDecimal, decimals: i32): BigInt {
   const integerPart = priceString.split('.')[0];
   
   return BigInt.fromString(integerPart);
+}
+
+/**
+ * Generates a deterministic ID by combining two hex strings
+ * More efficient than string concatenation
+ */
+export function generateCompositeId(part1: string, part2: string): string {
+  return part1 + "-" + part2;
+}
+
+/**
+ * Generates a user position ID for TEA tokens
+ */
+export function generateUserPositionId(userAddress: Address, vaultId: BigInt): string {
+  return generateCompositeId(userAddress.toHexString(), vaultId.toHexString());
+}
+
+/**
+ * Generates an APE position ID
+ */
+export function generateApePositionId(userAddress: Address, vaultId: BigInt): string {
+  return generateCompositeId(userAddress.toHexString(), vaultId.toHexString());
+}
+
+/**
+ * Calculates collateral USD price with caching
+ */
+export function getCollateralUsdPrice(tokenAddress: string, blockNumber: BigInt): BigInt {
+  const token = Address.fromString(tokenAddress);
+  const priceUsd = getTokenUsdPrice(token, blockNumber);
+  return priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
 }

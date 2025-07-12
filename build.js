@@ -56,7 +56,6 @@ function generateContractsFile() {
 
 export const vaultAddress = "${process.env.VAULT_ADDRESS}";
 export const sirAddress = "${process.env.SIR_ADDRESS}";
-export const zeroAddress = "0x0000000000000000000000000000000000000000";
 
 // Uniswap V3 Factory (same address on all networks)
 export const uniswapV3FactoryAddress = "${addresses.uniswapV3Factory}";

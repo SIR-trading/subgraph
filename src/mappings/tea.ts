@@ -13,8 +13,8 @@ import {
 } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
-import { sirAddress, vaultAddress, zeroAddress } from "../contracts";
-import { getTokenUsdPrice } from "../helpers";
+import { sirAddress, vaultAddress } from "../contracts";
+import { getTokenUsdPrice, generateUserPositionId } from "../helpers";
 
 /**
  * Handles ERC1155 single token transfers for TEA positions
@@ -37,8 +37,8 @@ export function handleDividendsPaid(event: DividendsPaid): void {
   // Create unique entity ID using transaction hash
   const dividendsEntity = new Dividends(event.transaction.hash.toHex());
   
-  // Get current SIR token price in USD via WETH
-  const sirTokenUsdPrice = getTokenUsdPrice(Address.fromString(sirAddress));
+  // Get current SIR token price in USD via WETH with caching
+  const sirTokenUsdPrice = getTokenUsdPrice(Address.fromString(sirAddress), event.block.number);
   
   // Set entity properties from event parameters
   dividendsEntity.timestamp = event.block.timestamp;
@@ -66,7 +66,7 @@ export function handleClaim(event: RewardsClaimed): void {
   const hasNoUnclaimedRewards = userUnclaimedRewards.equals(BigInt.fromI32(0));
   
   if (hasNoTeaTokens && hasNoUnclaimedRewards) {
-    const userPositionId = userAddress.toHexString() + vaultId.toHexString();
+    const userPositionId = generateUserPositionId(userAddress, vaultId);
     store.remove("UserPositionTea", userPositionId);
   }
 }
@@ -105,19 +105,20 @@ function updateTotalTeaSupply(
   recipientAddress: Address,
   senderAddress: Address,
   transferAmount: BigInt,
-  zeroAddress: Address,
 ): void {
   const vault = VaultSchema.load(vaultId.toHexString());
   if (!vault) return;
 
+  const zeroAddr = Address.zero();
+
   // Tokens minted (from zero address) - increase total supply
-  if (senderAddress.equals(zeroAddress)) {
+  if (senderAddress.equals(zeroAddr)) {
     vault.totalTea = vault.totalTea.plus(transferAmount);
     vault.save();
   }
 
   // Tokens burned (to zero address) - decrease total supply
-  if (recipientAddress.equals(zeroAddress)) {
+  if (recipientAddress.equals(zeroAddr)) {
     vault.totalTea = vault.totalTea.minus(transferAmount);
     vault.save();
   }
@@ -132,7 +133,7 @@ function updateSenderPosition(
   transferAmount: BigInt,
   vaultContract: Vault,
 ): void {
-  const senderPositionId = senderAddress.toHexString() + vaultId.toHexString();
+  const senderPositionId = generateUserPositionId(senderAddress, vaultId);
   const senderPosition = UserPositionTea.load(senderPositionId);
   const unclaimedRewardsResult = vaultContract.try_unclaimedRewards(vaultId, senderAddress);
 
@@ -161,7 +162,7 @@ function updateRecipientPosition(
   transferAmount: BigInt,
   vaultContract: Vault,
 ): void {
-  const recipientPositionId = recipientAddress.toHexString() + vaultId.toHexString();
+  const recipientPositionId = generateUserPositionId(recipientAddress, vaultId);
   const existingPosition = UserPositionTea.load(recipientPositionId);
 
   if (existingPosition !== null) {
@@ -192,8 +193,8 @@ function createNewTeaPosition(
   const collateralTokenContract = ERC20.bind(collateralTokenAddress);
   const debtTokenContract = ERC20.bind(debtTokenAddress);
 
-  // Create new position entity
-  const positionId = userAddress.toHexString() + vaultId.toHexString();
+  // Create new position entity with optimized ID generation
+  const positionId = generateUserPositionId(userAddress, vaultId);
   const newPosition = new UserPositionTea(positionId);
   
   // Set position properties
@@ -226,13 +227,13 @@ function handleTeaTransfer(
 ): void {
   const vaultContract = Vault.bind(Address.fromString(vaultAddress));
   const vaultAddressBytes = Address.fromString(vaultAddress);
-  const zeroAddressBytes = Address.fromString(zeroAddress);
+  const zeroAddressBytes = Address.zero();
 
   // Update vault locked liquidity when tokens move to/from vault
   updateVaultLiquidity(vaultId, recipientAddress, senderAddress, transferAmount, vaultAddressBytes);
   
   // Update total TEA supply when tokens are minted/burned (zero address transfers)
-  updateTotalTeaSupply(vaultId, recipientAddress, senderAddress, transferAmount, zeroAddressBytes);
+  updateTotalTeaSupply(vaultId, recipientAddress, senderAddress, transferAmount);
   
   // Update sender's position
   updateSenderPosition(vaultId, senderAddress, transferAmount, vaultContract);
