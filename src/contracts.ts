@@ -1,6 +1,6 @@
 
-export const vaultAddress = "0x360e681DAA1608d53C8Dc2F88CFAa19f7CDfE749";
-export const sirAddress = "0xE4f0288D22d9509820411275a00357AaDF4672A6";
+export const vaultAddress = "0xD4aD288de412Ef61435BAb420dF9d5a61f6f0659";
+export const sirAddress = "0x7Fa77a8D7Fb89bad4df149912f9d3B0d449Ee63b";
 export const zeroAddress = "0x0000000000000000000000000000000000000000";
 export const quoterAddress = "0xe3c07ebF66b9D070b589bCCa30903891F71A92Be";
 export const usdcAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
