@@ -21,8 +21,6 @@ dataSources:
           file: ./abis/VaultExternal.json
         - name: ERC20
           file: ./abis/Erc20.json
-        - name: Quoter 
-          file: ./abis/Quoter.json
       eventHandlers:
         - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256,address)
           handler: handleVaultInitialized
@@ -45,8 +43,6 @@ dataSources:
           file: ./abis/Vault.json
         - name: ERC20
           file: ./abis/Erc20.json
-        - name: Quoter 
-          file: ./abis/Quoter.json
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleSingleTransfer
@@ -73,8 +69,6 @@ dataSources:
           file: ./abis/Erc20.json
         - name: Sir
           file: ./abis/Sir.json
-        - name: Quoter 
-          file: ./abis/Quoter.json
       eventHandlers:
         - event: ReservesChanged(indexed uint48,uint144,uint144)
           handler: handleReservesChanged
@@ -105,8 +99,6 @@ dataSources:
           file: ./abis/Sir.json
         - name: ERC20
           file: ./abis/Erc20.json
-        - name: Quoter 
-          file: ./abis/Quoter.json
       eventHandlers:
         - event: DividendsPaid(uint96,uint80)
           handler: handleDividendsPaid
@@ -133,8 +125,6 @@ dataSources:
           file: ./abis/Sir.json
         - name: ERC20
           file: ./abis/Erc20.json
-        - name: Quoter 
-          file: ./abis/Quoter.json
       eventHandlers:
         - event: AuctionStarted(indexed address,uint256)
           handler: handleAuctionStarted

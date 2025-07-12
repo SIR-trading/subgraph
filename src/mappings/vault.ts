@@ -3,9 +3,9 @@ import { ApePosition, Vault, ClosedApePosition } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
+import { Address, BigInt, DataSourceContext, BigDecimal } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
-import { USDC, WETH, getTokenUsdPriceViaWeth, getBestPriceQuote } from "../helpers";
+import { USDC, WETH, getTokenUsdPrice, priceToScaledBigInt, UNISWAP_V3_FACTORY } from "../helpers";
 import {
   Burn,
   Mint,
@@ -217,58 +217,44 @@ export function handleBurn(event: Burn): void {
 
 function getCollateralUsdPrice(_token: string): BigInt {
   const token = Address.fromString(_token);
-  if (token.equals(USDC)) {
-    return BigInt.fromI32(1).times(BigInt.fromI32(10).pow(6));
-  }
-  if (token.equals(WETH)) {
-    return getBestPriceQuote(WETH, USDC).priceQuote;
-  } else {
-    const priceFromUsdc = getBestPriceQuote(token, USDC);
-    if (priceFromUsdc.priceQuote.equals(BigInt.fromI32(0))) {
-      // maybe there is not usdc/collateral pool
-      // try WETH instead
-      return getTokenUsdPriceViaWeth(_token);
-    }
-    return priceFromUsdc.priceQuote;
-  }
+  const priceUsd = getTokenUsdPrice(token);
+  return priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
 }
 
 function getVaultUsdValue(Vault: Vault): BigInt {
-  if (Address.fromString(Vault.collateralToken).equals(USDC)) {
+  const collateralToken = Address.fromString(Vault.collateralToken);
+  const priceUsd = getTokenUsdPrice(collateralToken);
+  const priceScaled = priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
+  
+  if (collateralToken.equals(USDC)) {
     return Vault.totalValue;
   }
-  if (Address.fromString(Vault.collateralToken).equals(WETH)) {
-    const quoteUsdcPrice = getBestPriceQuote(WETH, USDC);
+  
+  if (collateralToken.equals(WETH)) {
     return Vault.totalValue
-      .times(quoteUsdcPrice.priceQuote)
+      .times(priceScaled)
       .div(BigInt.fromI32(10).pow(18));
   } else {
-    const decimals = ERC20.bind(
-      Address.fromString(Vault.collateralToken)
-    ).decimals();
-    const priceFromUsdc = getUsdcPrice(Vault, u8(decimals));
-    if (priceFromUsdc.equals(BigInt.fromI32(0))) {
-      // maybe there is not usdc/collateral pool
-      // try WETH instead
-      return getUsdPriceFromWethVault(Vault);
-    }
-    return priceFromUsdc;
+    const decimals = ERC20.bind(collateralToken).decimals();
+    return Vault.totalValue
+      .times(priceScaled)
+      .div(BigInt.fromI32(10).pow(decimals as u8));
   }
-}
-function getUsdPriceFromWethVault(vault: Vault): BigInt {
-  return getTokenUsdPriceViaWeth(vault.collateralToken);
 }
 function getUsdcPrice(Vault: Vault, collateralDecimals: u8): BigInt {
-  const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
   const CollateralAddress = Address.fromString(Vault.collateralToken);
-  const collateralPriceUsd = getBestPriceQuote(CollateralAddress, USDC);
-  if (collateralPriceUsd.priceQuote.equals(BigInt.fromI32(0))) {
+  const priceUsd = getTokenUsdPrice(CollateralAddress);
+  
+  if (priceUsd.equals(BigDecimal.fromString("0"))) {
     return BigInt.fromI32(0);
   }
-  // ======
+  
+  // Convert BigDecimal price to scaled BigInt for calculation
+  const priceScaled = priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
+  
   const totalValueUsd = Vault.totalValue
-    .times(collateralPriceUsd.priceQuote)
+    .times(priceScaled)
     .div(BigInt.fromI32(10).pow(collateralDecimals));
-  // =======
+  
   return totalValueUsd;
 }

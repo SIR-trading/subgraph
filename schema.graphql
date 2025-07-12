@@ -52,7 +52,7 @@ type UserPositionTea @entity(immutable: false) {
 type Dividends @entity(immutable: true) {
   id: String!
   ethAmount: BigInt!
-  sirUsdPrice: BigInt!
+  sirUsdPrice: BigDecimal!
   stakedAmount: BigInt!
   timestamp: BigInt!
 }

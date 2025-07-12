@@ -14,7 +14,7 @@ import {
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
 import { sirAddress, vaultAddress, zeroAddress } from "../contracts";
-import { getTokenUsdPriceViaWeth } from "../helpers";
+import { getTokenUsdPrice } from "../helpers";
 
 /**
  * Handles ERC1155 single token transfers for TEA positions
@@ -38,7 +38,7 @@ export function handleDividendsPaid(event: DividendsPaid): void {
   const dividendsEntity = new Dividends(event.transaction.hash.toHex());
   
   // Get current SIR token price in USD via WETH
-  const sirTokenUsdPrice = getTokenUsdPriceViaWeth(sirAddress);
+  const sirTokenUsdPrice = getTokenUsdPrice(Address.fromString(sirAddress));
   
   // Set entity properties from event parameters
   dividendsEntity.timestamp = event.block.timestamp;

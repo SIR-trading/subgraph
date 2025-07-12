@@ -708,17 +708,17 @@ export class Dividends extends Entity {
     this.set("ethAmount", Value.fromBigInt(value));
   }
 
-  get sirUsdPrice(): BigInt {
+  get sirUsdPrice(): BigDecimal {
     let value = this.get("sirUsdPrice");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
-      return value.toBigInt();
+      return value.toBigDecimal();
     }
   }
 
-  set sirUsdPrice(value: BigInt) {
-    this.set("sirUsdPrice", Value.fromBigInt(value));
+  set sirUsdPrice(value: BigDecimal) {
+    this.set("sirUsdPrice", Value.fromBigDecimal(value));
   }
 
   get stakedAmount(): BigInt {
