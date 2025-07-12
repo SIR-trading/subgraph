@@ -5,7 +5,7 @@ import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
-import { USDC, WETH, getUsdPriceWeth, quoteToken } from "../helpers";
+import { USDC, WETH, getTokenUsdPriceViaWeth, getBestPriceQuote } from "../helpers";
 import {
   Burn,
   Mint,
@@ -221,15 +221,15 @@ function getCollateralUsdPrice(_token: string): BigInt {
     return BigInt.fromI32(1).times(BigInt.fromI32(10).pow(6));
   }
   if (token.equals(WETH)) {
-    return quoteToken(WETH, USDC, 3000).value;
+    return getBestPriceQuote(WETH, USDC).priceQuote;
   } else {
-    const priceFromUsdc = quoteToken(token, USDC, 3000);
-    if (priceFromUsdc.value.equals(BigInt.fromI32(0))) {
+    const priceFromUsdc = getBestPriceQuote(token, USDC);
+    if (priceFromUsdc.priceQuote.equals(BigInt.fromI32(0))) {
       // maybe there is not usdc/collateral pool
       // try WETH instead
-      return getUsdPriceWeth(_token);
+      return getTokenUsdPriceViaWeth(_token);
     }
-    return priceFromUsdc.value;
+    return priceFromUsdc.priceQuote;
   }
 }
 
@@ -238,9 +238,9 @@ function getVaultUsdValue(Vault: Vault): BigInt {
     return Vault.totalValue;
   }
   if (Address.fromString(Vault.collateralToken).equals(WETH)) {
-    const quoteUsdcPrice = quoteToken(WETH, USDC, 3000);
+    const quoteUsdcPrice = getBestPriceQuote(WETH, USDC);
     return Vault.totalValue
-      .times(quoteUsdcPrice.value)
+      .times(quoteUsdcPrice.priceQuote)
       .div(BigInt.fromI32(10).pow(18));
   } else {
     const decimals = ERC20.bind(
@@ -256,18 +256,18 @@ function getVaultUsdValue(Vault: Vault): BigInt {
   }
 }
 function getUsdPriceFromWethVault(vault: Vault): BigInt {
-  return getUsdPriceWeth(vault.collateralToken);
+  return getTokenUsdPriceViaWeth(vault.collateralToken);
 }
 function getUsdcPrice(Vault: Vault, collateralDecimals: u8): BigInt {
   const USDC = Address.fromString("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
   const CollateralAddress = Address.fromString(Vault.collateralToken);
-  const collateralPriceUsd = quoteToken(CollateralAddress, USDC, 3000);
-  if (collateralPriceUsd.value.equals(BigInt.fromI32(0))) {
+  const collateralPriceUsd = getBestPriceQuote(CollateralAddress, USDC);
+  if (collateralPriceUsd.priceQuote.equals(BigInt.fromI32(0))) {
     return BigInt.fromI32(0);
   }
   // ======
   const totalValueUsd = Vault.totalValue
-    .times(collateralPriceUsd.value)
+    .times(collateralPriceUsd.priceQuote)
     .div(BigInt.fromI32(10).pow(collateralDecimals));
   // =======
   return totalValueUsd;
