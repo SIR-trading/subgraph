@@ -76,10 +76,14 @@ dataSources:
         - name: Quoter 
           file: ./abis/Quoter.json
       eventHandlers:
-        - event: ReservesChanged(indexed uint48,bool,bool,uint144,uint144)
+        - event: ReservesChanged(indexed uint48,uint144,uint144)
           handler: handleReservesChanged
         - event: VaultNewTax(indexed uint48,uint8,uint16)
           handler: handleVaultTax
+        - event: Burn(indexed uint48,indexed address,bool,uint256,uint144,uint144,uint144)
+          handler: handleBurn
+        - event: Mint(indexed uint48,indexed address,bool,uint144,uint144,uint144,uint256)
+          handler: handleMint
       file: ./src/mappings/vault.ts
   - kind: ethereum
     name: Claims

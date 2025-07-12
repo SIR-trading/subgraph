@@ -36,9 +36,15 @@
     ],
     "anonymous": false
   },
-  { "type": "error", "name": "DepositTooLarge", "inputs": [] },
   { "type": "error", "name": "LeverageTierOutOfRange", "inputs": [] },
+  {
+    "type": "error",
+    "name": "StringsInsufficientHexLength",
+    "inputs": [
+      { "name": "value", "type": "uint256", "internalType": "uint256" },
+      { "name": "length", "type": "uint256", "internalType": "uint256" }
+    ]
+  },
   { "type": "error", "name": "VaultAlreadyInitialized", "inputs": [] },
   { "type": "error", "name": "VaultDoesNotExist", "inputs": [] }
 ]
-
