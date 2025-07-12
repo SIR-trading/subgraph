@@ -118,6 +118,10 @@ export function handleReservesChanged(event: ReservesChanged): void {
 }
 
 export function handleMint(event: Mint): void {
+  if (event.params.isAPE === false) {
+    // this is not APE mint, so we do not handle it
+    return;
+  }
   const vault = Vault.load(event.params.vaultId.toHexString());
   const user = event.params.minter.toHexString();
   if (!vault) {
@@ -158,6 +162,10 @@ export function handleMint(event: Mint): void {
 }
 
 export function handleBurn(event: Burn): void {
+  if (event.params.isAPE === false) {
+    // this is not APE mint, so we do not handle it
+    return;
+  }
   const vault = Vault.load(event.params.vaultId.toHexString());
   const user = event.params.burner.toHexString();
   if (!vault) {
