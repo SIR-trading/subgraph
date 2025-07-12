@@ -8,7 +8,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   const debtSymbol = debtTokenContract.symbol();
   const collateralSymbol = collateralTokenContract.symbol();
   let vault = Vault.load(event.params.vaultId.toHexString());
-  APE.create(event.params.apeAddress);
+  APE.create(event.params.ape);
   if (vault) {
     return;
   } else {

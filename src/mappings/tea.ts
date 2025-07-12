@@ -15,6 +15,7 @@ import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
 import { sirAddress, vaultAddress, zeroAddress } from "../contracts";
 import { getTokenUsdPriceViaWeth } from "../helpers";
+
 /**
  * Handles ERC1155 single token transfers for TEA positions
  * Updates user balances and vault liquidity tracking
