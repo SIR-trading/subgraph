@@ -3,7 +3,7 @@ import { ApePosition, Vault, ClosedApePosition } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, BigDecimal, DataSourceContext } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, DataSourceContext, store } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice } from "../helpers";
 import { 
@@ -44,10 +44,10 @@ export function handleVaultTax(event: VaultNewTax): void {
   vault.save();
 }
 export function handleVaultInitialized(event: VaultInitialized): void {
-  const vaultId = event.params.vaultId.toHexString();
+  const vaultIdString = event.params.vaultId.toHexString();
   
   // Check if vault already exists to avoid duplicates
-  let vault = Vault.load(vaultId);
+  let vault = Vault.load(vaultIdString);
   if (vault) {
     return;
   }
@@ -72,7 +72,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   APE.createWithContext(event.params.ape, context);
 
   // Create new vault with all required fields
-  vault = loadOrCreateVault(vaultId);
+  vault = loadOrCreateVault(vaultIdString);
   vault.collateralToken = event.params.collateralToken.toHexString();
   vault.debtToken = event.params.debtToken.toHex();
   vault.leverageTier = event.params.leverageTier;
@@ -118,17 +118,32 @@ export function handleMint(event: Mint): void {
     return;
   }
 
-  const user = event.params.minter.toHexString();
-  const apePositionId = generateApePositionId(event.params.minter, event.params.vaultId);
+  const userAddress = event.params.minter;
+  const vaultIdBigInt = event.params.vaultId;
+  const apePositionId = generateApePositionId(userAddress, vaultIdBigInt);
 
   let apePosition = ApePosition.load(apePositionId);
   if (!apePosition) {
     apePosition = new ApePosition(apePositionId);
-    apePosition.vaultId = event.params.vaultId.toHexString();
-    apePosition.user = event.params.minter;
+    apePosition.vaultId = vaultIdBigInt.toHexString();
+    apePosition.user = userAddress;
     apePosition.collateralTotal = BigInt.fromI32(0);
     apePosition.dollarTotal = BigInt.fromI32(0);
-    apePosition.apeBalance = BigInt.fromI32(0);
+    apePosition.balance = BigInt.fromI32(0);
+    
+    // Set additional fields for the merged entity
+    const collateralTokenAddress = Address.fromString(vault.collateralToken);
+    const collateralTokenContract = ERC20.bind(collateralTokenAddress);
+    const debtTokenAddress = Address.fromString(vault.debtToken);
+    const debtTokenContract = ERC20.bind(debtTokenAddress);
+    
+    apePosition.decimals = collateralTokenContract.decimals();
+    apePosition.ape = vault.apeAddress.toHexString();
+    apePosition.collateralToken = vault.collateralToken;
+    apePosition.debtToken = vault.debtToken;
+    apePosition.collateralSymbol = collateralTokenContract.symbol();
+    apePosition.debtSymbol = debtTokenContract.symbol();
+    apePosition.leverageTier = vault.leverageTier.toString();
   }
 
   const collateralDeposited = event.params.collateralIn.plus(
@@ -143,10 +158,12 @@ export function handleMint(event: Mint): void {
     .div(BigInt.fromI32(10).pow(u8(vault.apeDecimals)).toBigDecimal()); // Divide by collateral decimals
   const dollarCollateralDepositedBigInt = BigInt.fromString(dollarCollateralDeposited.truncate(0).toString());
 
+  const tokensMinted = event.params.tokenOut;
+
   // Update APE position
   apePosition.collateralTotal = apePosition.collateralTotal.plus(collateralDeposited);
   apePosition.dollarTotal = apePosition.dollarTotal.plus(dollarCollateralDepositedBigInt);
-  apePosition.apeBalance = apePosition.apeBalance.plus(event.params.tokenOut);
+  apePosition.balance = apePosition.balance.plus(tokensMinted);
   apePosition.save();
 }
 
@@ -160,26 +177,28 @@ export function handleBurn(event: Burn): void {
     return;
   }
 
-  const user = event.params.burner.toHexString();
-  const apePositionId = generateApePositionId(event.params.burner, event.params.vaultId);
+  const userAddress = event.params.burner;
+  const vaultIdBigInt = event.params.vaultId;
+  const apePositionId = generateApePositionId(userAddress, vaultIdBigInt);
   const apePosition = ApePosition.load(apePositionId);
   if (!apePosition) {
     return;
   }
 
   const closedApePosition = new ClosedApePosition(event.transaction.hash.toHexString());
-  closedApePosition.vaultId = event.params.vaultId.toHexString();
-  closedApePosition.user = event.params.burner;
+  closedApePosition.vaultId = vaultIdBigInt.toHexString();
+  closedApePosition.user = userAddress;
 
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
+  const tokensBurned = event.params.tokenIn;
 
-  // Calculate closed APE position values
+  // Calculate closed APE position values based on proportion burned
   closedApePosition.collateralDeposited = apePosition.collateralTotal
-    .times(event.params.tokenIn)
-    .div(apePosition.apeBalance);
+    .times(tokensBurned)
+    .div(apePosition.balance);
   closedApePosition.dollarDeposited = apePosition.dollarTotal
-    .times(event.params.tokenIn)
-    .div(apePosition.apeBalance);
+    .times(tokensBurned)
+    .div(apePosition.balance);
   closedApePosition.collateralWithdrawn = event.params.collateralWithdrawn;
   
   const dollarWithdrawn = closedApePosition.collateralWithdrawn
@@ -194,9 +213,15 @@ export function handleBurn(event: Burn): void {
   // Update current APE position
   apePosition.collateralTotal = apePosition.collateralTotal.minus(closedApePosition.collateralDeposited);
   apePosition.dollarTotal = apePosition.dollarTotal.minus(closedApePosition.dollarDeposited);
-  apePosition.apeBalance = apePosition.apeBalance.minus(event.params.tokenIn);
+  apePosition.balance = apePosition.balance.minus(tokensBurned);
 
-  apePosition.save();
+  // Remove position if balance becomes zero, otherwise save it
+  if (apePosition.balance.equals(BigInt.fromI32(0))) {
+    store.remove("ApePosition", apePosition.id);
+  } else {
+    apePosition.save();
+  }
+  
   closedApePosition.save();
 }
 

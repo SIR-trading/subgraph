@@ -19,22 +19,9 @@ type Vault @entity(immutable: false) {
   apeDecimals: Int!
 }
 
-type UserPosition @entity(immutable: false) {
+type TeaPosition @entity(immutable: false) {
   id: String!
-  balance: BigInt!
-  positionDecimals: Int!
-  APE: String!
-  user: Bytes!
-  collateralSymbol: String!
-  debtSymbol: String!
-  collateralToken: String!
-  debtToken: String!
-  leverageTier: String!
-  vaultId: String!
-}
-type UserPositionTea @entity(immutable: false) {
-  id: String!
-  positionDecimals: Int!
+  decimals: Int!
   balance: BigInt!
   user: Bytes!
   collateralSymbol: String!
@@ -43,6 +30,34 @@ type UserPositionTea @entity(immutable: false) {
   debtToken: Bytes!
   leverageTier: String!
   vaultId: String!
+}
+
+type ApePosition @entity(immutable: false) {
+  id: String!
+  vaultId: String!
+  user: Bytes!
+  balance: BigInt!
+  decimals: Int!
+  ape: String!
+  collateralSymbol: String!
+  debtSymbol: String!
+  collateralToken: String!
+  debtToken: String!
+  leverageTier: String!
+  collateralTotal: BigInt!
+  dollarTotal: BigInt!
+}
+
+type ClosedApePosition @entity(immutable: true) {
+  id: String!
+  vaultId: String!
+  user: Bytes!
+  collateralDeposited: BigInt!
+  dollarDeposited: BigInt!
+  collateralWithdrawn: BigInt!
+  dollarWithdrawn: BigInt!
+  timestamp: BigInt!
+  decimal: Int!
 }
 
 type Dividend @entity(immutable: true) {
@@ -78,25 +93,4 @@ type AuctionsHistory @entity(immutable: true) {
   highestBid: BigInt!
   highestBidder: Bytes!
   startTime: BigInt!
-}
-
-type ApePosition @entity(immutable: false) {
-  id: String!
-  vaultId: String!
-  user: Bytes!
-  collateralTotal: BigInt!
-  dollarTotal: BigInt!
-  apeBalance: BigInt!
-}
-
-type ClosedApePosition @entity(immutable: true) {
-  id: String!
-  vaultId: String!
-  user: Bytes!
-  collateralDeposited: BigInt!
-  dollarDeposited: BigInt!
-  collateralWithdrawn: BigInt!
-  dollarWithdrawn: BigInt!
-  timestamp: BigInt!
-  decimal: Int!
 }

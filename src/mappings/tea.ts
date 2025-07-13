@@ -8,7 +8,7 @@ import { RewardsClaimed, DividendsPaid } from "../../generated/Claims/Sir";
 import { store } from "@graphprotocol/graph-ts";
 import {
   Vault as VaultSchema,
-  UserPositionTea,
+  TeaPosition,
   Dividend,
 } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
@@ -69,7 +69,7 @@ export function handleClaim(event: RewardsClaimed): void {
   
   if (hasNoTeaTokens && hasNoUnclaimedRewards) {
     const userPositionId = generateUserPositionId(userAddress, vaultId);
-    store.remove("UserPositionTea", userPositionId);
+    store.remove("TeaPosition", userPositionId);
   }
 }
 
@@ -136,7 +136,7 @@ function updateSenderPosition(
   vaultContract: Vault,
 ): void {
   const senderPositionId = generateUserPositionId(senderAddress, vaultId);
-  const senderPosition = UserPositionTea.load(senderPositionId);
+  const senderPosition = TeaPosition.load(senderPositionId);
   const unclaimedRewardsResult = vaultContract.try_unclaimedRewards(vaultId, senderAddress);
 
   if (senderPosition && !unclaimedRewardsResult.reverted) {
@@ -148,7 +148,7 @@ function updateSenderPosition(
     const hasNoRewards = unclaimedRewardsResult.value.equals(BigInt.fromI32(0));
     
     if (hasNoBalance && hasNoRewards) {
-      store.remove("UserPositionTea", senderPosition.id);
+      store.remove("TeaPosition", senderPosition.id);
     } else {
       senderPosition.save();
     }
@@ -165,7 +165,7 @@ function updateRecipientPosition(
   vaultContract: Vault,
 ): void {
   const recipientPositionId = generateUserPositionId(recipientAddress, vaultId);
-  const existingPosition = UserPositionTea.load(recipientPositionId);
+  const existingPosition = TeaPosition.load(recipientPositionId);
 
   if (existingPosition !== null) {
     // Update existing position
@@ -197,7 +197,7 @@ function createNewTeaPosition(
 
   // Create new position entity with optimized ID generation
   const positionId = generateUserPositionId(userAddress, vaultId);
-  const newPosition = new UserPositionTea(positionId);
+  const newPosition = new TeaPosition(positionId);
   
   // Set position properties
   newPosition.user = userAddress;
@@ -210,7 +210,7 @@ function createNewTeaPosition(
   newPosition.collateralToken = collateralTokenAddress;
   
   // Set token metadata
-  newPosition.positionDecimals = collateralTokenContract.decimals();
+  newPosition.decimals = collateralTokenContract.decimals();
   newPosition.debtSymbol = debtTokenContract.symbol();
   newPosition.collateralSymbol = collateralTokenContract.symbol();
   

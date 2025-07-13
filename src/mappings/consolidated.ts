@@ -61,7 +61,7 @@ export function handleClaim(event: RewardsClaimed): void {
   
   if (hasNoTeaTokens && hasNoUnclaimedRewards) {
     const userPositionId = generateUserPositionId(userAddress, vaultId);
-    store.remove("UserPositionTea", userPositionId);
+    store.remove("TeaPosition", userPositionId);
   }
 }
 

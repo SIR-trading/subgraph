@@ -9,7 +9,6 @@ import {
   Bytes,
   BigInt,
   BigDecimal,
-  Int8,
 } from "@graphprotocol/graph-ts";
 
 export class Vault extends Entity {
@@ -273,7 +272,7 @@ export class Vault extends Entity {
   }
 }
 
-export class UserPosition extends Entity {
+export class TeaPosition extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
@@ -281,24 +280,24 @@ export class UserPosition extends Entity {
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save UserPosition entity without an ID");
+    assert(id != null, "Cannot save TeaPosition entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type UserPosition must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type TeaPosition must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("UserPosition", id.toString(), this);
+      store.set("TeaPosition", id.toString(), this);
     }
   }
 
-  static loadInBlock(id: string): UserPosition | null {
-    return changetype<UserPosition | null>(
-      store.get_in_block("UserPosition", id),
+  static loadInBlock(id: string): TeaPosition | null {
+    return changetype<TeaPosition | null>(
+      store.get_in_block("TeaPosition", id),
     );
   }
 
-  static load(id: string): UserPosition | null {
-    return changetype<UserPosition | null>(store.get("UserPosition", id));
+  static load(id: string): TeaPosition | null {
+    return changetype<TeaPosition | null>(store.get("TeaPosition", id));
   }
 
   get id(): string {
@@ -314,21 +313,8 @@ export class UserPosition extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get balance(): BigInt {
-    let value = this.get("balance");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set balance(value: BigInt) {
-    this.set("balance", Value.fromBigInt(value));
-  }
-
-  get positionDecimals(): i32 {
-    let value = this.get("positionDecimals");
+  get decimals(): i32 {
+    let value = this.get("decimals");
     if (!value || value.kind == ValueKind.NULL) {
       return 0;
     } else {
@@ -336,167 +322,8 @@ export class UserPosition extends Entity {
     }
   }
 
-  set positionDecimals(value: i32) {
-    this.set("positionDecimals", Value.fromI32(value));
-  }
-
-  get APE(): string {
-    let value = this.get("APE");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set APE(value: string) {
-    this.set("APE", Value.fromString(value));
-  }
-
-  get user(): Bytes {
-    let value = this.get("user");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBytes();
-    }
-  }
-
-  set user(value: Bytes) {
-    this.set("user", Value.fromBytes(value));
-  }
-
-  get collateralSymbol(): string {
-    let value = this.get("collateralSymbol");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set collateralSymbol(value: string) {
-    this.set("collateralSymbol", Value.fromString(value));
-  }
-
-  get debtSymbol(): string {
-    let value = this.get("debtSymbol");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set debtSymbol(value: string) {
-    this.set("debtSymbol", Value.fromString(value));
-  }
-
-  get collateralToken(): string {
-    let value = this.get("collateralToken");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set collateralToken(value: string) {
-    this.set("collateralToken", Value.fromString(value));
-  }
-
-  get debtToken(): string {
-    let value = this.get("debtToken");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set debtToken(value: string) {
-    this.set("debtToken", Value.fromString(value));
-  }
-
-  get leverageTier(): string {
-    let value = this.get("leverageTier");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set leverageTier(value: string) {
-    this.set("leverageTier", Value.fromString(value));
-  }
-
-  get vaultId(): string {
-    let value = this.get("vaultId");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set vaultId(value: string) {
-    this.set("vaultId", Value.fromString(value));
-  }
-}
-
-export class UserPositionTea extends Entity {
-  constructor(id: string) {
-    super();
-    this.set("id", Value.fromString(id));
-  }
-
-  save(): void {
-    let id = this.get("id");
-    assert(id != null, "Cannot save UserPositionTea entity without an ID");
-    if (id) {
-      assert(
-        id.kind == ValueKind.STRING,
-        `Entities of type UserPositionTea must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
-      );
-      store.set("UserPositionTea", id.toString(), this);
-    }
-  }
-
-  static loadInBlock(id: string): UserPositionTea | null {
-    return changetype<UserPositionTea | null>(
-      store.get_in_block("UserPositionTea", id),
-    );
-  }
-
-  static load(id: string): UserPositionTea | null {
-    return changetype<UserPositionTea | null>(store.get("UserPositionTea", id));
-  }
-
-  get id(): string {
-    let value = this.get("id");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set id(value: string) {
-    this.set("id", Value.fromString(value));
-  }
-
-  get positionDecimals(): i32 {
-    let value = this.get("positionDecimals");
-    if (!value || value.kind == ValueKind.NULL) {
-      return 0;
-    } else {
-      return value.toI32();
-    }
-  }
-
-  set positionDecimals(value: i32) {
-    this.set("positionDecimals", Value.fromI32(value));
+  set decimals(value: i32) {
+    this.set("decimals", Value.fromI32(value));
   }
 
   get balance(): BigInt {
@@ -1079,6 +906,110 @@ export class ApePosition extends Entity {
     this.set("user", Value.fromBytes(value));
   }
 
+  get balance(): BigInt {
+    let value = this.get("balance");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set balance(value: BigInt) {
+    this.set("balance", Value.fromBigInt(value));
+  }
+
+  get decimals(): i32 {
+    let value = this.get("decimals");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set decimals(value: i32) {
+    this.set("decimals", Value.fromI32(value));
+  }
+
+  get ape(): string {
+    let value = this.get("ape");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set ape(value: string) {
+    this.set("ape", Value.fromString(value));
+  }
+
+  get collateralSymbol(): string {
+    let value = this.get("collateralSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set collateralSymbol(value: string) {
+    this.set("collateralSymbol", Value.fromString(value));
+  }
+
+  get debtSymbol(): string {
+    let value = this.get("debtSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set debtSymbol(value: string) {
+    this.set("debtSymbol", Value.fromString(value));
+  }
+
+  get collateralToken(): string {
+    let value = this.get("collateralToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set collateralToken(value: string) {
+    this.set("collateralToken", Value.fromString(value));
+  }
+
+  get debtToken(): string {
+    let value = this.get("debtToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set debtToken(value: string) {
+    this.set("debtToken", Value.fromString(value));
+  }
+
+  get leverageTier(): string {
+    let value = this.get("leverageTier");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set leverageTier(value: string) {
+    this.set("leverageTier", Value.fromString(value));
+  }
+
   get collateralTotal(): BigInt {
     let value = this.get("collateralTotal");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1103,19 +1034,6 @@ export class ApePosition extends Entity {
 
   set dollarTotal(value: BigInt) {
     this.set("dollarTotal", Value.fromBigInt(value));
-  }
-
-  get apeBalance(): BigInt {
-    let value = this.get("apeBalance");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set apeBalance(value: BigInt) {
-    this.set("apeBalance", Value.fromBigInt(value));
   }
 }
 
