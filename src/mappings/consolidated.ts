@@ -13,7 +13,7 @@ import {
   Auction,
   AuctionsParticipant,
   AuctionsHistory,
-  Dividends,
+  Dividend,
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
@@ -23,11 +23,11 @@ import { getBestPoolPrice, generateUserPositionId } from "../helpers";
 
 /**
  * Handles dividend payments to SIR token stakers
- * Creates a new Dividends entity with ETH amount, staked SIR amount, and SIR/ETH price
+ * Creates a new Dividend entity with ETH amount, staked SIR amount, and SIR/ETH price
  */
 export function handleDividendsPaid(event: DividendsPaid): void {
   // Create unique entity ID using transaction hash
-  const dividendsEntity = new Dividends(event.transaction.hash.toHex());
+  const dividendsEntity = new Dividend(event.transaction.hash.toHex());
   
   // Get current SIR token price in ETH directly from Uniswap pool
   const sirAddress_addr = Address.fromString(sirAddress);

@@ -785,14 +785,14 @@ export class BurnCall__Outputs {
     this._call = call;
   }
 
-  get newReserves(): BurnCallNewReservesStruct {
-    return changetype<BurnCallNewReservesStruct>(
+  get newReserves(): BurnCallNewReservesOutputStruct {
+    return changetype<BurnCallNewReservesOutputStruct>(
       this._call.outputValues[0].value.toTuple(),
     );
   }
 
-  get fees(): BurnCallFeesStruct {
-    return changetype<BurnCallFeesStruct>(
+  get fees(): BurnCallFeesOutputStruct {
+    return changetype<BurnCallFeesOutputStruct>(
       this._call.outputValues[1].value.toTuple(),
     );
   }
@@ -812,7 +812,7 @@ export class BurnCallReservesStruct extends ethereum.Tuple {
   }
 }
 
-export class BurnCallNewReservesStruct extends ethereum.Tuple {
+export class BurnCallNewReservesOutputStruct extends ethereum.Tuple {
   get reserveApes(): BigInt {
     return this[0].toBigInt();
   }
@@ -826,7 +826,7 @@ export class BurnCallNewReservesStruct extends ethereum.Tuple {
   }
 }
 
-export class BurnCallFeesStruct extends ethereum.Tuple {
+export class BurnCallFeesOutputStruct extends ethereum.Tuple {
   get collateralInOrWithdrawn(): BigInt {
     return this[0].toBigInt();
   }
@@ -1009,14 +1009,14 @@ export class MintCall__Outputs {
     this._call = call;
   }
 
-  get newReserves(): MintCallNewReservesStruct {
-    return changetype<MintCallNewReservesStruct>(
+  get newReserves(): MintCallNewReservesOutputStruct {
+    return changetype<MintCallNewReservesOutputStruct>(
       this._call.outputValues[0].value.toTuple(),
     );
   }
 
-  get fees(): MintCallFeesStruct {
-    return changetype<MintCallFeesStruct>(
+  get fees(): MintCallFeesOutputStruct {
+    return changetype<MintCallFeesOutputStruct>(
       this._call.outputValues[1].value.toTuple(),
     );
   }
@@ -1040,7 +1040,7 @@ export class MintCallReservesStruct extends ethereum.Tuple {
   }
 }
 
-export class MintCallNewReservesStruct extends ethereum.Tuple {
+export class MintCallNewReservesOutputStruct extends ethereum.Tuple {
   get reserveApes(): BigInt {
     return this[0].toBigInt();
   }
@@ -1054,7 +1054,7 @@ export class MintCallNewReservesStruct extends ethereum.Tuple {
   }
 }
 
-export class MintCallFeesStruct extends ethereum.Tuple {
+export class MintCallFeesOutputStruct extends ethereum.Tuple {
   get collateralInOrWithdrawn(): BigInt {
     return this[0].toBigInt();
   }

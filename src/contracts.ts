@@ -4,7 +4,7 @@
 export const vaultAddress = "0xD4aD288de412Ef61435BAb420dF9d5a61f6f0659";
 export const sirAddress = "0x7Fa77a8D7Fb89bad4df149912f9d3B0d449Ee63b";
 
-// Uniswap V3 Factory (same address on all networks)
+// Uniswap V3 Factory
 export const uniswapV3FactoryAddress = "0x0227628f3F023bb0B980b67D528571c95c6DaC1c";
 
 // Network-specific token addresses

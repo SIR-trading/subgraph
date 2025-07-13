@@ -9,7 +9,7 @@ import { store } from "@graphprotocol/graph-ts";
 import {
   Vault as VaultSchema,
   UserPositionTea,
-  Dividends,
+  Dividend,
 } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
@@ -31,11 +31,11 @@ export function handleSingleTransfer(event: TransferSingle): void {
 
 /**
  * Handles dividend payments to SIR token stakers
- * Creates a new Dividends entity with ETH amount, staked SIR amount, and USD price
+ * Creates a new Dividend entity with ETH amount, staked SIR amount, and USD price
  */
 export function handleDividendsPaid(event: DividendsPaid): void {
   // Create unique entity ID using transaction hash
-  const dividendsEntity = new Dividends(event.transaction.hash.toHex());
+  const dividendsEntity = new Dividend(event.transaction.hash.toHex());
   
   // Get current SIR token price in ETH directly from Uniswap pool
   const sirAddress_addr = Address.fromString(sirAddress);
