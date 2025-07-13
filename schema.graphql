@@ -49,10 +49,10 @@ type UserPositionTea @entity(immutable: false) {
   vaultId: String!
 }
 
-type Dividends @entity(immutable: true) {
+type Dividend @entity(immutable: true) {
   id: String!
   ethAmount: BigInt!
-  sirUsdPrice: BigDecimal!
+  sirEthPrice: BigDecimal!
   stakedAmount: BigInt!
   timestamp: BigInt!
 }

@@ -9,6 +9,7 @@ import {
   Bytes,
   BigInt,
   BigDecimal,
+  Int8,
 } from "@graphprotocol/graph-ts";
 
 export class Vault extends Entity {
@@ -656,7 +657,7 @@ export class UserPositionTea extends Entity {
   }
 }
 
-export class Dividends extends Entity {
+export class Dividend extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
@@ -664,22 +665,22 @@ export class Dividends extends Entity {
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save Dividends entity without an ID");
+    assert(id != null, "Cannot save Dividend entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Dividends must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Dividend must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Dividends", id.toString(), this);
+      store.set("Dividend", id.toString(), this);
     }
   }
 
-  static loadInBlock(id: string): Dividends | null {
-    return changetype<Dividends | null>(store.get_in_block("Dividends", id));
+  static loadInBlock(id: string): Dividend | null {
+    return changetype<Dividend | null>(store.get_in_block("Dividend", id));
   }
 
-  static load(id: string): Dividends | null {
-    return changetype<Dividends | null>(store.get("Dividends", id));
+  static load(id: string): Dividend | null {
+    return changetype<Dividend | null>(store.get("Dividend", id));
   }
 
   get id(): string {
@@ -708,8 +709,8 @@ export class Dividends extends Entity {
     this.set("ethAmount", Value.fromBigInt(value));
   }
 
-  get sirUsdPrice(): BigDecimal {
-    let value = this.get("sirUsdPrice");
+  get sirEthPrice(): BigDecimal {
+    let value = this.get("sirEthPrice");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -717,8 +718,8 @@ export class Dividends extends Entity {
     }
   }
 
-  set sirUsdPrice(value: BigDecimal) {
-    this.set("sirUsdPrice", Value.fromBigDecimal(value));
+  set sirEthPrice(value: BigDecimal) {
+    this.set("sirEthPrice", Value.fromBigDecimal(value));
   }
 
   get stakedAmount(): BigInt {

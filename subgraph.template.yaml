@@ -111,7 +111,7 @@ dataSources:
       startBlock: {{START_BLOCK}}
     mapping:
       entities:
-        - Dividends
+        - Dividend
         - Auction
         - AuctionsParticipant
         - AuctionsHistory
