@@ -229,7 +229,6 @@ function handleTeaTransfer(
 ): void {
   const vaultContract = Vault.bind(Address.fromString(vaultAddress));
   const vaultAddressBytes = Address.fromString(vaultAddress);
-  const zeroAddressBytes = Address.zero();
 
   // Update vault locked liquidity when tokens move to/from vault
   updateVaultLiquidity(vaultId, recipientAddress, senderAddress, transferAmount, vaultAddressBytes);

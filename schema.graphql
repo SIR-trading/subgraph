@@ -18,11 +18,7 @@ type Vault @entity(immutable: false) {
   apeAddress: Bytes!
   apeDecimals: Int!
 }
-type Test @entity(immutable: true) {
-  id: String!
-  amount: BigInt!
-}
-# TODO CHANGE NAMES
+
 type UserPosition @entity(immutable: false) {
   id: String!
   balance: BigInt!

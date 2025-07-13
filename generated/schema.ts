@@ -273,59 +273,6 @@ export class Vault extends Entity {
   }
 }
 
-export class Test extends Entity {
-  constructor(id: string) {
-    super();
-    this.set("id", Value.fromString(id));
-  }
-
-  save(): void {
-    let id = this.get("id");
-    assert(id != null, "Cannot save Test entity without an ID");
-    if (id) {
-      assert(
-        id.kind == ValueKind.STRING,
-        `Entities of type Test must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
-      );
-      store.set("Test", id.toString(), this);
-    }
-  }
-
-  static loadInBlock(id: string): Test | null {
-    return changetype<Test | null>(store.get_in_block("Test", id));
-  }
-
-  static load(id: string): Test | null {
-    return changetype<Test | null>(store.get("Test", id));
-  }
-
-  get id(): string {
-    let value = this.get("id");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toString();
-    }
-  }
-
-  set id(value: string) {
-    this.set("id", Value.fromString(value));
-  }
-
-  get amount(): BigInt {
-    let value = this.get("amount");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set amount(value: BigInt) {
-    this.set("amount", Value.fromBigInt(value));
-  }
-}
-
 export class UserPosition extends Entity {
   constructor(id: string) {
     super();
