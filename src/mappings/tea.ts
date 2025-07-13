@@ -13,8 +13,8 @@ import {
 } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
-import { sirAddress, vaultAddress } from "../contracts";
-import { getTokenUsdPrice, generateUserPositionId } from "../helpers";
+import { sirAddress, vaultAddress, wethAddress } from "../contracts";
+import { getBestPoolPrice, generateUserPositionId } from "../helpers";
 
 /**
  * Handles ERC1155 single token transfers for TEA positions
@@ -37,14 +37,16 @@ export function handleDividendsPaid(event: DividendsPaid): void {
   // Create unique entity ID using transaction hash
   const dividendsEntity = new Dividends(event.transaction.hash.toHex());
   
-  // Get current SIR token price in USD via WETH with caching
-  const sirTokenUsdPrice = getTokenUsdPrice(Address.fromString(sirAddress), event.block.number);
+  // Get current SIR token price in ETH directly from Uniswap pool
+  const sirAddress_addr = Address.fromString(sirAddress);
+  const wethAddress_addr = Address.fromString(wethAddress);
+  const sirTokenEthPrice = getBestPoolPrice(sirAddress_addr, wethAddress_addr);
   
   // Set entity properties from event parameters
   dividendsEntity.timestamp = event.block.timestamp;
   dividendsEntity.ethAmount = event.params.amountETH;
   dividendsEntity.stakedAmount = event.params.amountStakedSIR;
-  dividendsEntity.sirUsdPrice = sirTokenUsdPrice;
+  dividendsEntity.sirEthPrice = sirTokenEthPrice;
   dividendsEntity.save();
 }
 
