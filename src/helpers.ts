@@ -265,7 +265,15 @@ function calculatePriceFromSqrtPrice(
   
   // Calculate (sqrtPrice / 2^96)^2
   const normalizedSqrtPrice = sqrtPrice.div(q96);
-  const price = normalizedSqrtPrice.times(normalizedSqrtPrice);
+  let price = normalizedSqrtPrice.times(normalizedSqrtPrice);
+  
+  // Determine token ordering (Uniswap V3 orders tokens alphabetically)
+  const token0IsTokenIn = tokenIn.toHexString().toLowerCase() < tokenOut.toHexString().toLowerCase();
+  
+  // If tokenIn is token1 (second alphabetically), we need the inverse price
+  if (!token0IsTokenIn) {
+    price = BigDecimal.fromString("1").div(price);
+  }
   
   // Adjust for token decimals: price * (10^decimalsIn / 10^decimalsOut)
   let decimalAdjustment = BigDecimal.fromString("1");
@@ -324,8 +332,8 @@ export function generateApePositionId(userAddress: Address, vaultId: BigInt): st
 /**
  * Calculates collateral USD price with caching
  */
-export function getCollateralUsdPrice(tokenAddress: string, blockNumber: BigInt): BigInt {
+export function getCollateralUsdPrice(tokenAddress: string, blockNumber: BigInt): BigDecimal {
   const token = Address.fromString(tokenAddress);
   const priceUsd = getTokenUsdPrice(token, blockNumber);
-  return priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
+  return priceUsd; // Return BigDecimal directly
 }

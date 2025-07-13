@@ -3,7 +3,7 @@ import { ApePosition, Vault, ClosedApePosition } from "../../generated/schema";
 import { ERC20 } from "../../generated/VaultExternal/ERC20";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, DataSourceContext } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice } from "../helpers";
 import { 
@@ -137,12 +137,15 @@ export function handleMint(event: Mint): void {
 
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
   const dollarCollateralDeposited = collateralDeposited
+    .toBigDecimal()
     .times(collateralPriceUsd)
-    .div(BigInt.fromI32(10).pow(u8(6))); // Remove USDC decimals
+    .times(BigDecimal.fromString("1000000")) // Scale to 6 decimals for USD
+    .div(BigInt.fromI32(10).pow(u8(vault.apeDecimals)).toBigDecimal()); // Divide by collateral decimals
+  const dollarCollateralDepositedBigInt = BigInt.fromString(dollarCollateralDeposited.truncate(0).toString());
 
   // Update APE position
   apePosition.collateralTotal = apePosition.collateralTotal.plus(collateralDeposited);
-  apePosition.dollarTotal = apePosition.dollarTotal.plus(dollarCollateralDeposited);
+  apePosition.dollarTotal = apePosition.dollarTotal.plus(dollarCollateralDepositedBigInt);
   apePosition.apeBalance = apePosition.apeBalance.plus(event.params.tokenOut);
   apePosition.save();
 }
@@ -178,9 +181,13 @@ export function handleBurn(event: Burn): void {
     .times(event.params.tokenIn)
     .div(apePosition.apeBalance);
   closedApePosition.collateralWithdrawn = event.params.collateralWithdrawn;
-  closedApePosition.dollarWithdrawn = closedApePosition.collateralWithdrawn
+  
+  const dollarWithdrawn = closedApePosition.collateralWithdrawn
+    .toBigDecimal()
     .times(collateralPriceUsd)
-    .div(BigInt.fromI32(10).pow(u8(6))); // Remove USDC decimals
+    .times(BigDecimal.fromString("1000000")) // Scale to 6 decimals for USD
+    .div(BigInt.fromI32(10).pow(u8(vault.apeDecimals)).toBigDecimal()); // Divide by collateral decimals
+  closedApePosition.dollarWithdrawn = BigInt.fromString(dollarWithdrawn.truncate(0).toString());
   closedApePosition.timestamp = event.block.timestamp;
   closedApePosition.decimal = ERC20.bind(Address.fromString(vault.collateralToken)).decimals();
 

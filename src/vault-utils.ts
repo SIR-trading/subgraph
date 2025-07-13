@@ -59,14 +59,6 @@ export function calculateVaultUsdValue(vault: Vault, blockNumber: BigInt): BigIn
   }
 }
 
-/**
- * Calculates collateral USD price with caching
- */
-export function getCollateralUsdPrice(tokenAddress: string, blockNumber: BigInt): BigInt {
-  const token = Address.fromString(tokenAddress);
-  const priceUsd = getTokenUsdPrice(token, blockNumber);
-  return priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
-}
 
 /**
  * Updates vault sort key based on volume and tax status
