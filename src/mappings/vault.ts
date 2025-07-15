@@ -39,7 +39,7 @@ export function handleVaultTax(event: VaultNewTax): void {
     .times(issuanceRate)
     .div(cumulativeTax)
 
-  vault.taxAmount = rate;
+  vault.taxAmount = tax;
   vault.rate = rate;
   vault.save();
 }
