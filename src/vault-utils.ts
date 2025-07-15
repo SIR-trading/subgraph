@@ -27,6 +27,7 @@ export function loadOrCreateVault(vaultId: string): Vault {
     vault.apeCollateral = BigInt.fromI32(0);
     vault.lockedLiquidity = BigInt.fromI32(0);
     vault.taxAmount = BigInt.fromI32(0);
+    vault.rate = BigInt.fromI32(0);
     vault.totalTea = BigInt.fromI32(0);
   }
   return vault;

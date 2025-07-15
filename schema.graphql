@@ -15,6 +15,7 @@ type Vault @entity(immutable: false) {
   apeCollateral: BigInt!
   teaCollateral: BigInt!
   taxAmount: BigInt!
+  rate: BigInt!
   apeAddress: Bytes!
   apeDecimals: Int!
 }

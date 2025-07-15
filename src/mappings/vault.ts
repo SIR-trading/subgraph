@@ -20,8 +20,8 @@ import {
 
 export function handleVaultTax(event: VaultNewTax): void {
   const multiplier = 100000;
-  const tax = BigInt.fromU64(event.params.tax).times(BigInt.fromU32(multiplier));
-  const cumulativeTax = BigInt.fromU64(event.params.cumulativeTax);
+  const tax = BigInt.fromU32(event.params.tax);
+  const cumulativeTax = BigInt.fromU32(event.params.cumulativeTax);
   
   // Use utility function to load or create vault
   let vault = loadOrCreateVault(event.params.vault.toHexString());
@@ -36,11 +36,11 @@ export function handleVaultTax(event: VaultNewTax): void {
   const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
   const rate = tax
-    .div(cumulativeTax)
     .times(issuanceRate)
-    .div(BigInt.fromU32(multiplier));
+    .div(cumulativeTax)
 
   vault.taxAmount = rate;
+  vault.rate = rate;
   vault.save();
 }
 export function handleVaultInitialized(event: VaultInitialized): void {
