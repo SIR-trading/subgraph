@@ -7,7 +7,7 @@ const CONTRACT_ADDRESSES = {
     uniswapV3Factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
     usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-    startBlock: "20830200"
+    startBlock: "22931060"
   },
   sepolia: {
     uniswapV3Factory: "0x0227628f3F023bb0B980b67D528571c95c6DaC1c",

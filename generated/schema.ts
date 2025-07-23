@@ -284,6 +284,98 @@ export class Vault extends Entity {
   set apeDecimals(value: i32) {
     this.set("apeDecimals", Value.fromI32(value));
   }
+
+  get feesIds(): Array<string> {
+    let value = this.get("feesIds");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set feesIds(value: Array<string>) {
+    this.set("feesIds", Value.fromStringArray(value));
+  }
+}
+
+export class Fee extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Fee entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type Fee must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("Fee", id.toString(), this);
+    }
+  }
+
+  static loadInBlock(id: string): Fee | null {
+    return changetype<Fee | null>(store.get_in_block("Fee", id));
+  }
+
+  static load(id: string): Fee | null {
+    return changetype<Fee | null>(store.get("Fee", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get vaultId(): string {
+    let value = this.get("vaultId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set vaultId(value: string) {
+    this.set("vaultId", Value.fromString(value));
+  }
+
+  get timestamp(): BigInt {
+    let value = this.get("timestamp");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set timestamp(value: BigInt) {
+    this.set("timestamp", Value.fromBigInt(value));
+  }
+
+  get lpApy(): BigDecimal {
+    let value = this.get("lpApy");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set lpApy(value: BigDecimal) {
+    this.set("lpApy", Value.fromBigDecimal(value));
+  }
 }
 
 export class TeaPosition extends Entity {

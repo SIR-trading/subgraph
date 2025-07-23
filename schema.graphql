@@ -18,6 +18,14 @@ type Vault @entity(immutable: false) {
   rate: BigInt!
   apeAddress: Bytes!
   apeDecimals: Int!
+  feesIds: [String!]!
+}
+
+type Fee @entity(immutable: false) {
+  id: String!
+  vaultId: String!
+  timestamp: BigInt!
+  lpApy: BigDecimal!
 }
 
 type TeaPosition @entity(immutable: false) {

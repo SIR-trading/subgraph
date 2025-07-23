@@ -29,6 +29,7 @@ export function loadOrCreateVault(vaultId: string): Vault {
     vault.taxAmount = BigInt.fromI32(0);
     vault.rate = BigInt.fromI32(0);
     vault.totalTea = BigInt.fromI32(0);
+    vault.feesIds = [];
   }
   return vault;
 }
