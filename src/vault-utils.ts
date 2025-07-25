@@ -1,7 +1,7 @@
 import { Address, BigInt, BigDecimal } from "@graphprotocol/graph-ts";
 import { Vault } from "../generated/schema";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
-import { getTokenUsdPrice, priceToScaledBigInt, USDC, WETH } from "./helpers";
+import { getTokenUsdcPrice, USDC } from "./helpers";
 
 /**
  * Safely loads or creates a vault entity
@@ -20,8 +20,6 @@ export function loadOrCreateVault(vaultId: string): Vault {
     vault.apeAddress = Address.zero();
     vault.apeDecimals = 0;
     vault.totalValueUsd = BigInt.fromI32(0);
-    vault.totalVolumeUsd = BigInt.fromI32(0);
-    vault.sortKey = BigInt.fromI32(0);
     vault.totalValue = BigInt.fromI32(0);
     vault.teaCollateral = BigInt.fromI32(0);
     vault.apeCollateral = BigInt.fromI32(0);
@@ -35,41 +33,31 @@ export function loadOrCreateVault(vaultId: string): Vault {
 }
 
 /**
- * Calculates USD value of vault collateral with caching
+ * Calculates USDC value of vault collateral with caching
  * Optimized to reduce redundant price calculations
  */
-export function calculateVaultUsdValue(vault: Vault, blockNumber: BigInt): BigInt {
+export function calculateVaultUsdcValue(vault: Vault, blockNumber: BigInt): BigInt {
   const collateralToken = Address.fromString(vault.collateralToken);
-  
-  // Use cached price calculation
-  const priceUsd = getTokenUsdPrice(collateralToken, blockNumber);
-  const priceScaled = priceToScaledBigInt(priceUsd, 6); // USDC has 6 decimals
   
   if (collateralToken.equals(USDC)) {
     return vault.totalValue;
   }
+
+  // Use full precision price calculation
+  const priceUsd = getTokenUsdcPrice(collateralToken, blockNumber);
+
+  const decimals = ERC20.bind(collateralToken).decimals();
   
-  if (collateralToken.equals(WETH)) {
-    return vault.totalValue
-      .times(priceScaled)
-      .div(BigInt.fromI32(10).pow(18));
-  } else {
-    const decimals = ERC20.bind(collateralToken).decimals();
-    return vault.totalValue
-      .times(priceScaled)
-      .div(BigInt.fromI32(10).pow(decimals as u8));
-  }
-}
-
-
-/**
- * Updates vault sort key based on volume and tax status
- * Centralizes sort key logic
- */
-export function updateVaultSortKey(vault: Vault): void {
-  if (vault.taxAmount.gt(BigInt.fromI32(0))) {
-    vault.sortKey = BigInt.fromI32(10).pow(20).plus(vault.totalVolumeUsd);
-  } else {
-    vault.sortKey = vault.totalVolumeUsd;
-  }
+  // Convert totalValue to BigDecimal and perform calculation in full precision
+  const totalValueDecimal = vault.totalValue.toBigDecimal();
+  const decimalsMultiplier = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal();
+  
+  // Calculate in full precision: (totalValue * priceUsd) / 10^decimals
+  const resultDecimal = totalValueDecimal.times(priceUsd).div(decimalsMultiplier);
+  
+  // Multiply by 10^6 to maintain USD scaling, then convert to BigInt
+  const scaledResult = resultDecimal.times(BigDecimal.fromString("1000000"));
+  
+  // Convert final result to BigInt
+  return BigInt.fromString(scaledResult.truncate(0).toString());
 }

@@ -8,15 +8,14 @@ import { sirAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice } from "../helpers";
 import { 
   loadOrCreateVault, 
-  calculateVaultUsdValue, 
-  updateVaultSortKey 
+  calculateVaultUsdcValue 
 } from "../vault-utils";
 import {
   Burn,
   Mint,
   ReservesChanged,
   VaultNewTax,
-} from "../../generated/Claims/Vault";
+} from "../../generated/Vault/Vault";
 
 /**
  * Generates a unique Fee entity ID based on vault ID and timestamp
@@ -177,9 +176,11 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 }
 
 export function handleReservesChanged(event: ReservesChanged): void {
-  const vault = Vault.load(event.params.vaultId.toHexString());
+  const vaultIdString = event.params.vaultId.toHexString();
+    
+  let vault = Vault.load(vaultIdString);
   if (!vault) {
-    return;
+    return; // Exit if vault does not exist
   }
 
   const params = event.params;
@@ -191,12 +192,9 @@ export function handleReservesChanged(event: ReservesChanged): void {
   vault.totalValue = total;
 
   // Calculate USD values with caching
-  const currentUsdValue = calculateVaultUsdValue(vault, event.block.number);
+  const currentUsdValue = calculateVaultUsdcValue(vault, event.block.number);
   vault.totalValueUsd = currentUsdValue;
-  vault.totalVolumeUsd = vault.totalVolumeUsd.plus(currentUsdValue);
   
-  // Update sort key using utility function
-  updateVaultSortKey(vault);
   vault.save();
 }
 

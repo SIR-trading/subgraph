@@ -151,7 +151,7 @@ export const USDC = Address.fromString(usdcAddress);
 export const WETH = Address.fromString(wethAddress);
 export const UNISWAP_V3_FACTORY = Address.fromString(uniswapV3FactoryAddress);
 
-export function getTokenUsdPrice(tokenAddress: Address, blockNumber: BigInt | null = null): BigDecimal {
+export function getTokenUsdcPrice(tokenAddress: Address, blockNumber: BigInt | null = null): BigDecimal {
   // Use cached price if available for the current block
   if (blockNumber) {
     const cachedPrice = priceCache.get(tokenAddress, blockNumber);
@@ -334,6 +334,6 @@ export function generateApePositionId(userAddress: Address, vaultId: BigInt): st
  */
 export function getCollateralUsdPrice(tokenAddress: string, blockNumber: BigInt): BigDecimal {
   const token = Address.fromString(tokenAddress);
-  const priceUsd = getTokenUsdPrice(token, blockNumber);
+  const priceUsd = getTokenUsdcPrice(token, blockNumber);
   return priceUsd; // Return BigDecimal directly
 }
