@@ -118,6 +118,7 @@ export function handleVaultTax(event: VaultNewTax): void {
   
   if (!cumulativeTax.gt(BigInt.fromI32(0))) {
     vault.taxAmount = BigInt.fromI32(0);
+    vault.rate = BigInt.fromI32(0);
     vault.save();
     return;
   }
