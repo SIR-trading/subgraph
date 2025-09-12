@@ -15,6 +15,18 @@ const CONTRACT_ADDRESSES = {
     weth: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
     startBlock: "8619003"
   },
+  hyperevm: {
+    uniswapV3Factory: "0xB1c0fa0B789320044A6F623cFe5eBda9562602E3",
+    usdc: "0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb", // USDT0 as proxy for USD
+    weth: "0x5555555555555555555555555555555555555555", // WHYPE (wrapped HYPE)
+    startBlock: "0"
+  },
+  "hyperevm-testnet": {
+    uniswapV3Factory: "0x22B0768972bB7f1F5ea7a8740BB8f94b32483826",
+    usdc: "0xd9CBEC81df392A88AEff575E962d149d57F4d6bc",
+    weth: "0xADcb2f358Eae6492F61A5F87eb8893d09391d160", // WHYPE (wrapped HYPE)
+    startBlock: "31893543"
+  },
   localhost: {
     uniswapV3Factory: process.env.UNISWAP_V3_FACTORY_ADDRESS,
     usdc: process.env.USDC_ADDRESS,

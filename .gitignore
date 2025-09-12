@@ -4,3 +4,4 @@ build
 subgraph.yaml
 docker-compose.yml
 data
+.claude
