@@ -64,6 +64,19 @@ export class Vault extends Entity {
     this.set("vaultId", Value.fromString(value));
   }
 
+  get exists(): boolean {
+    let value = this.get("exists");
+    if (!value || value.kind == ValueKind.NULL) {
+      return false;
+    } else {
+      return value.toBoolean();
+    }
+  }
+
+  set exists(value: boolean) {
+    this.set("exists", Value.fromBoolean(value));
+  }
+
   get collateralToken(): string {
     let value = this.get("collateralToken");
     if (!value || value.kind == ValueKind.NULL) {

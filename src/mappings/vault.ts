@@ -142,12 +142,9 @@ export function handleVaultTax(event: VaultNewTax): void {
 
 export function handleVaultInitialized(event: VaultInitialized): void {
   const vaultIdString = event.params.vaultId.toHexString();
-  
-  // Check if vault already exists to avoid duplicates
-  let vault = Vault.load(vaultIdString);
-  if (vault) {
-    return;
-  }
+
+  // Load or create vault (vault may have been created by tax event)
+  let vault = loadOrCreateVault(vaultIdString);
 
   // Get token information
   const collateralTokenContract = ERC20.bind(event.params.collateralToken);
@@ -156,20 +153,22 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   const collateralSymbol = collateralTokenContract.symbol();
   const collateralDecimals = collateralTokenContract.decimals();
 
-  // Create data source context for APE template
-  const context = new DataSourceContext();
-  context.setString("apeAddress", event.params.ape.toHexString());
-  context.setString("collateralSymbol", collateralSymbol);
-  context.setString("collateralToken", event.params.collateralToken.toHexString());
-  context.setString("debtSymbol", debtSymbol);
-  context.setString("debtToken", event.params.debtToken.toHexString());
-  context.setString("leverageTier", event.params.leverageTier.toString());
-  context.setString("vaultId", event.params.vaultId.toString());
+  // Only create APE template if vault hasn't been initialized yet
+  if (!vault.exists) {
+    // Create data source context for APE template
+    const context = new DataSourceContext();
+    context.setString("apeAddress", event.params.ape.toHexString());
+    context.setString("collateralSymbol", collateralSymbol);
+    context.setString("collateralToken", event.params.collateralToken.toHexString());
+    context.setString("debtSymbol", debtSymbol);
+    context.setString("debtToken", event.params.debtToken.toHexString());
+    context.setString("leverageTier", event.params.leverageTier.toString());
+    context.setString("vaultId", event.params.vaultId.toString());
 
-  APE.createWithContext(event.params.ape, context);
+    APE.createWithContext(event.params.ape, context);
+  }
 
-  // Create new vault with all required fields
-  vault = loadOrCreateVault(vaultIdString);
+  // Always update vault with all required fields (whether new or existing from tax event)
   vault.collateralToken = event.params.collateralToken.toHexString();
   vault.debtToken = event.params.debtToken.toHex();
   vault.leverageTier = event.params.leverageTier;

@@ -172,6 +172,12 @@ function updateRecipientPosition(
     existingPosition.balance = existingPosition.balance.plus(transferAmount);
     existingPosition.save();
   } else {
+    // Check if vault exists in the subgraph before creating a new position
+    const vault = VaultSchema.load(vaultId.toHexString());
+    if (!vault || !vault.exists) {
+      // Vault doesn't exist yet, skip creating the position
+      return;
+    }
     // Create new position
     createNewTeaPosition(recipientAddress, vaultId, transferAmount, vaultContract);
   }
@@ -186,7 +192,18 @@ function createNewTeaPosition(
   initialBalance: BigInt,
   vaultContract: Vault,
 ): void {
-  const vaultParams = vaultContract.paramsById(vaultId);
+  // Double-check vault exists in subgraph before making contract call
+  const vault = VaultSchema.load(vaultId.toHexString());
+  if (!vault || !vault.exists) {
+    return;
+  }
+
+  const vaultParamsResult = vaultContract.try_paramsById(vaultId);
+  if (vaultParamsResult.reverted) {
+    // Contract call failed, skip creating the position
+    return;
+  }
+  const vaultParams = vaultParamsResult.value;
   const debtTokenAddress = vaultParams.debtToken;
   const collateralTokenAddress = vaultParams.collateralToken;
   const leverageTier = vaultParams.leverageTier;
@@ -227,18 +244,25 @@ function handleTeaTransfer(
   senderAddress: Address,
   transferAmount: BigInt,
 ): void {
+  // Check if vault exists in the subgraph before processing
+  const vault = VaultSchema.load(vaultId.toHexString());
+  if (!vault || !vault.exists) {
+    // Vault not yet initialized, skip processing this transfer
+    return;
+  }
+
   const vaultContract = Vault.bind(Address.fromString(vaultAddress));
   const vaultAddressBytes = Address.fromString(vaultAddress);
 
   // Update vault locked liquidity when tokens move to/from vault
   updateVaultLiquidity(vaultId, recipientAddress, senderAddress, transferAmount, vaultAddressBytes);
-  
+
   // Update total TEA supply when tokens are minted/burned (zero address transfers)
   updateTotalTeaSupply(vaultId, recipientAddress, senderAddress, transferAmount);
-  
+
   // Update sender's position
   updateSenderPosition(vaultId, senderAddress, transferAmount, vaultContract);
-  
+
   // Update or create recipient's position
   updateRecipientPosition(vaultId, recipientAddress, transferAmount, vaultContract);
 }
