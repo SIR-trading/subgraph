@@ -1,6 +1,7 @@
 type Vault @entity(immutable: false) {
   id: String!
   vaultId: String!
+  exists: Boolean!
   collateralToken: String! @search(by: [term])
   debtToken: String! @search(by: [term])
   collateralSymbol: String! @search(by: [term])

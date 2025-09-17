@@ -12,6 +12,7 @@ export function loadOrCreateVault(vaultId: string): Vault {
   if (!vault) {
     vault = new Vault(vaultId);
     vault.vaultId = vaultId;
+    vault.exists = false;
     vault.collateralToken = "";
     vault.debtToken = "";
     vault.leverageTier = 0;

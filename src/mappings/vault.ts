@@ -112,17 +112,22 @@ function cleanupOldFees(vault: Vault, currentTimestamp: BigInt): void {
 export function handleVaultTax(event: VaultNewTax): void {
   const tax = BigInt.fromU32(event.params.tax);
   const cumulativeTax = BigInt.fromU32(event.params.cumulativeTax);
-  
-  // Use utility function to load or create vault
-  let vault = loadOrCreateVault(event.params.vault.toHexString());
-  
+  const vaultIdHex = event.params.vault.toHexString();
+  const vaultIdDecimal = event.params.vault.toString();
+
+  // Use utility function to load or create vault (using hex as entity ID)
+  let vault = loadOrCreateVault(vaultIdHex);
+
+  // Set vaultId as decimal string to match the format used in handleVaultInitialized
+  vault.vaultId = vaultIdDecimal;
+
   if (!cumulativeTax.gt(BigInt.fromI32(0))) {
     vault.taxAmount = BigInt.fromI32(0);
     vault.rate = BigInt.fromI32(0);
     vault.save();
     return;
   }
-  
+
   // Calculate tax rate
   const contract = Sir.bind(Address.fromString(sirAddress));
   const issuanceRate = contract.LP_ISSUANCE_FIRST_3_YEARS();
@@ -173,6 +178,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   vault.debtSymbol = debtSymbol;
   vault.vaultId = event.params.vaultId.toString();
   vault.apeAddress = event.params.ape;
+  vault.exists = true;
   vault.save();
 }
 
