@@ -1,84 +1,76 @@
+type Token @entity(immutable: false) {
+  id: Bytes! # Token contract address
+  symbol: String
+  decimals: Int!
+}
+
 type Vault @entity(immutable: false) {
-  id: String!
-  vaultId: String!
+  id: Bytes!
   exists: Boolean!
-  collateralToken: String! @search(by: [term])
-  debtToken: String! @search(by: [term])
-  collateralSymbol: String! @search(by: [term])
-  debtSymbol: String! @search(by: [term])
+  collateralToken: Token! @link
+  debtToken: Token! @link
   leverageTier: Int!
   totalValue: BigInt!
-  totalValueUsd: BigInt!
+  totalValueUsd: BigDecimal!
   lockedLiquidity: BigInt!
-  totalTea: BigInt!
-  apeCollateral: BigInt!
-  teaCollateral: BigInt!
-  taxAmount: BigInt!
+  teaSupply: BigInt!
+  reserveApes: BigInt!
+  reserveLPers: BigInt!
+  tax: BigInt!
   rate: BigInt!
-  apeAddress: Bytes!
-  apeDecimals: Int!
-  feesIds: [String!]!
+  ape: Token! @link
+  feesIds: [Bytes!]!
 }
 
 type Fee @entity(immutable: false) {
-  id: String!
-  vaultId: String!
+  id: Bytes!
+  vaultId: Bytes!
   timestamp: BigInt!
   lpApy: BigDecimal!
 }
 
 type TeaPosition @entity(immutable: false) {
-  id: String!
-  decimals: Int!
-  balance: BigInt!
+  id: Bytes!
+  vault: Vault! @link
   user: Bytes!
-  collateralSymbol: String!
-  debtSymbol: String!
-  collateralToken: Bytes!
-  debtToken: Bytes!
-  leverageTier: String!
-  vaultId: String!
+  balance: BigInt!
+  collateralTotal: BigInt!
+  dollarTotal: BigDecimal!
+  debtTokenTotal: BigInt!
 }
 
 type ApePosition @entity(immutable: false) {
-  id: String!
-  vaultId: String!
+  id: Bytes!
+  vault: Vault! @link
   user: Bytes!
   balance: BigInt!
-  decimals: Int!
-  ape: String!
-  collateralSymbol: String!
-  debtSymbol: String!
-  collateralToken: String!
-  debtToken: String!
-  leverageTier: String!
   collateralTotal: BigInt!
-  dollarTotal: BigInt!
+  dollarTotal: BigDecimal!
+  debtTokenTotal: BigInt!
 }
 
-type ClosedApePosition @entity(immutable: true) {
-  id: String!
-  vaultId: String!
+type ApePositionClosed @entity(immutable: true) {
+  id: Bytes!
+  vault: Vault! @link
   user: Bytes!
   collateralDeposited: BigInt!
-  dollarDeposited: BigInt!
+  dollarDeposited: BigDecimal!
   collateralWithdrawn: BigInt!
-  dollarWithdrawn: BigInt!
+  dollarWithdrawn: BigDecimal!
   timestamp: BigInt!
-  decimal: Int!
 }
 
 type Dividend @entity(immutable: true) {
-  id: String!
+  id: Bytes!
   ethAmount: BigInt!
-  sirEthPrice: BigDecimal!
+  sirEthPrice: BigDecimal
   stakedAmount: BigInt!
   timestamp: BigInt!
 }
 
 type Auction @entity(immutable: false) {
-  id: String!
-  token: Bytes!
+  id: Bytes!
+  token: Token! @link
   amount: BigInt!
   highestBid: BigInt!
   highestBidder: Bytes!
@@ -88,15 +80,15 @@ type Auction @entity(immutable: false) {
 }
 
 type AuctionsParticipant @entity(immutable: false) {
-  id: String!
+  id: Bytes!
   auctionId: Auction! @link
   user: Bytes!
   bid: BigInt!
 }
 
 type AuctionsHistory @entity(immutable: true) {
-  id: String!
-  token: Bytes!
+  id: Bytes!
+  token: Token! @link
   amount: BigInt!
   highestBid: BigInt!
   highestBidder: Bytes!

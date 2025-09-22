@@ -1,7 +1,7 @@
 // Consolidated mappings file for optimized subgraph
 // Combines tea.ts and auction.ts handlers to reduce redundancy
 
-import { Address, BigInt, store } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes, BigDecimal, store } from "@graphprotocol/graph-ts";
 import {
   AuctionedTokensSentToWinner,
   AuctionStarted,
@@ -17,7 +17,7 @@ import {
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
-import { getBestPoolPrice, generateUserPositionId } from "../helpers";
+import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken } from "../helpers";
 
 // ===== DIVIDEND HANDLERS =====
 
@@ -27,18 +27,21 @@ import { getBestPoolPrice, generateUserPositionId } from "../helpers";
  */
 export function handleDividendsPaid(event: DividendsPaid): void {
   // Create unique entity ID using transaction hash
-  const dividendsEntity = new Dividend(event.transaction.hash.toHex());
+  const dividendsEntity = new Dividend(event.transaction.hash);
   
   // Get current SIR token price in ETH directly from Uniswap pool
   const sirAddress_addr = Address.fromString(sirAddress);
   const wethAddress_addr = Address.fromString(wethAddress);
   const sirTokenEthPrice = getBestPoolPrice(sirAddress_addr, wethAddress_addr);
-  
+
   // Set entity properties from event parameters
   dividendsEntity.timestamp = event.block.timestamp;
   dividendsEntity.ethAmount = event.params.amountETH;
   dividendsEntity.stakedAmount = event.params.amountStakedSIR;
-  dividendsEntity.sirEthPrice = sirTokenEthPrice;
+  // Only set price if it's not zero (pool exists and has liquidity)
+  if (!sirTokenEthPrice.equals(BigDecimal.fromString("0"))) {
+    dividendsEntity.sirEthPrice = sirTokenEthPrice;
+  }
   dividendsEntity.save();
 }
 
@@ -61,19 +64,19 @@ export function handleClaim(event: RewardsClaimed): void {
   
   if (hasNoTeaTokens && hasNoUnclaimedRewards) {
     const userPositionId = generateUserPositionId(userAddress, vaultId);
-    store.remove("TeaPosition", userPositionId);
+    store.remove("TeaPosition", userPositionId.toHexString());
   }
 }
 
 // ===== AUCTION HANDLERS =====
 
 export function handleAuctionStarted(event: AuctionStarted): void {
-  const auctionId = event.params.token.toHex();
+  const auctionId = event.params.token;
   let auction = Auction.load(auctionId);
-  
+
   if (auction) {
     // Move current auction to history
-    const pastAuctionId = auctionId + "-" + auction.startTime.toString();
+    const pastAuctionId = Bytes.fromHexString(auctionId.toHexString() + auction.startTime.toString());
     const pastAuction = new AuctionsHistory(pastAuctionId);
     pastAuction.token = auction.token;
     pastAuction.startTime = auction.startTime;
@@ -85,13 +88,16 @@ export function handleAuctionStarted(event: AuctionStarted): void {
     // Clean up participants from previous auction
     const participants = auction.participants.load();
     participants.forEach((participant) => {
-      store.remove("AuctionsParticipant", participant.id);
+      store.remove("AuctionsParticipant", participant.id.toHexString());
     });
   }
 
+  // Get or create Token entity for the auction token
+  const tokenEntity = loadOrCreateToken(event.params.token);
+
   // Create new auction
   auction = new Auction(auctionId);
-  auction.token = event.params.token;
+  auction.token = tokenEntity.id;
   auction.startTime = event.block.timestamp;
   auction.amount = event.params.feesToBeAuctioned;
   auction.highestBid = BigInt.zero();
@@ -101,12 +107,12 @@ export function handleAuctionStarted(event: AuctionStarted): void {
 }
 
 export function handleBidReceived(event: BidReceived): void {
-  const auction = Auction.load(event.params.token.toHex());
+  const auction = Auction.load(event.params.token);
   if (auction == null) {
     return;
   }
 
-  const userID = event.params.token.toHex() + "-" + event.params.bidder.toHex();
+  const userID = Bytes.fromHexString(event.params.token.toHex() + event.params.bidder.toHex());
   let participant = AuctionsParticipant.load(userID);
   
   if (!participant) {
@@ -129,7 +135,7 @@ export function handleBidReceived(event: BidReceived): void {
 }
 
 export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void {
-  const auction = Auction.load(event.params.token.toHex());
+  const auction = Auction.load(event.params.token);
   if (auction == null) {
     return;
   }

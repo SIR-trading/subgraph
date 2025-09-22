@@ -1,4 +1,4 @@
-import { Address, BigInt, BigDecimal } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes } from "@graphprotocol/graph-ts";
 import { Vault } from "../generated/schema";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
 import { getTokenUsdcPrice, USDC } from "./helpers";
@@ -7,27 +7,24 @@ import { getTokenUsdcPrice, USDC } from "./helpers";
  * Safely loads or creates a vault entity
  * Reduces code duplication across handlers
  */
-export function loadOrCreateVault(vaultId: string): Vault {
+export function loadOrCreateVault(vaultId: Bytes): Vault {
   let vault = Vault.load(vaultId);
   if (!vault) {
     vault = new Vault(vaultId);
-    vault.vaultId = vaultId;
     vault.exists = false;
-    vault.collateralToken = "";
-    vault.debtToken = "";
+    // These will be set properly when vault is initialized
+    vault.collateralToken = Address.zero();
+    vault.debtToken = Address.zero();
+    vault.ape = Address.zero();
     vault.leverageTier = 0;
-    vault.collateralSymbol = "";
-    vault.debtSymbol = "";
-    vault.apeAddress = Address.zero();
-    vault.apeDecimals = 0;
-    vault.totalValueUsd = BigInt.fromI32(0);
+    vault.totalValueUsd = BigDecimal.fromString("0");
     vault.totalValue = BigInt.fromI32(0);
-    vault.teaCollateral = BigInt.fromI32(0);
-    vault.apeCollateral = BigInt.fromI32(0);
+    vault.reserveLPers = BigInt.fromI32(0);
+    vault.reserveApes = BigInt.fromI32(0);
     vault.lockedLiquidity = BigInt.fromI32(0);
-    vault.taxAmount = BigInt.fromI32(0);
+    vault.tax = BigInt.fromI32(0);
     vault.rate = BigInt.fromI32(0);
-    vault.totalTea = BigInt.fromI32(0);
+    vault.teaSupply = BigInt.fromI32(0);
     vault.feesIds = [];
   }
   return vault;
@@ -37,11 +34,12 @@ export function loadOrCreateVault(vaultId: string): Vault {
  * Calculates USDC value of vault collateral with caching
  * Optimized to reduce redundant price calculations
  */
-export function calculateVaultUsdcValue(vault: Vault, blockNumber: BigInt): BigInt {
-  const collateralToken = Address.fromString(vault.collateralToken);
+export function calculateVaultUsdcValue(vault: Vault, blockNumber: BigInt): BigDecimal {
+  const collateralToken = Address.fromBytes(vault.collateralToken);
   
   if (collateralToken.equals(USDC)) {
-    return vault.totalValue;
+    // For USDC, totalValue is already in 6 decimals, convert to BigDecimal
+    return vault.totalValue.toBigDecimal();
   }
 
   // Use full precision price calculation
@@ -59,6 +57,6 @@ export function calculateVaultUsdcValue(vault: Vault, blockNumber: BigInt): BigI
   // Multiply by 10^6 to maintain USD scaling, then convert to BigInt
   const scaledResult = resultDecimal.times(BigDecimal.fromString("1000000"));
   
-  // Convert final result to BigInt
-  return BigInt.fromString(scaledResult.truncate(0).toString());
+  // Return as BigDecimal (already in USD with 6 decimal precision)
+  return scaledResult;
 }

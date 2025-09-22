@@ -1,11 +1,10 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ClosedApePosition, Fee } from "../../generated/schema";
-import { ERC20 } from "../../generated/VaultExternal/ERC20";
+import { ApePosition, Vault, ApePositionClosed, Fee, Token } from "../../generated/schema";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, BigDecimal, DataSourceContext, store } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
-import { generateApePositionId, getCollateralUsdPrice } from "../helpers";
+import { generateApePositionId, getCollateralUsdPrice, loadOrCreateToken, bigIntToHex } from "../helpers";
 import { 
   loadOrCreateVault, 
   calculateVaultUsdcValue 
@@ -21,8 +20,8 @@ import {
  * Generates a unique Fee entity ID based on vault ID and timestamp
  * Format: vaultId-timestamp to enable time-based filtering
  */
-function generateFeesId(vaultId: string, timestamp: BigInt): string {
-  return vaultId + "-" + timestamp.toString();
+function generateFeesId(vaultId: Bytes, timestamp: BigInt): Bytes {
+  return Bytes.fromHexString(vaultId.toHexString() + bigIntToHex(timestamp).slice(2));
 }
 
 /**
@@ -31,9 +30,9 @@ function generateFeesId(vaultId: string, timestamp: BigInt): string {
  * Aggregates APYs when multiple fees have the same timestamp
  */
 function createFeesEntity(
-  vaultId: string, 
-  vault: Vault, 
-  collateralFeeToLPers: BigInt, 
+  vaultId: Bytes,
+  vault: Vault,
+  collateralFeeToLPers: BigInt,
   timestamp: BigInt
 ): void {
   // Generate ID for this fees entry
@@ -42,9 +41,9 @@ function createFeesEntity(
   // Calculate LP APY: fees deposited divided by tea collateral
   let newLpApy = BigDecimal.fromString("0");
   
-  // Since ReservesChanged comes before Mint/Burn, teaCollateral already includes the fees
+  // Since ReservesChanged comes before Mint/Burn, reserveLPers already includes the fees
   // We need to subtract the fees to get the base collateral amount for accurate APY calculation
-  const baseTeaCollateral = vault.teaCollateral.minus(collateralFeeToLPers);
+  const baseTeaCollateral = vault.reserveLPers.minus(collateralFeeToLPers);
   
   if (baseTeaCollateral.gt(BigInt.fromI32(0))) {
     // Convert fees to BigDecimal for precision
@@ -98,7 +97,7 @@ function cleanupOldFees(vault: Vault, currentTimestamp: BigInt): void {
     
     if (fees && fees.timestamp.lt(cutoffTimestamp)) {
       // Remove old fees entry from storage and array
-      store.remove("Fee", oldestFeesId);
+      store.remove("Fee", oldestFeesId.toHexString());
       currentFeesIds.shift(); // Remove from front of array
     } else {
       // Found a recent fee (within 1 month), all subsequent ones are also recent
@@ -112,17 +111,13 @@ function cleanupOldFees(vault: Vault, currentTimestamp: BigInt): void {
 export function handleVaultTax(event: VaultNewTax): void {
   const tax = BigInt.fromU32(event.params.tax);
   const cumulativeTax = BigInt.fromU32(event.params.cumulativeTax);
-  const vaultIdHex = event.params.vault.toHexString();
-  const vaultIdDecimal = event.params.vault.toString();
+  const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vault));
 
-  // Use utility function to load or create vault (using hex as entity ID)
-  let vault = loadOrCreateVault(vaultIdHex);
-
-  // Set vaultId as decimal string to match the format used in handleVaultInitialized
-  vault.vaultId = vaultIdDecimal;
+  // Use utility function to load or create vault
+  let vault = loadOrCreateVault(vaultId);
 
   if (!cumulativeTax.gt(BigInt.fromI32(0))) {
-    vault.taxAmount = BigInt.fromI32(0);
+    vault.tax = BigInt.fromI32(0);
     vault.rate = BigInt.fromI32(0);
     vault.save();
     return;
@@ -135,32 +130,45 @@ export function handleVaultTax(event: VaultNewTax): void {
     .times(issuanceRate)
     .div(cumulativeTax)
 
-  vault.taxAmount = tax;
+  vault.tax = tax;
   vault.rate = rate;
   vault.save();
 }
 
 export function handleVaultInitialized(event: VaultInitialized): void {
-  const vaultIdString = event.params.vaultId.toHexString();
+  const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
 
   // Load or create vault (vault may have been created by tax event)
-  let vault = loadOrCreateVault(vaultIdString);
+  let vault = loadOrCreateVault(vaultId);
 
-  // Get token information
-  const collateralTokenContract = ERC20.bind(event.params.collateralToken);
-  const debtTokenContract = ERC20.bind(event.params.debtToken);
-  const debtSymbol = debtTokenContract.symbol();
-  const collateralSymbol = collateralTokenContract.symbol();
-  const collateralDecimals = collateralTokenContract.decimals();
+  // Get or create Token entities
+  const collateralToken = loadOrCreateToken(event.params.collateralToken);
+  const debtToken = loadOrCreateToken(event.params.debtToken);
+  const apeToken = loadOrCreateToken(event.params.ape);
 
   // Only create APE template if vault hasn't been initialized yet
   if (!vault.exists) {
     // Create data source context for APE template
     const context = new DataSourceContext();
     context.setString("apeAddress", event.params.ape.toHexString());
-    context.setString("collateralSymbol", collateralSymbol);
+
+    // Handle nullable symbols
+    const collSymbol = collateralToken.symbol;
+    if (collSymbol) {
+      context.setString("collateralSymbol", collSymbol);
+    } else {
+      context.setString("collateralSymbol", "");
+    }
+
     context.setString("collateralToken", event.params.collateralToken.toHexString());
-    context.setString("debtSymbol", debtSymbol);
+
+    const debtSymbol = debtToken.symbol;
+    if (debtSymbol) {
+      context.setString("debtSymbol", debtSymbol);
+    } else {
+      context.setString("debtSymbol", "");
+    }
+
     context.setString("debtToken", event.params.debtToken.toHexString());
     context.setString("leverageTier", event.params.leverageTier.toString());
     context.setString("vaultId", event.params.vaultId.toString());
@@ -169,22 +177,18 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   }
 
   // Always update vault with all required fields (whether new or existing from tax event)
-  vault.collateralToken = event.params.collateralToken.toHexString();
-  vault.debtToken = event.params.debtToken.toHex();
+  vault.collateralToken = collateralToken.id;
+  vault.debtToken = debtToken.id;
+  vault.ape = apeToken.id;
   vault.leverageTier = event.params.leverageTier;
-  vault.apeDecimals = collateralDecimals;
-  vault.collateralSymbol = collateralSymbol;
-  vault.debtSymbol = debtSymbol;
-  vault.vaultId = event.params.vaultId.toString();
-  vault.apeAddress = event.params.ape;
   vault.exists = true;
   vault.save();
 }
 
 export function handleReservesChanged(event: ReservesChanged): void {
-  const vaultIdString = event.params.vaultId.toHexString();
-    
-  let vault = Vault.load(vaultIdString);
+  const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
+
+  let vault = Vault.load(vaultId);
   if (!vault) {
     return; // Exit if vault does not exist
   }
@@ -193,8 +197,8 @@ export function handleReservesChanged(event: ReservesChanged): void {
   const total = params.reserveApes.plus(params.reserveLPers);
 
   // Update vault reserves and total value
-  vault.apeCollateral = params.reserveApes;
-  vault.teaCollateral = params.reserveLPers;
+  vault.reserveApes = params.reserveApes;
+  vault.reserveLPers = params.reserveLPers;
   vault.totalValue = total;
 
   // Calculate USD values with caching
@@ -209,13 +213,14 @@ export function handleMint(event: Mint): void {
     return; // Only handle APE mints
   }
 
-  const vault = Vault.load(event.params.vaultId.toHexString());
+  const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
+  const vault = Vault.load(vaultId);
   if (!vault) {
     return;
   }
 
   // Check if TEA supply is 0 - if so, skip fees creation as per requirement
-  if (vault.totalTea.equals(BigInt.fromI32(0))) {
+  if (vault.teaSupply.equals(BigInt.fromI32(0))) {
     // Still process the APE position but don't create fees
     processApePosition(event, vault);
     return;
@@ -247,44 +252,50 @@ function processApePosition(event: Mint, vault: Vault): void {
   let apePosition = ApePosition.load(apePositionId);
   if (!apePosition) {
     apePosition = new ApePosition(apePositionId);
-    apePosition.vaultId = vaultIdBigInt.toHexString();
+    apePosition.vault = vault.id;
     apePosition.user = userAddress;
     apePosition.collateralTotal = BigInt.fromI32(0);
-    apePosition.dollarTotal = BigInt.fromI32(0);
+    apePosition.dollarTotal = BigDecimal.fromString("0");
+    apePosition.debtTokenTotal = BigInt.fromI32(0);
     apePosition.balance = BigInt.fromI32(0);
-    
-    // Set additional fields for the merged entity
-    const collateralTokenAddress = Address.fromString(vault.collateralToken);
-    const collateralTokenContract = ERC20.bind(collateralTokenAddress);
-    const debtTokenAddress = Address.fromString(vault.debtToken);
-    const debtTokenContract = ERC20.bind(debtTokenAddress);
-    
-    apePosition.decimals = collateralTokenContract.decimals();
-    apePosition.ape = vault.apeAddress.toHexString();
-    apePosition.collateralToken = vault.collateralToken;
-    apePosition.debtToken = vault.debtToken;
-    apePosition.collateralSymbol = collateralTokenContract.symbol();
-    apePosition.debtSymbol = debtTokenContract.symbol();
-    apePosition.leverageTier = vault.leverageTier.toString();
   }
 
   const collateralDeposited = event.params.collateralIn.plus(
     event.params.collateralFeeToLPers.plus(event.params.collateralFeeToStakers)
   );
 
+  // Get collateral token decimals from the Token entity
+  const collateralToken = Token.load(vault.collateralToken);
+  const collateralDecimals = collateralToken ? collateralToken.decimals : 18;
+
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
   const dollarCollateralDeposited = collateralDeposited
     .toBigDecimal()
     .times(collateralPriceUsd)
-    .times(BigDecimal.fromString("1000000")) // Scale to 6 decimals for USD
-    .div(BigInt.fromI32(10).pow(u8(vault.apeDecimals)).toBigDecimal()); // Divide by collateral decimals
-  const dollarCollateralDepositedBigInt = BigInt.fromString(dollarCollateralDeposited.truncate(0).toString());
+    .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal()); // Convert to true USD value
 
   const tokensMinted = event.params.tokenOut;
 
+  // Calculate debt token cost for this mint
+  // For APE positions, debt tokens are swapped for collateral
+  // We need the debt token price to calculate how much debt token was spent
+  const debtToken = Token.load(vault.debtToken);
+  const debtDecimals = debtToken ? debtToken.decimals : 18;
+
+  // Get debt token price in USD
+  const debtPriceUsd = getCollateralUsdPrice(vault.debtToken, event.block.number);
+
+  // Calculate debt token amount from USD value
+  // debtTokenAmount = dollarCollateralDeposited / debtPriceUsd * 10^debtDecimals
+  const debtTokenAmountDecimal = dollarCollateralDeposited
+    .times(BigInt.fromI32(10).pow(u8(debtDecimals)).toBigDecimal())
+    .div(debtPriceUsd);
+  const debtTokenAmount = BigInt.fromString(debtTokenAmountDecimal.truncate(0).toString());
+
   // Update APE position
   apePosition.collateralTotal = apePosition.collateralTotal.plus(collateralDeposited);
-  apePosition.dollarTotal = apePosition.dollarTotal.plus(dollarCollateralDepositedBigInt);
+  apePosition.dollarTotal = apePosition.dollarTotal.plus(dollarCollateralDeposited);
+  apePosition.debtTokenTotal = apePosition.debtTokenTotal.plus(debtTokenAmount);
   apePosition.balance = apePosition.balance.plus(tokensMinted);
   apePosition.save();
 }
@@ -294,12 +305,13 @@ export function handleBurn(event: Burn): void {
     return; // Only handle APE burns
   }
 
-  const vault = Vault.load(event.params.vaultId.toHexString());
+  const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
+  const vault = Vault.load(vaultId);
   if (!vault) {
     return;
   }
 
-  // Create fees entity when APE is burned (totalTea is always > 0 for burns)
+  // Create fees entity when APE is burned (teaSupply is always > 0 for burns)
   const collateralFeeToLPers = event.params.collateralFeeToLPers;
   if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
     createFeesEntity(
@@ -326,9 +338,13 @@ function processBurnPosition(event: Burn, vault: Vault): void {
     return;
   }
 
-  const closedApePosition = new ClosedApePosition(event.transaction.hash.toHexString());
-  closedApePosition.vaultId = vaultIdBigInt.toHexString();
+  const closedApePosition = new ApePositionClosed(event.transaction.hash);
+  closedApePosition.vault = vault.id;
   closedApePosition.user = userAddress;
+
+  // Get collateral token decimals from the Token entity
+  const collateralToken = Token.load(vault.collateralToken);
+  const collateralDecimals = collateralToken ? collateralToken.decimals : 18;
 
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
   const tokensBurned = event.params.tokenIn;
@@ -337,28 +353,38 @@ function processBurnPosition(event: Burn, vault: Vault): void {
   closedApePosition.collateralDeposited = apePosition.collateralTotal
     .times(tokensBurned)
     .div(apePosition.balance);
-  closedApePosition.dollarDeposited = apePosition.dollarTotal
-    .times(tokensBurned)
-    .div(apePosition.balance);
+
+  // Calculate dollar deposited as BigDecimal
+  const dollarDeposited = apePosition.dollarTotal
+    .times(tokensBurned.toBigDecimal())
+    .div(apePosition.balance.toBigDecimal());
+
+  // Store in ApePositionClosed
+  closedApePosition.dollarDeposited = dollarDeposited;
+
   closedApePosition.collateralWithdrawn = event.params.collateralWithdrawn;
-  
+
   const dollarWithdrawn = closedApePosition.collateralWithdrawn
     .toBigDecimal()
     .times(collateralPriceUsd)
-    .times(BigDecimal.fromString("1000000")) // Scale to 6 decimals for USD
-    .div(BigInt.fromI32(10).pow(u8(vault.apeDecimals)).toBigDecimal()); // Divide by collateral decimals
-  closedApePosition.dollarWithdrawn = BigInt.fromString(dollarWithdrawn.truncate(0).toString());
+    .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal()); // Convert to true USD value
+  closedApePosition.dollarWithdrawn = dollarWithdrawn;
   closedApePosition.timestamp = event.block.timestamp;
-  closedApePosition.decimal = ERC20.bind(Address.fromString(vault.collateralToken)).decimals();
+
+  // Calculate proportional debt token amount to reduce
+  const debtTokenBurned = apePosition.debtTokenTotal
+    .times(tokensBurned)
+    .div(apePosition.balance);
 
   // Update current APE position
   apePosition.collateralTotal = apePosition.collateralTotal.minus(closedApePosition.collateralDeposited);
-  apePosition.dollarTotal = apePosition.dollarTotal.minus(closedApePosition.dollarDeposited);
+  apePosition.dollarTotal = apePosition.dollarTotal.minus(dollarDeposited);
+  apePosition.debtTokenTotal = apePosition.debtTokenTotal.minus(debtTokenBurned);
   apePosition.balance = apePosition.balance.minus(tokensBurned);
 
   // Remove position if balance becomes zero, otherwise save it
   if (apePosition.balance.equals(BigInt.fromI32(0))) {
-    store.remove("ApePosition", apePosition.id);
+    store.remove("ApePosition", apePosition.id.toHexString());
   } else {
     apePosition.save();
   }

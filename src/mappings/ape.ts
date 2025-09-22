@@ -1,9 +1,7 @@
-import { ApePosition } from "../../generated/schema";
+import { ApePosition, Token } from "../../generated/schema";
 import { Transfer } from "../../generated/templates/APE/APE";
-import { Address, BigInt, dataSource, store } from "@graphprotocol/graph-ts";
-
-import { ERC20 } from "../../generated/templates/APE/ERC20";
-import { generateApePositionId } from "../helpers";
+import { Address, BigInt, dataSource, store, Bytes } from "@graphprotocol/graph-ts";
+import { generateApePositionId, loadOrCreateToken, bigIntToHex } from "../helpers";
 
 export function handleTransferFrom(event: Transfer): void {
   // Skip mint and burn operations (from/to zero address)
@@ -16,10 +14,7 @@ export function handleTransferFrom(event: Transfer): void {
   const context = dataSource.context();
   const apeAddress = context.getString("apeAddress");
   const debtToken = context.getString("debtToken");
-  const debtSymbol = context.getString("debtSymbol");
   const collateralToken = context.getString("collateralToken");
-  const collateralSymbol = context.getString("collateralSymbol");
-  const leverageTier = context.getString("leverageTier");
   const vaultId = context.getString("vaultId");
   
   const vaultIdBigInt = BigInt.fromString(vaultId);
@@ -36,25 +31,27 @@ export function handleTransferFrom(event: Transfer): void {
     // Ensure position has cost tracking data
     if (senderPosition.balance.equals(BigInt.fromI32(0))) {
       // Handle edge case where position exists but has zero balance
-      store.remove("ApePosition", senderPosition.id);
+      store.remove("ApePosition", senderPosition.id.toHexString());
       return;
     }
     
     // Calculate the proportion being transferred
     const transferProportion = transferAmount.toBigDecimal().div(senderPosition.balance.toBigDecimal());
-    
-    // Calculate collateral and dollar amounts to transfer based on proportion
+
+    // Calculate collateral, dollar, and debt token amounts to transfer based on proportion
     const collateralToTransfer = senderPosition.collateralTotal.toBigDecimal().times(transferProportion);
-    const dollarToTransfer = senderPosition.dollarTotal.toBigDecimal().times(transferProportion);
-    
+    const dollarToTransfer = senderPosition.dollarTotal.times(transferProportion);
+    const debtTokenToTransfer = senderPosition.debtTokenTotal.toBigDecimal().times(transferProportion);
+
     // Update sender position
     senderPosition.balance = senderPosition.balance.minus(transferAmount);
     senderPosition.collateralTotal = senderPosition.collateralTotal.minus(BigInt.fromString(collateralToTransfer.truncate(0).toString()));
-    senderPosition.dollarTotal = senderPosition.dollarTotal.minus(BigInt.fromString(dollarToTransfer.truncate(0).toString()));
+    senderPosition.dollarTotal = senderPosition.dollarTotal.minus(dollarToTransfer);
+    senderPosition.debtTokenTotal = senderPosition.debtTokenTotal.minus(BigInt.fromString(debtTokenToTransfer.truncate(0).toString()));
     
     // Remove position if balance is zero
     if (senderPosition.balance.equals(BigInt.fromI32(0))) {
-      store.remove("ApePosition", senderPosition.id);
+      store.remove("ApePosition", senderPosition.id.toHexString());
     } else {
       senderPosition.save();
     }
@@ -64,30 +61,32 @@ export function handleTransferFrom(event: Transfer): void {
       // Merge positions with weighted average cost
       const newTotalBalance = recipientPosition.balance.plus(transferAmount);
       const newCollateralTotal = recipientPosition.collateralTotal.plus(BigInt.fromString(collateralToTransfer.truncate(0).toString()));
-      const newDollarTotal = recipientPosition.dollarTotal.plus(BigInt.fromString(dollarToTransfer.truncate(0).toString()));
-      
+      const newDollarTotal = recipientPosition.dollarTotal.plus(dollarToTransfer);
+      const newDebtTokenTotal = recipientPosition.debtTokenTotal.plus(BigInt.fromString(debtTokenToTransfer.truncate(0).toString()));
+
       recipientPosition.balance = newTotalBalance;
       recipientPosition.collateralTotal = newCollateralTotal;
       recipientPosition.dollarTotal = newDollarTotal;
+      recipientPosition.debtTokenTotal = newDebtTokenTotal;
       recipientPosition.save();
     } else {
       // Create new position with transferred amounts
       const collateralTokenAddress = Address.fromString(collateralToken);
-      const collateralTokenContract = ERC20.bind(collateralTokenAddress);
-      
+      const debtTokenAddress = Address.fromString(debtToken);
+      const apeTokenAddress = Address.fromString(apeAddress);
+
+      // Get or create Token entities
+      const collateralTokenEntity = loadOrCreateToken(collateralTokenAddress);
+      const debtTokenEntity = loadOrCreateToken(debtTokenAddress);
+      const apeTokenEntity = loadOrCreateToken(apeTokenAddress);
+
       recipientPosition = new ApePosition(recipientPositionId);
       recipientPosition.user = event.params.to;
       recipientPosition.balance = transferAmount;
-      recipientPosition.vaultId = vaultId;
-      recipientPosition.decimals = collateralTokenContract.decimals();
-      recipientPosition.ape = apeAddress;
-      recipientPosition.collateralToken = collateralToken;
-      recipientPosition.debtToken = debtToken;
-      recipientPosition.debtSymbol = debtSymbol;
-      recipientPosition.collateralSymbol = collateralSymbol;
-      recipientPosition.leverageTier = leverageTier;
+      recipientPosition.vault = Bytes.fromHexString(bigIntToHex(vaultIdBigInt));
       recipientPosition.collateralTotal = BigInt.fromString(collateralToTransfer.truncate(0).toString());
-      recipientPosition.dollarTotal = BigInt.fromString(dollarToTransfer.truncate(0).toString());
+      recipientPosition.dollarTotal = dollarToTransfer;
+      recipientPosition.debtTokenTotal = BigInt.fromString(debtTokenToTransfer.truncate(0).toString());
       recipientPosition.save();
     }
   } else {

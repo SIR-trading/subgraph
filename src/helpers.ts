@@ -1,6 +1,7 @@
-import { Address, BigInt, BigDecimal, ethereum } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { usdcAddress, wethAddress, uniswapV3FactoryAddress } from "./contracts";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
+import { Token } from "../generated/schema";
 
 // Price cache to avoid redundant calculations within the same block
 class PriceCache {
@@ -308,32 +309,90 @@ export function priceToScaledBigInt(price: BigDecimal, decimals: i32): BigInt {
 }
 
 /**
+ * Converts a BigInt to a padded hex string suitable for Bytes.fromHexString
+ * Ensures the hex string has even length by padding with a leading zero if needed
+ */
+export function bigIntToHex(value: BigInt): string {
+  let hex = value.toHexString();
+  // Remove 0x prefix
+  if (hex.startsWith("0x")) {
+    hex = hex.slice(2);
+  }
+  // Pad with leading zero if odd length
+  if (hex.length % 2 !== 0) {
+    hex = "0" + hex;
+  }
+  return "0x" + hex;
+}
+
+/**
  * Generates a deterministic ID by combining two hex strings
  * More efficient than string concatenation
  */
-export function generateCompositeId(part1: string, part2: string): string {
-  return part1 + "-" + part2;
+export function generateCompositeId(part1: string, part2: string): Bytes {
+  // Remove 0x prefix if present and combine
+  const clean1 = part1.startsWith("0x") ? part1.slice(2) : part1;
+  const clean2 = part2.startsWith("0x") ? part2.slice(2) : part2;
+  return Bytes.fromHexString("0x" + clean1 + clean2);
 }
 
 /**
  * Generates a user position ID for TEA tokens
  */
-export function generateUserPositionId(userAddress: Address, vaultId: BigInt): string {
-  return generateCompositeId(userAddress.toHexString(), vaultId.toHexString());
+export function generateUserPositionId(userAddress: Address, vaultId: BigInt): Bytes {
+  return generateCompositeId(userAddress.toHexString(), bigIntToHex(vaultId));
 }
 
 /**
  * Generates an APE position ID
  */
-export function generateApePositionId(userAddress: Address, vaultId: BigInt): string {
-  return generateCompositeId(userAddress.toHexString(), vaultId.toHexString());
+export function generateApePositionId(userAddress: Address, vaultId: BigInt): Bytes {
+  return generateCompositeId(userAddress.toHexString(), bigIntToHex(vaultId));
 }
 
 /**
  * Calculates collateral USD price with caching
  */
-export function getCollateralUsdPrice(tokenAddress: string, blockNumber: BigInt): BigDecimal {
-  const token = Address.fromString(tokenAddress);
-  const priceUsd = getTokenUsdcPrice(token, blockNumber);
+export function getCollateralUsdPrice(tokenId: Bytes, blockNumber: BigInt): BigDecimal {
+  const tokenEntity = Token.load(tokenId);
+  if (!tokenEntity) {
+    return BigDecimal.zero();
+  }
+  const priceUsd = getTokenUsdcPrice(Address.fromBytes(tokenEntity.id), blockNumber);
   return priceUsd; // Return BigDecimal directly
+}
+
+/**
+ * Loads or creates a Token entity
+ */
+export function loadOrCreateToken(tokenAddress: Address): Token {
+  const tokenId = Bytes.fromHexString(tokenAddress.toHexString());
+  let token = Token.load(tokenId);
+
+  if (!token) {
+    token = new Token(tokenId);
+
+    // Fetch token details from ERC20 contract
+    const tokenContract = ERC20.bind(tokenAddress);
+
+    // Try to get symbol, handle failure gracefully
+    const symbolResult = tokenContract.try_symbol();
+    if (!symbolResult.reverted) {
+      token.symbol = symbolResult.value;
+    } else {
+      token.symbol = null; // Symbol is optional
+    }
+
+    // Try to get decimals, default to 18 if fails
+    const decimalsResult = tokenContract.try_decimals();
+    if (!decimalsResult.reverted) {
+      token.decimals = decimalsResult.value;
+    } else {
+      token.decimals = 18; // Default to 18 decimals
+    }
+
+    token.save();
+  }
+
+  return token;
 }
