@@ -1,10 +1,10 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ApePositionClosed, Fee, Token } from "../../generated/schema";
+import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition } from "../../generated/schema";
 import { Sir } from "../../generated/Tvl/Sir";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
 import { sirAddress } from "../contracts";
-import { generateApePositionId, getCollateralUsdPrice, loadOrCreateToken, bigIntToHex } from "../helpers";
+import { generateApePositionId, getCollateralUsdPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
 import { 
   loadOrCreateVault, 
   calculateVaultUsdcValue 
@@ -209,57 +209,123 @@ export function handleReservesChanged(event: ReservesChanged): void {
 }
 
 export function handleMint(event: Mint): void {
-  if (event.params.isAPE === false) {
-    return; // Only handle APE mints
-  }
-
   const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
   const vault = Vault.load(vaultId);
   if (!vault) {
     return;
   }
 
-  // Check if TEA supply is 0 - if so, skip fees creation as per requirement
-  if (vault.teaSupply.equals(BigInt.fromI32(0))) {
-    // Still process the APE position but don't create fees
-    processApePosition(event, vault);
-    return;
-  }
+  const isAPE = event.params.isAPE;
 
-  // Create fees entity when APE is minted and TEA supply > 0
-  const collateralFeeToLPers = event.params.collateralFeeToLPers;
-  if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
-    createFeesEntity(
-      vault.id,
-      vault,
-      collateralFeeToLPers,
-      event.block.timestamp
-    );
-  }
+  if (isAPE) {
+    // Check if TEA supply is 0 - if so, skip fees creation as per requirement
+    if (vault.teaSupply.gt(BigInt.fromI32(0))) {
+      // Create fees entity when APE is minted and TEA supply > 0
+      const collateralFeeToLPers = event.params.collateralFeeToLPers;
+      if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
+        createFeesEntity(
+          vault.id,
+          vault,
+          collateralFeeToLPers,
+          event.block.timestamp
+        );
+      }
+    }
 
-  // Process the APE position
-  processApePosition(event, vault);
+
+
+    // Process the APE position
+    processApeMint(event, vault);
+  } else {
+    // Process the TEA position
+    processTeaMint(event, vault);
+  }
 }
 
 /**
  * Processes APE position creation/update for mint events
  */
-function processApePosition(event: Mint, vault: Vault): void {
+function processApeMint(event: Mint, vault: Vault): void {
   const userAddress = event.params.minter;
   const vaultIdBigInt = event.params.vaultId;
-  const apePositionId = generateApePositionId(userAddress, vaultIdBigInt);
+  const positionId = generateApePositionId(userAddress, vaultIdBigInt);
 
-  let apePosition = ApePosition.load(apePositionId);
-  if (!apePosition) {
-    apePosition = new ApePosition(apePositionId);
-    apePosition.vault = vault.id;
-    apePosition.user = userAddress;
-    apePosition.collateralTotal = BigInt.fromI32(0);
-    apePosition.dollarTotal = BigDecimal.fromString("0");
-    apePosition.debtTokenTotal = BigInt.fromI32(0);
-    apePosition.balance = BigInt.fromI32(0);
+  // Calculate position updates
+  const updates = calculatePositionUpdates(event, vault);
+
+  // Load or create position
+  let position = ApePosition.load(positionId);
+  if (!position) {
+    position = new ApePosition(positionId);
+    position.vault = vault.id;
+    position.user = userAddress;
+    position.collateralTotal = BigInt.fromI32(0);
+    position.dollarTotal = BigDecimal.fromString("0");
+    position.debtTokenTotal = BigInt.fromI32(0);
+    position.balance = BigInt.fromI32(0);
   }
 
+  // Update position with calculated values
+  position.collateralTotal = position.collateralTotal.plus(updates.collateralDeposited);
+  position.dollarTotal = position.dollarTotal.plus(updates.dollarCollateralDeposited);
+  position.debtTokenTotal = position.debtTokenTotal.plus(updates.debtTokenAmount);
+  position.balance = position.balance.plus(updates.tokensMinted);
+  position.save();
+}
+
+/**
+ * Processes TEA position creation/update for mint events
+ */
+function processTeaMint(event: Mint, vault: Vault): void {
+  const userAddress = event.params.minter;
+  const vaultIdBigInt = event.params.vaultId;
+  const positionId = generateUserPositionId(userAddress, vaultIdBigInt);
+
+  // Calculate position updates
+  const updates = calculatePositionUpdates(event, vault);
+
+  // Load or create position
+  let position = TeaPosition.load(positionId);
+  if (!position) {
+    position = new TeaPosition(positionId);
+    position.vault = vault.id;
+    position.user = userAddress;
+    position.collateralTotal = BigInt.fromI32(0);
+    position.dollarTotal = BigDecimal.fromString("0");
+    position.debtTokenTotal = BigInt.fromI32(0);
+    position.balance = BigInt.fromI32(0);
+  }
+
+  // Update position with calculated values
+  position.collateralTotal = position.collateralTotal.plus(updates.collateralDeposited);
+  position.dollarTotal = position.dollarTotal.plus(updates.dollarCollateralDeposited);
+  position.debtTokenTotal = position.debtTokenTotal.plus(updates.debtTokenAmount);
+  position.balance = position.balance.plus(updates.tokensMinted);
+  position.save();
+}
+
+/**
+ * Class to hold position update values
+ */
+class PositionUpdates {
+  collateralDeposited: BigInt;
+  dollarCollateralDeposited: BigDecimal;
+  debtTokenAmount: BigInt;
+  tokensMinted: BigInt;
+
+  constructor() {
+    this.collateralDeposited = BigInt.fromI32(0);
+    this.dollarCollateralDeposited = BigDecimal.fromString("0");
+    this.debtTokenAmount = BigInt.fromI32(0);
+    this.tokensMinted = BigInt.fromI32(0);
+  }
+}
+
+/**
+ * Helper function to calculate position updates from mint event
+ */
+function calculatePositionUpdates(event: Mint, vault: Vault): PositionUpdates {
+  // Include all collateral (base + fees)
   const collateralDeposited = event.params.collateralIn.plus(
     event.params.collateralFeeToLPers.plus(event.params.collateralFeeToStakers)
   );
@@ -272,64 +338,62 @@ function processApePosition(event: Mint, vault: Vault): void {
   const dollarCollateralDeposited = collateralDeposited
     .toBigDecimal()
     .times(collateralPriceUsd)
-    .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal()); // Convert to true USD value
+    .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
 
-  const tokensMinted = event.params.tokenOut;
-
-  // Calculate debt token cost for this mint
-  // For APE positions, debt tokens are swapped for collateral
-  // We need the debt token price to calculate how much debt token was spent
+  // Calculate debt token equivalent
   const debtToken = Token.load(vault.debtToken);
   const debtDecimals = debtToken ? debtToken.decimals : 18;
-
-  // Get debt token price in USD
   const debtPriceUsd = getCollateralUsdPrice(vault.debtToken, event.block.number);
 
-  // Calculate debt token amount from USD value
-  // debtTokenAmount = dollarCollateralDeposited / debtPriceUsd * 10^debtDecimals
   const debtTokenAmountDecimal = dollarCollateralDeposited
     .times(BigInt.fromI32(10).pow(u8(debtDecimals)).toBigDecimal())
     .div(debtPriceUsd);
   const debtTokenAmount = BigInt.fromString(debtTokenAmountDecimal.truncate(0).toString());
 
-  // Update APE position
-  apePosition.collateralTotal = apePosition.collateralTotal.plus(collateralDeposited);
-  apePosition.dollarTotal = apePosition.dollarTotal.plus(dollarCollateralDeposited);
-  apePosition.debtTokenTotal = apePosition.debtTokenTotal.plus(debtTokenAmount);
-  apePosition.balance = apePosition.balance.plus(tokensMinted);
-  apePosition.save();
+  const tokensMinted = event.params.tokenOut;
+
+  const result = new PositionUpdates();
+  result.collateralDeposited = collateralDeposited;
+  result.dollarCollateralDeposited = dollarCollateralDeposited;
+  result.debtTokenAmount = debtTokenAmount;
+  result.tokensMinted = tokensMinted;
+  return result;
 }
 
 export function handleBurn(event: Burn): void {
-  if (event.params.isAPE === false) {
-    return; // Only handle APE burns
-  }
-
   const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
   const vault = Vault.load(vaultId);
   if (!vault) {
     return;
   }
 
-  // Create fees entity when APE is burned (teaSupply is always > 0 for burns)
-  const collateralFeeToLPers = event.params.collateralFeeToLPers;
-  if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
-    createFeesEntity(
-      vault.id,
-      vault,
-      collateralFeeToLPers,
-      event.block.timestamp
-    );
-  }
+  const isAPE = event.params.isAPE;
 
-  // Process the APE position burn
-  processBurnPosition(event, vault);
+  if (isAPE) {
+    // Handle APE burn
+    // Create fees entity when APE is burned (teaSupply is always > 0 for burns)
+    const collateralFeeToLPers = event.params.collateralFeeToLPers;
+    if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
+      createFeesEntity(
+        vault.id,
+        vault,
+        collateralFeeToLPers,
+        event.block.timestamp
+      );
+    }
+
+    // Process the APE position burn
+    processApeBurn(event, vault);
+  } else {
+    // Handle TEA burn
+    processTeaBurn(event, vault);
+  }
 }
 
 /**
  * Processes APE position updates for burn events
  */
-function processBurnPosition(event: Burn, vault: Vault): void {
+function processApeBurn(event: Burn, vault: Vault): void {
   const userAddress = event.params.burner;
   const vaultIdBigInt = event.params.vaultId;
   const apePositionId = generateApePositionId(userAddress, vaultIdBigInt);
@@ -390,6 +454,46 @@ function processBurnPosition(event: Burn, vault: Vault): void {
   }
   
   closedApePosition.save();
+}
+
+/**
+ * Processes TEA position updates for burn events
+ */
+function processTeaBurn(event: Burn, vault: Vault): void {
+  const userAddress = event.params.burner;
+  const vaultIdBigInt = event.params.vaultId;
+  const teaPositionId = generateUserPositionId(userAddress, vaultIdBigInt);
+  const teaPosition = TeaPosition.load(teaPositionId);
+  if (!teaPosition) {
+    return;
+  }
+
+  const tokensBurned = event.params.tokenIn;
+
+  // Calculate proportion being burned
+  const burnProportion = tokensBurned.toBigDecimal().div(teaPosition.balance.toBigDecimal());
+
+  // Calculate amounts to reduce based on proportion
+  const collateralToReduce = BigInt.fromString(
+    teaPosition.collateralTotal.toBigDecimal().times(burnProportion).truncate(0).toString()
+  );
+  const dollarToReduce = teaPosition.dollarTotal.times(burnProportion);
+  const debtTokenToReduce = BigInt.fromString(
+    teaPosition.debtTokenTotal.toBigDecimal().times(burnProportion).truncate(0).toString()
+  );
+
+  // Update TEA position
+  teaPosition.collateralTotal = teaPosition.collateralTotal.minus(collateralToReduce);
+  teaPosition.dollarTotal = teaPosition.dollarTotal.minus(dollarToReduce);
+  teaPosition.debtTokenTotal = teaPosition.debtTokenTotal.minus(debtTokenToReduce);
+  teaPosition.balance = teaPosition.balance.minus(tokensBurned);
+
+  // Remove position if balance becomes zero, otherwise save it
+  if (teaPosition.balance.equals(BigInt.fromI32(0))) {
+    store.remove("TeaPosition", teaPosition.id.toHexString());
+  } else {
+    teaPosition.save();
+  }
 }
 
 // TEA transfer handlers (consolidated from tea.ts)

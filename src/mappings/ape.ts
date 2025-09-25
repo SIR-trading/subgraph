@@ -12,9 +12,6 @@ export function handleTransferFrom(event: Transfer): void {
   }
 
   const context = dataSource.context();
-  const apeAddress = context.getString("apeAddress");
-  const debtToken = context.getString("debtToken");
-  const collateralToken = context.getString("collateralToken");
   const vaultId = context.getString("vaultId");
   
   const vaultIdBigInt = BigInt.fromString(vaultId);
@@ -70,16 +67,6 @@ export function handleTransferFrom(event: Transfer): void {
       recipientPosition.debtTokenTotal = newDebtTokenTotal;
       recipientPosition.save();
     } else {
-      // Create new position with transferred amounts
-      const collateralTokenAddress = Address.fromString(collateralToken);
-      const debtTokenAddress = Address.fromString(debtToken);
-      const apeTokenAddress = Address.fromString(apeAddress);
-
-      // Get or create Token entities
-      const collateralTokenEntity = loadOrCreateToken(collateralTokenAddress);
-      const debtTokenEntity = loadOrCreateToken(debtTokenAddress);
-      const apeTokenEntity = loadOrCreateToken(apeTokenAddress);
-
       recipientPosition = new ApePosition(recipientPositionId);
       recipientPosition.user = event.params.to;
       recipientPosition.balance = transferAmount;

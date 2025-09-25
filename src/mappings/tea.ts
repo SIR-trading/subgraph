@@ -94,12 +94,6 @@ function updateVaultLiquidity(
     vault.lockedLiquidity = vault.lockedLiquidity.plus(transferAmount);
     vault.save();
   }
-
-  // Tokens moving FROM the vault (unlocking liquidity)
-  if (senderAddress.equals(vaultAddress)) {
-    vault.lockedLiquidity = vault.lockedLiquidity.minus(transferAmount);
-    vault.save();
-  }
 }
 
 /**
@@ -131,37 +125,6 @@ function updateTotalTeaSupply(
 }
 
 /**
- * Updates the sender's TEA position, removing it if balance and rewards are zero
- */
-function updateSenderPosition(
-  vaultId: BigInt,
-  senderAddress: Address,
-  transferAmount: BigInt,
-  vaultContract: Vault,
-): TeaPosition | null {
-  const senderPositionId = generateUserPositionId(senderAddress, vaultId);
-  const senderPosition = TeaPosition.load(senderPositionId);
-  const unclaimedRewardsResult = vaultContract.try_unclaimedRewards(vaultId, senderAddress);
-
-  if (senderPosition && !unclaimedRewardsResult.reverted) {
-    // Decrease sender's balance
-    senderPosition.balance = senderPosition.balance.minus(transferAmount);
-
-    // Remove position if both balance and unclaimed rewards are zero
-    const hasNoBalance = senderPosition.balance.equals(BigInt.fromU64(0));
-    const hasNoRewards = unclaimedRewardsResult.value.equals(BigInt.fromI32(0));
-
-    if (hasNoBalance && hasNoRewards) {
-      store.remove("TeaPosition", senderPosition.id.toHexString());
-    } else {
-      senderPosition.save();
-    }
-    return senderPosition;
-  }
-  return null;
-}
-
-/**
  * Updates or creates the recipient's TEA position
  */
 function updateRecipientPosition(
@@ -184,14 +147,8 @@ function updateRecipientPosition(
     existingPosition.debtTokenTotal = existingPosition.debtTokenTotal.plus(debtTokenToTransfer);
     existingPosition.save();
   } else {
-    // Check if vault exists in the subgraph before creating a new position
-    const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
-    const vault = VaultSchema.load(vaultIdBytes);
-    if (!vault || !vault.exists) {
-      // Vault doesn't exist yet, skip creating the position
-      return;
-    }
     // Create new position with transferred amounts
+    const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
     createNewTeaPosition(recipientAddress, vaultId, transferAmount, vaultContract);
     const newPosition = TeaPosition.load(recipientPositionId);
     if (newPosition) {
@@ -212,26 +169,12 @@ function createNewTeaPosition(
   initialBalance: BigInt,
   vaultContract: Vault,
 ): void {
-  // Double-check vault exists in subgraph before making contract call
   const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
-  const vault = VaultSchema.load(vaultIdBytes);
-  if (!vault || !vault.exists) {
-    return;
-  }
-
   const vaultParamsResult = vaultContract.try_paramsById(vaultId);
   if (vaultParamsResult.reverted) {
     // Contract call failed, skip creating the position
     return;
   }
-  const vaultParams = vaultParamsResult.value;
-  const debtTokenAddress = vaultParams.debtToken;
-  const collateralTokenAddress = vaultParams.collateralToken;
-  const leverageTier = vaultParams.leverageTier;
-
-  // Get or create Token entities
-  const collateralToken = loadOrCreateToken(collateralTokenAddress);
-  const debtToken = loadOrCreateToken(debtTokenAddress);
 
   // Create new position entity with optimized ID generation
   const positionId = generateUserPositionId(userAddress, vaultId);
@@ -260,14 +203,6 @@ function handleTeaTransfer(
   senderAddress: Address,
   transferAmount: BigInt,
 ): void {
-  // Check if vault exists in the subgraph before processing
-  const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
-  const vault = VaultSchema.load(vaultIdBytes);
-  if (!vault || !vault.exists) {
-    // Vault not yet initialized, skip processing this transfer
-    return;
-  }
-
   const vaultContract = Vault.bind(Address.fromString(vaultAddress));
   const vaultAddressBytes = Address.fromString(vaultAddress);
 
@@ -277,63 +212,52 @@ function handleTeaTransfer(
   // Update total TEA supply when tokens are minted/burned (zero address transfers)
   updateTotalTeaSupply(vaultId, recipientAddress, senderAddress, transferAmount);
 
-  // Calculate cost basis to transfer if this is a user-to-user transfer
+  const zeroAddr = Address.zero();
+
+  // Skip other mints and all burns - these are handled in vault.ts
+  if (senderAddress.equals(zeroAddr) || recipientAddress.equals(zeroAddr)) {
+    return;
+  }
+
+  // Handle user-to-user transfers
   let collateralToTransfer = BigInt.fromI32(0);
   let dollarToTransfer = BigDecimal.fromString("0");
   let debtTokenToTransfer = BigInt.fromI32(0);
 
-  const zeroAddr = Address.zero();
-  const isNormalTransfer = !senderAddress.equals(zeroAddr) && !recipientAddress.equals(zeroAddr);
-
-  if (isNormalTransfer) {
-    // Update sender's position and get proportional amounts to transfer
-    const senderPositionId = generateUserPositionId(senderAddress, vaultId);
-    const senderPosition = TeaPosition.load(senderPositionId);
-
-    if (senderPosition && senderPosition.balance.gt(BigInt.fromI32(0))) {
-      // Calculate proportion being transferred
-      const transferProportion = transferAmount.toBigDecimal().div(senderPosition.balance.toBigDecimal());
-
-      // Calculate amounts to transfer
-      collateralToTransfer = BigInt.fromString(senderPosition.collateralTotal.toBigDecimal().times(transferProportion).truncate(0).toString());
-      dollarToTransfer = senderPosition.dollarTotal.times(transferProportion);
-      debtTokenToTransfer = BigInt.fromString(senderPosition.debtTokenTotal.toBigDecimal().times(transferProportion).truncate(0).toString());
-
-      // Update sender's cost basis
-      senderPosition.collateralTotal = senderPosition.collateralTotal.minus(collateralToTransfer);
-      senderPosition.dollarTotal = senderPosition.dollarTotal.minus(dollarToTransfer);
-      senderPosition.debtTokenTotal = senderPosition.debtTokenTotal.minus(debtTokenToTransfer);
-    }
-  } else if (senderAddress.equals(zeroAddr)) {
-    // Minting new TEA tokens - calculate cost basis from current collateral value
-    const collateralToken = loadOrCreateToken(Address.fromBytes(vault.collateralToken));
-    const debtToken = loadOrCreateToken(Address.fromBytes(vault.debtToken));
-    const collateralDecimals = collateralToken.decimals;
-    const debtDecimals = debtToken.decimals;
-
-    // TEA amount represents collateral deposited
-    collateralToTransfer = transferAmount;
-
-    // Calculate USD value
-    const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, BigInt.fromI32(0));
-    dollarToTransfer = transferAmount
-      .toBigDecimal()
-      .times(collateralPriceUsd)
-      .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
-
-    // Calculate debt token equivalent
-    const debtPriceUsd = getCollateralUsdPrice(vault.debtToken, BigInt.fromI32(0));
-    debtTokenToTransfer = BigInt.fromString(
-      dollarToTransfer
-        .times(BigInt.fromI32(10).pow(u8(debtDecimals)).toBigDecimal())
-        .div(debtPriceUsd)
-        .truncate(0)
-        .toString()
-    );
-  }
-
   // Update sender's position
-  const senderPos = updateSenderPosition(vaultId, senderAddress, transferAmount, vaultContract);
+  const senderPositionId = generateUserPositionId(senderAddress, vaultId);
+  const senderPosition = TeaPosition.load(senderPositionId);
+  const unclaimedRewardsResult = vaultContract.try_unclaimedRewards(vaultId, senderAddress);
+
+  if (senderPosition && senderPosition.balance.gt(BigInt.fromI32(0))) {
+    // Calculate proportion being transferred
+    const transferProportion = transferAmount.toBigDecimal().div(senderPosition.balance.toBigDecimal());
+
+    // Calculate amounts to transfer
+    collateralToTransfer = BigInt.fromString(senderPosition.collateralTotal.toBigDecimal().times(transferProportion).truncate(0).toString());
+    dollarToTransfer = senderPosition.dollarTotal.times(transferProportion);
+    debtTokenToTransfer = BigInt.fromString(senderPosition.debtTokenTotal.toBigDecimal().times(transferProportion).truncate(0).toString());
+
+    // Update sender's entire position at once
+    senderPosition.balance = senderPosition.balance.minus(transferAmount);
+    senderPosition.collateralTotal = senderPosition.collateralTotal.minus(collateralToTransfer);
+    senderPosition.dollarTotal = senderPosition.dollarTotal.minus(dollarToTransfer);
+    senderPosition.debtTokenTotal = senderPosition.debtTokenTotal.minus(debtTokenToTransfer);
+
+    // Remove position if both balance and unclaimed rewards are zero
+    if (!unclaimedRewardsResult.reverted) {
+      const hasNoBalance = senderPosition.balance.equals(BigInt.fromU64(0));
+      const hasNoRewards = unclaimedRewardsResult.value.equals(BigInt.fromI32(0));
+
+      if (hasNoBalance && hasNoRewards) {
+        store.remove("TeaPosition", senderPosition.id.toHexString());
+      } else {
+        senderPosition.save();
+      }
+    } else {
+      senderPosition.save();
+    }
+  }
 
   // Update or create recipient's position with cost basis
   updateRecipientPosition(vaultId, recipientAddress, transferAmount, vaultContract, collateralToTransfer, dollarToTransfer, debtTokenToTransfer);
