@@ -11,6 +11,11 @@ export function handleTransferFrom(event: Transfer): void {
     return;
   }
 
+  // Skip self-transfers (no position update needed)
+  if (event.params.from.equals(event.params.to)) {
+    return;
+  }
+
   const context = dataSource.context();
   const vaultId = context.getString("vaultId");
   
