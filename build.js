@@ -27,6 +27,12 @@ const CONTRACT_ADDRESSES = {
     weth: "0xADcb2f358Eae6492F61A5F87eb8893d09391d160", // WHYPE (wrapped HYPE)
     startBlock: "31893543"
   },
+  "megaeth-testnet-v2": {
+    uniswapV3Factory: "0x94996d371622304F2eB85df1eb7f328F7B317C3E",
+    usdc: "0x56C00C15453DcbE86faBa6147cf02E2C64c74959",
+    weth: "0x4200000000000000000000000000000000000006",
+    startBlock: "5759805"
+  },
   localhost: {
     uniswapV3Factory: process.env.UNISWAP_V3_FACTORY_ADDRESS,
     usdc: process.env.USDC_ADDRESS,

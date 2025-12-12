@@ -1,7 +1,9 @@
 {
   "scripts": {
     "codegen": "graph codegen",
-    "build": "graph build",
+    "build": "node build.js && graph codegen && graph build",
+    "build:graph": "graph build",
+    "deploy:goldsky": "goldsky subgraph deploy sir-subgraph --path .",
     "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ isekai/index",
     "create-local": "graph create --node http://155.138.223.147:8020 sir-trade/index",
     "remove-local": "graph remove --node http://155.138.223.147:8020 sir-trade/index",
