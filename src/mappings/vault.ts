@@ -345,10 +345,14 @@ function calculatePositionUpdates(event: Mint, vault: Vault): PositionUpdates {
   const debtDecimals = debtToken ? debtToken.decimals : 18;
   const debtPriceUsd = getCollateralUsdPrice(vault.debtToken, event.block.number);
 
-  const debtTokenAmountDecimal = dollarCollateralDeposited
-    .times(BigInt.fromI32(10).pow(u8(debtDecimals)).toBigDecimal())
-    .div(debtPriceUsd);
-  const debtTokenAmount = BigInt.fromString(debtTokenAmountDecimal.truncate(0).toString());
+  // Handle zero price case to avoid division by zero
+  let debtTokenAmount = BigInt.fromI32(0);
+  if (debtPriceUsd.gt(BigDecimal.fromString("0"))) {
+    const debtTokenAmountDecimal = dollarCollateralDeposited
+      .times(BigInt.fromI32(10).pow(u8(debtDecimals)).toBigDecimal())
+      .div(debtPriceUsd);
+    debtTokenAmount = BigInt.fromString(debtTokenAmountDecimal.truncate(0).toString());
+  }
 
   const tokensMinted = event.params.tokenOut;
 
