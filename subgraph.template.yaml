@@ -97,7 +97,7 @@ dataSources:
         # APE token mint/burn events from Vault ABI
         - event: Burn(indexed uint48,indexed address,bool,uint256,uint144,uint144,uint144)
           handler: handleBurn
-        - event: Mint(indexed uint48,indexed address,bool,uint144,uint144,uint144,uint256)
+        - event: {{MINT_EVENT}}
           handler: handleMint
       file: ./src/mappings/vault.ts
 

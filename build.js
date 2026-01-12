@@ -41,13 +41,24 @@ const CONTRACT_ADDRESSES = {
   }
 };
 
+// Networks that use the old Mint event (without portionLockTime parameter)
+// All other networks use the new Mint event with portionLockTime
+const LEGACY_MINT_NETWORKS = ["mainnet", "sepolia", "hyperevm", "hyperevm-testnet"];
+
+// Mint event signatures
+const MINT_EVENT_OLD = "Mint(indexed uint48,indexed address,bool,uint144,uint144,uint144,uint256)";
+const MINT_EVENT_NEW = "Mint(indexed uint48,indexed address,bool,uint144,uint144,uint144,uint256,uint8)";
+
 function generateSubgraphYaml() {
   const network = process.env.NETWORK || "localhost";
   const addresses = CONTRACT_ADDRESSES[network];
-  
+
   if (!addresses) {
     throw new Error(`Unsupported network: ${network}`);
   }
+
+  // Determine which Mint event signature to use based on network
+  const mintEvent = LEGACY_MINT_NETWORKS.includes(network) ? MINT_EVENT_OLD : MINT_EVENT_NEW;
 
   const subgraphTemplate = fs.readFileSync("subgraph.template.yaml", "utf-8");
 
@@ -55,16 +66,18 @@ function generateSubgraphYaml() {
     .replaceAll("{{VAULT_ADDRESS}}", process.env.VAULT_ADDRESS)
     .replaceAll("{{SIR_ADDRESS}}", process.env.SIR_ADDRESS)
     .replaceAll("{{NETWORK}}", network)
-    .replaceAll("{{START_BLOCK}}", addresses.startBlock);
+    .replaceAll("{{START_BLOCK}}", addresses.startBlock)
+    .replaceAll("{{MINT_EVENT}}", mintEvent);
 
   fs.writeFileSync("subgraph.yaml", replaced);
   console.log(`✅ Generated subgraph.yaml for ${network} network`);
+  console.log(`   Using Mint event: ${mintEvent}`);
 }
 
 function generateContractsFile() {
   const network = process.env.NETWORK || "localhost";
   const addresses = CONTRACT_ADDRESSES[network];
-  
+
   if (!addresses) {
     throw new Error(`Unsupported network: ${network}`);
   }
@@ -87,6 +100,32 @@ export const wethAddress = "${addresses.weth}";
   console.log(`✅ Generated src/contracts.ts for ${network} network`);
 }
 
+function generateVaultAbi() {
+  const network = process.env.NETWORK || "localhost";
+  const isLegacy = LEGACY_MINT_NETWORKS.includes(network);
+
+  // Read the base Vault ABI
+  const vaultAbi = JSON.parse(fs.readFileSync("abis/VaultBase.json", "utf-8"));
+
+  // Find the Mint event and update it based on network
+  const mintEventIndex = vaultAbi.findIndex(
+    (item) => item.type === "event" && item.name === "Mint"
+  );
+
+  if (mintEventIndex !== -1 && !isLegacy) {
+    // Add portionLockTime parameter for new networks
+    vaultAbi[mintEventIndex].inputs.push({
+      name: "portionLockTime",
+      type: "uint8",
+      indexed: false,
+      internalType: "uint8"
+    });
+  }
+
+  fs.writeFileSync("abis/Vault.json", JSON.stringify(vaultAbi, null, 2));
+  console.log(`✅ Generated abis/Vault.json for ${network} network (${isLegacy ? "legacy" : "with portionLockTime"})`);
+}
+
 function main() {
   try {
     // Validate required environment variables
@@ -97,9 +136,10 @@ function main() {
       }
     }
 
+    generateVaultAbi();
     generateSubgraphYaml();
     generateContractsFile();
-    
+
     console.log("🎉 Build completed successfully!");
   } catch (error) {
     console.error("❌ Build failed:", error.message);
