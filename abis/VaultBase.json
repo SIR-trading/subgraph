@@ -387,6 +387,16 @@
   },
   {
     "type": "function",
+    "name": "lockEnd",
+    "inputs": [
+      { "name": "account", "type": "address", "internalType": "address" },
+      { "name": "vaultId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint40", "internalType": "uint40" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "uniswapV3SwapCallback",
     "inputs": [
       { "name": "amount0Delta", "type": "int256", "internalType": "int256" },

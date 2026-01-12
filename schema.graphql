@@ -37,6 +37,7 @@ type TeaPosition @entity(immutable: false) {
   collateralTotal: BigInt!
   dollarTotal: BigDecimal!
   debtTokenTotal: BigInt!
+  lockEnd: BigInt! # Timestamp when TEA becomes unlocked (0 = no lock)
 }
 
 type ApePosition @entity(immutable: false) {

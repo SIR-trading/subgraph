@@ -1,9 +1,10 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
 import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition } from "../../generated/schema";
 import { Sir } from "../../generated/Tvl/Sir";
+import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
-import { sirAddress } from "../contracts";
+import { sirAddress, vaultAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
 import { 
   loadOrCreateVault, 
@@ -294,6 +295,7 @@ function processTeaMint(event: Mint, vault: Vault): void {
     position.dollarTotal = BigDecimal.fromString("0");
     position.debtTokenTotal = BigInt.fromI32(0);
     position.balance = BigInt.fromI32(0);
+    position.lockEnd = BigInt.fromI32(0);
   }
 
   // Update position with calculated values
@@ -301,6 +303,14 @@ function processTeaMint(event: Mint, vault: Vault): void {
   position.dollarTotal = position.dollarTotal.plus(updates.dollarCollateralDeposited);
   position.debtTokenTotal = position.debtTokenTotal.plus(updates.debtTokenAmount);
   position.balance = position.balance.plus(updates.tokensMinted);
+
+  // Fetch lock end from contract
+  const vaultContract = VaultContractBinding.bind(Address.fromString(vaultAddress));
+  const lockEndResult = vaultContract.try_lockEnd(userAddress, vaultIdBigInt);
+  if (!lockEndResult.reverted) {
+    position.lockEnd = BigInt.fromU64(lockEndResult.value);
+  }
+
   position.save();
 }
 

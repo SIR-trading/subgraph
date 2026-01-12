@@ -145,6 +145,13 @@ function updateRecipientPosition(
     existingPosition.collateralTotal = existingPosition.collateralTotal.plus(collateralToTransfer);
     existingPosition.dollarTotal = existingPosition.dollarTotal.plus(dollarToTransfer);
     existingPosition.debtTokenTotal = existingPosition.debtTokenTotal.plus(debtTokenToTransfer);
+
+    // Fetch updated lock end from contract
+    const lockEndResult = vaultContract.try_lockEnd(recipientAddress, vaultId);
+    if (!lockEndResult.reverted) {
+      existingPosition.lockEnd = BigInt.fromU64(lockEndResult.value);
+    }
+
     existingPosition.save();
   } else {
     // Create new position with transferred amounts
@@ -155,6 +162,13 @@ function updateRecipientPosition(
       newPosition.collateralTotal = collateralToTransfer;
       newPosition.dollarTotal = dollarToTransfer;
       newPosition.debtTokenTotal = debtTokenToTransfer;
+
+      // Fetch lock end from contract
+      const lockEndResult = vaultContract.try_lockEnd(recipientAddress, vaultId);
+      if (!lockEndResult.reverted) {
+        newPosition.lockEnd = BigInt.fromU64(lockEndResult.value);
+      }
+
       newPosition.save();
     }
   }
@@ -189,6 +203,7 @@ function createNewTeaPosition(
   newPosition.collateralTotal = BigInt.fromI32(0);
   newPosition.dollarTotal = BigDecimal.fromString("0");
   newPosition.debtTokenTotal = BigInt.fromI32(0);
+  newPosition.lockEnd = BigInt.fromI32(0);
 
   newPosition.save();
 }
