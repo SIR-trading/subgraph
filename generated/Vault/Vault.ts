@@ -889,6 +889,27 @@ export class Vault extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  lockEnd(account: Address, vaultId: BigInt): BigInt {
+    let result = super.call("lockEnd", "lockEnd(address,uint256):(uint40)", [
+      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromUnsignedBigInt(vaultId),
+    ]);
+
+    return result[0].toBigInt();
+  }
+
+  try_lockEnd(account: Address, vaultId: BigInt): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("lockEnd", "lockEnd(address,uint256):(uint40)", [
+      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromUnsignedBigInt(vaultId),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   uri(vaultId: BigInt): string {
     let result = super.call("uri", "uri(uint256):(string)", [
       ethereum.Value.fromUnsignedBigInt(vaultId),

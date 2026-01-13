@@ -149,7 +149,7 @@ function updateRecipientPosition(
     // Fetch updated lock end from contract
     const lockEndResult = vaultContract.try_lockEnd(recipientAddress, vaultId);
     if (!lockEndResult.reverted) {
-      existingPosition.lockEnd = BigInt.fromU64(lockEndResult.value);
+      existingPosition.lockEnd = lockEndResult.value;
     }
 
     existingPosition.save();
@@ -166,7 +166,7 @@ function updateRecipientPosition(
       // Fetch lock end from contract
       const lockEndResult = vaultContract.try_lockEnd(recipientAddress, vaultId);
       if (!lockEndResult.reverted) {
-        newPosition.lockEnd = BigInt.fromU64(lockEndResult.value);
+        newPosition.lockEnd = lockEndResult.value;
       }
 
       newPosition.save();

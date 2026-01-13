@@ -5,7 +5,7 @@ import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
 import { sirAddress, vaultAddress } from "../contracts";
-import { generateApePositionId, getCollateralUsdPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
+import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
 import { 
   loadOrCreateVault, 
   calculateVaultUsdcValue 
@@ -305,10 +305,10 @@ function processTeaMint(event: Mint, vault: Vault): void {
   position.balance = position.balance.plus(updates.tokensMinted);
 
   // Fetch lock end from contract
-  const vaultContract = VaultContractBinding.bind(Address.fromString(vaultAddress));
-  const lockEndResult = vaultContract.try_lockEnd(userAddress, vaultIdBigInt);
+  const vaultContractForLock = VaultContractBinding.bind(Address.fromString(vaultAddress));
+  const lockEndResult = vaultContractForLock.try_lockEnd(userAddress, vaultIdBigInt);
   if (!lockEndResult.reverted) {
-    position.lockEnd = BigInt.fromU64(lockEndResult.value);
+    position.lockEnd = lockEndResult.value;
   }
 
   position.save();
@@ -344,23 +344,31 @@ function calculatePositionUpdates(event: Mint, vault: Vault): PositionUpdates {
   const collateralToken = Token.load(vault.collateralToken);
   const collateralDecimals = collateralToken ? collateralToken.decimals : 18;
 
+  // Get debt token decimals
+  const debtToken = Token.load(vault.debtToken);
+  const debtDecimals = debtToken ? debtToken.decimals : 18;
+
+  // Get USD price for collateral (used for dollarTotal tracking)
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
+
+  // Calculate dollar value of collateral deposited (may be 0 for test tokens without USD pools)
   const dollarCollateralDeposited = collateralDeposited
     .toBigDecimal()
     .times(collateralPriceUsd)
     .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
 
-  // Calculate debt token equivalent
-  const debtToken = Token.load(vault.debtToken);
-  const debtDecimals = debtToken ? debtToken.decimals : 18;
-  const debtPriceUsd = getCollateralUsdPrice(vault.debtToken, event.block.number);
-
-  // Handle zero price case to avoid division by zero
+  // Calculate debt token equivalent using direct collateral/debt Uniswap V3 pool price
+  // This is more accurate than going through USD conversion
   let debtTokenAmount = BigInt.fromI32(0);
-  if (debtPriceUsd.gt(BigDecimal.fromString("0"))) {
-    const debtTokenAmountDecimal = dollarCollateralDeposited
+  const directPrice = getDirectTokenPrice(vault.collateralToken, vault.debtToken, event.block.number);
+  if (directPrice.gt(BigDecimal.fromString("0"))) {
+    // directPrice = debt tokens per collateral token
+    // debtTokenAmount = collateralDeposited * directPrice * (10^debtDecimals / 10^collateralDecimals)
+    const debtTokenAmountDecimal = collateralDeposited
+      .toBigDecimal()
+      .times(directPrice)
       .times(BigInt.fromI32(10).pow(u8(debtDecimals)).toBigDecimal())
-      .div(debtPriceUsd);
+      .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
     debtTokenAmount = BigInt.fromString(debtTokenAmountDecimal.truncate(0).toString());
   }
 

@@ -363,6 +363,30 @@ export function getCollateralUsdPrice(tokenId: Bytes, blockNumber: BigInt): BigD
 }
 
 /**
+ * Gets the direct price between two tokens from Uniswap V3
+ * Returns price as tokenOut per tokenIn (e.g., debt per collateral)
+ * This is useful when neither token has a USD price (e.g., test tokens)
+ */
+export function getDirectTokenPrice(
+  tokenInId: Bytes,
+  tokenOutId: Bytes,
+  blockNumber: BigInt
+): BigDecimal {
+  const tokenIn = Token.load(tokenInId);
+  const tokenOut = Token.load(tokenOutId);
+
+  if (!tokenIn || !tokenOut) {
+    return BigDecimal.zero();
+  }
+
+  const tokenInAddress = Address.fromBytes(tokenIn.id);
+  const tokenOutAddress = Address.fromBytes(tokenOut.id);
+
+  // Get direct price from Uniswap V3 pool
+  return getBestPoolPrice(tokenInAddress, tokenOutAddress);
+}
+
+/**
  * Loads or creates a Token entity
  */
 export function loadOrCreateToken(tokenAddress: Address): Token {
