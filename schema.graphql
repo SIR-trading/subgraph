@@ -87,11 +87,12 @@ type AuctionsParticipant @entity(immutable: false) {
   bid: BigInt!
 }
 
-type AuctionsHistory @entity(immutable: true) {
-  id: Bytes!
-  token: Token! @link
-  amount: BigInt!
-  highestBid: BigInt!
-  highestBidder: Bytes!
-  startTime: BigInt!
+type AuctionStats @entity {
+  id: Bytes! # singleton "stats"
+  totalAuctions: BigInt! # total auctions ever started
+}
+
+type CurrentAuction @entity {
+  id: Bytes! # token address
+  auction: Auction! @link # reference to the current auction for this token
 }

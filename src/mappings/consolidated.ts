@@ -12,7 +12,8 @@ import {
 import {
   Auction,
   AuctionsParticipant,
-  AuctionsHistory,
+  AuctionStats,
+  CurrentAuction,
   Dividend,
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Claims/Vault";
@@ -70,51 +71,83 @@ export function handleClaim(event: RewardsClaimed): void {
 
 // ===== AUCTION HANDLERS =====
 
+const STATS_ID = Bytes.fromUTF8("stats");
+
+function loadOrCreateStats(): AuctionStats {
+  let stats = AuctionStats.load(STATS_ID);
+  if (!stats) {
+    stats = new AuctionStats(STATS_ID);
+    stats.totalAuctions = BigInt.zero();
+    stats.save();
+  }
+  return stats;
+}
+
 export function handleAuctionStarted(event: AuctionStarted): void {
-  const auctionId = event.params.token;
-  let auction = Auction.load(auctionId);
+  const tokenAddress = event.params.token;
+  const startTime = event.block.timestamp;
 
-  if (auction) {
-    // Move current auction to history
-    const pastAuctionId = Bytes.fromHexString(auctionId.toHexString() + auction.startTime.toString());
-    const pastAuction = new AuctionsHistory(pastAuctionId);
-    pastAuction.token = auction.token;
-    pastAuction.startTime = auction.startTime;
-    pastAuction.amount = auction.amount;
-    pastAuction.highestBid = auction.highestBid;
-    pastAuction.highestBidder = auction.highestBidder;
-    pastAuction.save();
+  // Create unique auction ID: token address + startTime
+  const auctionId = Bytes.fromUTF8(
+    tokenAddress.toHexString() + "-" + startTime.toString()
+  );
 
-    // Clean up participants from previous auction
-    const participants = auction.participants.load();
-    participants.forEach((participant) => {
-      store.remove("AuctionsParticipant", participant.id.toHexString());
-    });
+  // Check if there's a current auction for this token and clean up its participants
+  const currentAuctionLookup = CurrentAuction.load(tokenAddress);
+  if (currentAuctionLookup) {
+    const previousAuction = Auction.load(currentAuctionLookup.auction);
+    if (previousAuction) {
+      // Clean up participants from previous auction
+      const participants = previousAuction.participants.load();
+      participants.forEach((participant) => {
+        store.remove("AuctionsParticipant", participant.id.toHexString());
+      });
+    }
   }
 
   // Get or create Token entity for the auction token
-  const tokenEntity = loadOrCreateToken(event.params.token);
+  const tokenEntity = loadOrCreateToken(tokenAddress);
 
-  // Create new auction
-  auction = new Auction(auctionId);
+  // Create new auction with unique ID
+  const auction = new Auction(auctionId);
   auction.token = tokenEntity.id;
-  auction.startTime = event.block.timestamp;
+  auction.startTime = startTime;
   auction.amount = event.params.feesToBeAuctioned;
   auction.highestBid = BigInt.zero();
   auction.highestBidder = Address.zero();
   auction.isClaimed = false;
   auction.save();
+
+  // Update CurrentAuction lookup
+  let currentAuction = CurrentAuction.load(tokenAddress);
+  if (!currentAuction) {
+    currentAuction = new CurrentAuction(tokenAddress);
+  }
+  currentAuction.auction = auctionId;
+  currentAuction.save();
+
+  // Increment total auctions counter
+  const stats = loadOrCreateStats();
+  stats.totalAuctions = stats.totalAuctions.plus(BigInt.fromI32(1));
+  stats.save();
 }
 
 export function handleBidReceived(event: BidReceived): void {
-  const auction = Auction.load(event.params.token);
+  // Look up current auction via CurrentAuction entity
+  const currentAuctionLookup = CurrentAuction.load(event.params.token);
+  if (currentAuctionLookup == null) {
+    return;
+  }
+
+  const auction = Auction.load(currentAuctionLookup.auction);
   if (auction == null) {
     return;
   }
 
-  const userID = Bytes.fromHexString(event.params.token.toHex() + event.params.bidder.toHex());
+  // Use auction ID + bidder for participant ID (unique per auction)
+  const userID = Bytes.fromUTF8(auction.id.toHexString() + event.params.bidder.toHexString());
   let participant = AuctionsParticipant.load(userID);
-  
+
   if (!participant) {
     participant = new AuctionsParticipant(userID);
     participant.auctionId = auction.id;
@@ -135,7 +168,13 @@ export function handleBidReceived(event: BidReceived): void {
 }
 
 export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void {
-  const auction = Auction.load(event.params.token);
+  // Look up current auction via CurrentAuction entity
+  const currentAuctionLookup = CurrentAuction.load(event.params.token);
+  if (currentAuctionLookup == null) {
+    return;
+  }
+
+  const auction = Auction.load(currentAuctionLookup.auction);
   if (auction == null) {
     return;
   }
