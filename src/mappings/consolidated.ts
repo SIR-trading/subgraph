@@ -145,7 +145,11 @@ export function handleBidReceived(event: BidReceived): void {
   }
 
   // Use auction ID + bidder for participant ID (unique per auction)
+<<<<<<< HEAD
   const userID = Bytes.fromUTF8(auction.id.toHexString() + event.params.bidder.toHexString());
+=======
+  const userID = Bytes.fromHexString(auction.id.toHexString() + event.params.bidder.toHex());
+>>>>>>> cafe52200e2539d886b460ae44e485d811e5e273
   let participant = AuctionsParticipant.load(userID);
 
   if (!participant) {
