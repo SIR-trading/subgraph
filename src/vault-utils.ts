@@ -1,7 +1,10 @@
 import { Address, BigInt, BigDecimal, Bytes } from "@graphprotocol/graph-ts";
-import { Vault } from "../generated/schema";
+import { Vault, UsdRefreshState } from "../generated/schema";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
-import { getTokenUsdcPrice, USDC } from "./helpers";
+import { getTokenUsdcPrice, USDC, bigIntToHex } from "./helpers";
+
+// Singleton ID for USD refresh state
+const USD_REFRESH_STATE_ID = Bytes.fromUTF8("usd-refresh");
 
 /**
  * Safely loads or creates a vault entity
@@ -56,7 +59,64 @@ export function calculateVaultUsdcValue(vault: Vault, blockNumber: BigInt): BigD
   
   // Multiply by 10^6 to maintain USD scaling, then convert to BigInt
   const scaledResult = resultDecimal.times(BigDecimal.fromString("1000000"));
-  
+
   // Return as BigDecimal (already in USD with 6 decimal precision)
   return scaledResult;
+}
+
+/**
+ * Loads or creates the USD refresh state singleton
+ */
+export function loadOrCreateUsdRefreshState(): UsdRefreshState {
+  let state = UsdRefreshState.load(USD_REFRESH_STATE_ID);
+  if (!state) {
+    state = new UsdRefreshState(USD_REFRESH_STATE_ID);
+    state.nextVaultIdToRefresh = BigInt.fromI32(1);
+    state.highestVaultId = BigInt.fromI32(0);
+    state.save();
+  }
+  return state;
+}
+
+/**
+ * Updates the highest vault ID when a new vault is created
+ * Called from handleVaultInitialized
+ */
+export function updateHighestVaultId(vaultIdNum: BigInt): void {
+  const state = loadOrCreateUsdRefreshState();
+  if (vaultIdNum.gt(state.highestVaultId)) {
+    state.highestVaultId = vaultIdNum;
+    state.save();
+  }
+}
+
+/**
+ * Refreshes the USD value of the next vault in rotation
+ * Called on each ReservesChanged event to keep stale vaults updated
+ */
+export function refreshNextStaleVault(blockNumber: BigInt): void {
+  const state = loadOrCreateUsdRefreshState();
+
+  // No vaults exist yet
+  if (state.highestVaultId.equals(BigInt.fromI32(0))) {
+    return;
+  }
+
+  // Construct vault ID from the current index
+  const vaultIdBytes = Bytes.fromHexString(bigIntToHex(state.nextVaultIdToRefresh));
+  const vault = Vault.load(vaultIdBytes);
+
+  // Only refresh if vault exists, is initialized, and has non-zero TVL
+  if (vault && vault.exists && vault.totalValue.gt(BigInt.fromI32(0))) {
+    vault.totalValueUsd = calculateVaultUsdcValue(vault, blockNumber);
+    vault.save();
+  }
+
+  // Advance to next vault, wrap to 1 when we exceed highest
+  let nextId = state.nextVaultIdToRefresh.plus(BigInt.fromI32(1));
+  if (nextId.gt(state.highestVaultId)) {
+    nextId = BigInt.fromI32(1);
+  }
+  state.nextVaultIdToRefresh = nextId;
+  state.save();
 }

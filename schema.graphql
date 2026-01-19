@@ -22,6 +22,12 @@ type Vault @entity(immutable: false) {
   feesIds: [Bytes!]!
 }
 
+type UsdRefreshState @entity {
+  id: Bytes! # "usd-refresh" singleton
+  nextVaultIdToRefresh: BigInt! # Next vault ID number in rotation (1, 2, 3...)
+  highestVaultId: BigInt! # Highest vault ID created, for wrap-around
+}
+
 type Fee @entity(immutable: false) {
   id: Bytes!
   vaultId: Bytes!

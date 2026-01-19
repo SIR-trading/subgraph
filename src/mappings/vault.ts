@@ -6,9 +6,11 @@ import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
 import { sirAddress, vaultAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
-import { 
-  loadOrCreateVault, 
-  calculateVaultUsdcValue 
+import {
+  loadOrCreateVault,
+  calculateVaultUsdcValue,
+  updateHighestVaultId,
+  refreshNextStaleVault
 } from "../vault-utils";
 import {
   Burn,
@@ -184,6 +186,9 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   vault.leverageTier = event.params.leverageTier;
   vault.exists = true;
   vault.save();
+
+  // Track highest vault ID for round-robin USD refresh
+  updateHighestVaultId(event.params.vaultId);
 }
 
 export function handleReservesChanged(event: ReservesChanged): void {
@@ -205,8 +210,11 @@ export function handleReservesChanged(event: ReservesChanged): void {
   // Calculate USD values with caching
   const currentUsdValue = calculateVaultUsdcValue(vault, event.block.number);
   vault.totalValueUsd = currentUsdValue;
-  
+
   vault.save();
+
+  // Refresh one other stale vault per event (round-robin)
+  refreshNextStaleVault(event.block.number);
 }
 
 export function handleMint(event: Mint): void {
