@@ -81,6 +81,45 @@ export class Token extends Entity {
   set decimals(value: i32) {
     this.set("decimals", Value.fromI32(value));
   }
+
+  get isCollateral(): boolean {
+    let value = this.get("isCollateral");
+    if (!value || value.kind == ValueKind.NULL) {
+      return false;
+    } else {
+      return value.toBoolean();
+    }
+  }
+
+  set isCollateral(value: boolean) {
+    this.set("isCollateral", Value.fromBoolean(value));
+  }
+
+  get isDebt(): boolean {
+    let value = this.get("isDebt");
+    if (!value || value.kind == ValueKind.NULL) {
+      return false;
+    } else {
+      return value.toBoolean();
+    }
+  }
+
+  set isDebt(value: boolean) {
+    this.set("isDebt", Value.fromBoolean(value));
+  }
+
+  get vaultCount(): i32 {
+    let value = this.get("vaultCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set vaultCount(value: i32) {
+    this.set("vaultCount", Value.fromI32(value));
+  }
 }
 
 export class Vault extends Entity {
@@ -304,6 +343,76 @@ export class Vault extends Entity {
 
   set feesIds(value: Array<Bytes>) {
     this.set("feesIds", Value.fromBytesArray(value));
+  }
+}
+
+export class UsdRefreshState extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save UsdRefreshState entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type UsdRefreshState must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("UsdRefreshState", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static loadInBlock(id: Bytes): UsdRefreshState | null {
+    return changetype<UsdRefreshState | null>(
+      store.get_in_block("UsdRefreshState", id.toHexString()),
+    );
+  }
+
+  static load(id: Bytes): UsdRefreshState | null {
+    return changetype<UsdRefreshState | null>(
+      store.get("UsdRefreshState", id.toHexString()),
+    );
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get nextVaultIdToRefresh(): BigInt {
+    let value = this.get("nextVaultIdToRefresh");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set nextVaultIdToRefresh(value: BigInt) {
+    this.set("nextVaultIdToRefresh", Value.fromBigInt(value));
+  }
+
+  get highestVaultId(): BigInt {
+    let value = this.get("highestVaultId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set highestVaultId(value: BigInt) {
+    this.set("highestVaultId", Value.fromBigInt(value));
   }
 }
 

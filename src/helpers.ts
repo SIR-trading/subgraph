@@ -415,6 +415,11 @@ export function loadOrCreateToken(tokenAddress: Address): Token {
       token.decimals = 18; // Default to 18 decimals
     }
 
+    // Initialize role flags (will be set when vault is created)
+    token.isCollateral = false;
+    token.isDebt = false;
+    token.vaultCount = 0;
+
     token.save();
   }
 

@@ -1,7 +1,9 @@
-import { Address, BigInt, BigDecimal, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { Vault, UsdRefreshState } from "../generated/schema";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
+import { Vault as VaultContract, Vault__getReservesInputVaultParamsStruct as VaultContract__getReservesInputVaultParamsStruct } from "../generated/Vault/Vault";
 import { getTokenUsdcPrice, USDC, bigIntToHex } from "./helpers";
+import { vaultAddress } from "./contracts";
 
 // Singleton ID for USD refresh state
 const USD_REFRESH_STATE_ID = Bytes.fromUTF8("usd-refresh");
@@ -91,7 +93,7 @@ export function updateHighestVaultId(vaultIdNum: BigInt): void {
 }
 
 /**
- * Refreshes the USD value of the next vault in rotation
+ * Refreshes the USD value and reserves of the next vault in rotation
  * Called on each ReservesChanged event to keep stale vaults updated
  */
 export function refreshNextStaleVault(blockNumber: BigInt): void {
@@ -106,9 +108,32 @@ export function refreshNextStaleVault(blockNumber: BigInt): void {
   const vaultIdBytes = Bytes.fromHexString(bigIntToHex(state.nextVaultIdToRefresh));
   const vault = Vault.load(vaultIdBytes);
 
-  // Only refresh if vault exists, is initialized, and has non-zero TVL
-  if (vault && vault.exists && vault.totalValue.gt(BigInt.fromI32(0))) {
-    vault.totalValueUsd = calculateVaultUsdcValue(vault, blockNumber);
+  // Only refresh if vault exists and is initialized
+  if (vault && vault.exists) {
+    // Fetch fresh reserves from contract
+    const vaultContract = VaultContract.bind(Address.fromString(vaultAddress));
+
+    // Build VaultParameters tuple for getReserves call
+    const vaultParamsTuple = new ethereum.Tuple(3);
+    vaultParamsTuple[0] = ethereum.Value.fromAddress(Address.fromBytes(vault.debtToken));
+    vaultParamsTuple[1] = ethereum.Value.fromAddress(Address.fromBytes(vault.collateralToken));
+    vaultParamsTuple[2] = ethereum.Value.fromI32(vault.leverageTier);
+
+    const reservesResult = vaultContract.try_getReserves(
+      changetype<VaultContract__getReservesInputVaultParamsStruct>(vaultParamsTuple)
+    );
+
+    if (!reservesResult.reverted) {
+      vault.reserveApes = reservesResult.value.reserveApes;
+      vault.reserveLPers = reservesResult.value.reserveLPers;
+      vault.totalValue = vault.reserveApes.plus(vault.reserveLPers);
+    }
+
+    // Refresh USD value if vault has non-zero TVL
+    if (vault.totalValue.gt(BigInt.fromI32(0))) {
+      vault.totalValueUsd = calculateVaultUsdcValue(vault, blockNumber);
+    }
+
     vault.save();
   }
 

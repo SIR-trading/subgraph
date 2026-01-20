@@ -2,6 +2,9 @@ type Token @entity(immutable: false) {
   id: Bytes! # Token contract address
   symbol: String
   decimals: Int!
+  isCollateral: Boolean!
+  isDebt: Boolean!
+  vaultCount: Int! # Number of vaults using this token (as collateral or debt)
 }
 
 type Vault @entity(immutable: false) {

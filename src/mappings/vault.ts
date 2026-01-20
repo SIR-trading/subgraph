@@ -177,6 +177,15 @@ export function handleVaultInitialized(event: VaultInitialized): void {
     context.setString("vaultId", event.params.vaultId.toString());
 
     APE.createWithContext(event.params.ape, context);
+
+    // Update token role flags and vault counts (only for new vaults)
+    collateralToken.isCollateral = true;
+    collateralToken.vaultCount = collateralToken.vaultCount + 1;
+    collateralToken.save();
+
+    debtToken.isDebt = true;
+    debtToken.vaultCount = debtToken.vaultCount + 1;
+    debtToken.save();
   }
 
   // Always update vault with all required fields (whether new or existing from tax event)
