@@ -3,6 +3,7 @@
 
 export const vaultAddress = "0x7Dad75dD36dE234C937C105e652B6E50d68b0309";
 export const sirAddress = "0x4Da4fb565Dcd5D5C5dB495205c109bA983A8ABa2";
+export const oracleAddress = "0xeD89aF5E62965C45956A0125a5d078218228497A";
 
 // Uniswap V3 Factory (same address on all networks)
 export const uniswapV3FactoryAddress = "0x1F98431c8aD98523631AE4a59f267346ea31F984";

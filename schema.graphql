@@ -7,6 +7,18 @@ type Token @entity(immutable: false) {
   vaultCount: Int! # Number of vaults using this token (as collateral or debt)
 }
 
+type TokenPairVolatility @entity(immutable: false) {
+  id: Bytes!                       # sorted(collateral, debt) concatenated
+  collateralToken: Token! @link
+  debtToken: Token! @link
+  ewmaN: BigDecimal!               # EWMA numerator state
+  ewmaD: BigDecimal!               # EWMA denominator state
+  lastPrice: BigInt!               # Oracle int64 price
+  lastTimestamp: BigInt!           # last update timestamp
+  volatility30d: BigDecimal!       # computed 30-day volatility
+  vaultCount: Int!                 # vaults using this pair
+}
+
 type Vault @entity(immutable: false) {
   id: Bytes!
   exists: Boolean!
@@ -23,6 +35,7 @@ type Vault @entity(immutable: false) {
   rate: BigInt!
   ape: Token! @link
   feesIds: [Bytes!]!
+  volatility: TokenPairVolatility @link  # 30-day realized volatility for this token pair
 }
 
 type UsdRefreshState @entity {

@@ -122,6 +122,154 @@ export class Token extends Entity {
   }
 }
 
+export class TokenPairVolatility extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save TokenPairVolatility entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type TokenPairVolatility must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("TokenPairVolatility", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static loadInBlock(id: Bytes): TokenPairVolatility | null {
+    return changetype<TokenPairVolatility | null>(
+      store.get_in_block("TokenPairVolatility", id.toHexString()),
+    );
+  }
+
+  static load(id: Bytes): TokenPairVolatility | null {
+    return changetype<TokenPairVolatility | null>(
+      store.get("TokenPairVolatility", id.toHexString()),
+    );
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get collateralToken(): Bytes {
+    let value = this.get("collateralToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set collateralToken(value: Bytes) {
+    this.set("collateralToken", Value.fromBytes(value));
+  }
+
+  get debtToken(): Bytes {
+    let value = this.get("debtToken");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set debtToken(value: Bytes) {
+    this.set("debtToken", Value.fromBytes(value));
+  }
+
+  get ewmaN(): BigDecimal {
+    let value = this.get("ewmaN");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set ewmaN(value: BigDecimal) {
+    this.set("ewmaN", Value.fromBigDecimal(value));
+  }
+
+  get ewmaD(): BigDecimal {
+    let value = this.get("ewmaD");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set ewmaD(value: BigDecimal) {
+    this.set("ewmaD", Value.fromBigDecimal(value));
+  }
+
+  get lastPrice(): BigInt {
+    let value = this.get("lastPrice");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set lastPrice(value: BigInt) {
+    this.set("lastPrice", Value.fromBigInt(value));
+  }
+
+  get lastTimestamp(): BigInt {
+    let value = this.get("lastTimestamp");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set lastTimestamp(value: BigInt) {
+    this.set("lastTimestamp", Value.fromBigInt(value));
+  }
+
+  get volatility30d(): BigDecimal {
+    let value = this.get("volatility30d");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set volatility30d(value: BigDecimal) {
+    this.set("volatility30d", Value.fromBigDecimal(value));
+  }
+
+  get vaultCount(): i32 {
+    let value = this.get("vaultCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set vaultCount(value: i32) {
+    this.set("vaultCount", Value.fromI32(value));
+  }
+}
+
 export class Vault extends Entity {
   constructor(id: Bytes) {
     super();
@@ -343,6 +491,23 @@ export class Vault extends Entity {
 
   set feesIds(value: Array<Bytes>) {
     this.set("feesIds", Value.fromBytesArray(value));
+  }
+
+  get volatility(): Bytes | null {
+    let value = this.get("volatility");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set volatility(value: Bytes | null) {
+    if (!value) {
+      this.unset("volatility");
+    } else {
+      this.set("volatility", Value.fromBytes(<Bytes>value));
+    }
   }
 }
 

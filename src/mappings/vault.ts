@@ -1,6 +1,6 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
 import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition } from "../../generated/schema";
-import { Sir } from "../../generated/Tvl/Sir";
+import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
@@ -18,6 +18,7 @@ import {
   ReservesChanged,
   VaultNewTax,
 } from "../../generated/Vault/Vault";
+import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
 
 /**
  * Generates a unique Fee entity ID based on vault ID and timestamp
@@ -194,6 +195,10 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   vault.ape = apeToken.id;
   vault.leverageTier = event.params.leverageTier;
   vault.exists = true;
+
+  // Link vault to token pair volatility entity
+  linkVaultToVolatility(vault);
+
   vault.save();
 
   // Track highest vault ID for round-robin USD refresh
@@ -220,10 +225,13 @@ export function handleReservesChanged(event: ReservesChanged): void {
   const currentUsdValue = calculateVaultUsdcValue(vault, event.block.number);
   vault.totalValueUsd = currentUsdValue;
 
+  // Update volatility for this vault
+  updateVaultVolatility(vault, event.block.timestamp);
+
   vault.save();
 
   // Refresh one other stale vault per event (round-robin)
-  refreshNextStaleVault(event.block.number);
+  refreshNextStaleVault(event.block.number, event.block.timestamp);
 }
 
 export function handleMint(event: Mint): void {
@@ -250,14 +258,15 @@ export function handleMint(event: Mint): void {
       }
     }
 
-
-
     // Process the APE position
     processApeMint(event, vault);
   } else {
     // Process the TEA position
     processTeaMint(event, vault);
   }
+
+  // Update volatility for this vault
+  updateVaultVolatility(vault, event.block.timestamp);
 }
 
 /**
@@ -427,6 +436,9 @@ export function handleBurn(event: Burn): void {
     // Handle TEA burn
     processTeaBurn(event, vault);
   }
+
+  // Update volatility for this vault
+  updateVaultVolatility(vault, event.block.timestamp);
 }
 
 /**

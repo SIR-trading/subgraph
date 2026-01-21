@@ -1,0 +1,12 @@
+[
+  {
+    "inputs": [
+      { "name": "collateralToken", "type": "address" },
+      { "name": "debtToken", "type": "address" }
+    ],
+    "name": "getPrice",
+    "outputs": [{ "name": "", "type": "int64" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

@@ -4,14 +4,14 @@ import {
   TransferBatch,
   TransferSingle,
 } from "../../generated/Vault/Vault";
-import { RewardsClaimed, DividendsPaid } from "../../generated/Claims/Sir";
+import { RewardsClaimed, DividendsPaid } from "../../generated/Sir/Sir";
 import { store } from "@graphprotocol/graph-ts";
 import {
   Vault as VaultSchema,
   TeaPosition,
   Dividend,
 } from "../../generated/schema";
-import { Vault as VaultContract } from "../../generated/Claims/Vault";
+import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
 import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, bigIntToHex, getCollateralUsdPrice } from "../helpers";
 

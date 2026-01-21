@@ -4,6 +4,7 @@ import { ERC20 } from "../generated/VaultExternal/ERC20";
 import { Vault as VaultContract, Vault__getReservesInputVaultParamsStruct as VaultContract__getReservesInputVaultParamsStruct } from "../generated/Vault/Vault";
 import { getTokenUsdcPrice, USDC, bigIntToHex } from "./helpers";
 import { vaultAddress } from "./contracts";
+import { updateVaultVolatility } from "./volatility-utils";
 
 // Singleton ID for USD refresh state
 const USD_REFRESH_STATE_ID = Bytes.fromUTF8("usd-refresh");
@@ -31,6 +32,7 @@ export function loadOrCreateVault(vaultId: Bytes): Vault {
     vault.rate = BigInt.fromI32(0);
     vault.teaSupply = BigInt.fromI32(0);
     vault.feesIds = [];
+    vault.volatility = null;
   }
   return vault;
 }
@@ -96,7 +98,7 @@ export function updateHighestVaultId(vaultIdNum: BigInt): void {
  * Refreshes the USD value and reserves of the next vault in rotation
  * Called on each ReservesChanged event to keep stale vaults updated
  */
-export function refreshNextStaleVault(blockNumber: BigInt): void {
+export function refreshNextStaleVault(blockNumber: BigInt, blockTimestamp: BigInt): void {
   const state = loadOrCreateUsdRefreshState();
 
   // No vaults exist yet
@@ -133,6 +135,9 @@ export function refreshNextStaleVault(blockNumber: BigInt): void {
     if (vault.totalValue.gt(BigInt.fromI32(0))) {
       vault.totalValueUsd = calculateVaultUsdcValue(vault, blockNumber);
     }
+
+    // Update volatility for this vault
+    updateVaultVolatility(vault, blockTimestamp);
 
     vault.save();
   }

@@ -8,7 +8,7 @@ import {
   BidReceived,
   DividendsPaid,
   RewardsClaimed,
-} from "../../generated/Claims/Sir";
+} from "../../generated/Sir/Sir";
 import {
   Auction,
   AuctionsParticipant,
@@ -16,7 +16,7 @@ import {
   CurrentAuction,
   Dividend,
 } from "../../generated/schema";
-import { Vault as VaultContract } from "../../generated/Claims/Vault";
+import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
 import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken } from "../helpers";
 

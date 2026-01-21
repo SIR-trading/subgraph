@@ -21,6 +21,8 @@ dataSources:
           file: ./abis/VaultExternal.json
         - name: ERC20
           file: ./abis/Erc20.json
+        - name: Oracle
+          file: ./abis/Oracle.json
       eventHandlers:
         # Vault initialization from VaultExternal
         - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256,address)
@@ -88,6 +90,8 @@ dataSources:
           file: ./abis/UniswapV3Factory.json
         - name: UniswapV3Pool
           file: ./abis/UniswapV3Pool.json
+        - name: Oracle
+          file: ./abis/Oracle.json
       eventHandlers:
         # Vault reserves and tax events from Vault ABI
         - event: ReservesChanged(indexed uint48,uint144,uint144)

@@ -87,6 +87,7 @@ function generateContractsFile() {
 
 export const vaultAddress = "${process.env.VAULT_ADDRESS}";
 export const sirAddress = "${process.env.SIR_ADDRESS}";
+export const oracleAddress = "${process.env.ORACLE_ADDRESS}";
 
 // Uniswap V3 Factory (same address on all networks)
 export const uniswapV3FactoryAddress = "${addresses.uniswapV3Factory}";
@@ -129,7 +130,7 @@ function generateVaultAbi() {
 function main() {
   try {
     // Validate required environment variables
-    const requiredVars = ["VAULT_ADDRESS", "SIR_ADDRESS"];
+    const requiredVars = ["VAULT_ADDRESS", "SIR_ADDRESS", "ORACLE_ADDRESS"];
     for (const varName of requiredVars) {
       if (!process.env[varName]) {
         throw new Error(`Missing required environment variable: ${varName}`);
