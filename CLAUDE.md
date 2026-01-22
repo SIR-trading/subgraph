@@ -116,6 +116,44 @@ Historical record of completed auctions.
 
 ## Key Concepts
 
+### Volatility Estimator
+
+The subgraph computes annualized volatility for each token pair using an EWMA (Exponentially Weighted Moving Average) algorithm.
+
+#### TokenPairVolatility Entity
+- `token0` / `token1`: Tokens sorted by address (token0 < token1) to ensure consistent price direction
+- `lastPrice`: Oracle tick in Q21.42 format (not a price ratio)
+- `volatilityAnnual`: Computed annualized volatility (e.g., 1.0 = 100%)
+
+#### Oracle Price Format (Q21.42)
+The Oracle returns `tickPriceX42 = log_1.0001(price) × 2^42`, not a direct price ratio. This is a logarithmic tick scaled by 2^42.
+
+#### EWMA Algorithm
+```
+r_i = (tick_i - tick_{i-1}) × ln(1.0001) / 2^42    # log return from tick diff
+α_i = exp(-Δt_i / τ)                               # decay factor (~10 day half-life)
+N_i = α_i × N_{i-1} + r_i²                         # EWMA numerator
+D_i = α_i × D_{i-1} + Δt_i                         # EWMA denominator
+σ_annual = sqrt(N_i / D_i × H)                     # annualized volatility
+```
+
+#### Constants (math-utils.ts)
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `H_SECONDS_ANNUAL` | 31,536,000 | 365 days in seconds |
+| `TAU` | 864,864.86 | ~10 day decay time constant |
+| `LN_1_0001` | 0.0000999950... | ln(1.0001) for tick conversion |
+| `SCALE_2_42` | 4,398,046,511,104 | 2^42 for Q21.42 format |
+
+#### Interpreting Volatility
+| Annual Vol | 1σ yearly price range |
+|------------|----------------------|
+| 50% | 1.65x or 0.61x |
+| 100% | 2.72x (e) or 0.37x |
+| 200% | 7.39x or 0.14x |
+
+The 2.72x factor comes from e (Euler's number) since we use natural logarithm.
+
 ### Leverage Tiers
 - Positive values (1-3): Long positions with increasing leverage
 - Negative values (-1 to -3): Short positions with increasing leverage

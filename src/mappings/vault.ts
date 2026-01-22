@@ -1,5 +1,5 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition } from "../../generated/schema";
+import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed } from "../../generated/schema";
 import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
@@ -290,6 +290,7 @@ function processApeMint(event: Mint, vault: Vault): void {
     position.dollarTotal = BigDecimal.fromString("0");
     position.debtTokenTotal = BigInt.fromI32(0);
     position.balance = BigInt.fromI32(0);
+    position.createdAt = event.block.timestamp;
   }
 
   // Update position with calculated values
@@ -322,6 +323,7 @@ function processTeaMint(event: Mint, vault: Vault): void {
     position.debtTokenTotal = BigInt.fromI32(0);
     position.balance = BigInt.fromI32(0);
     position.lockEnd = BigInt.fromI32(0);
+    position.createdAt = event.block.timestamp;
   }
 
   // Update position with calculated values
@@ -519,24 +521,47 @@ function processTeaBurn(event: Burn, vault: Vault): void {
     return;
   }
 
+  // Create TeaPositionClosed record (mirrors ApePositionClosed pattern)
+  const closedTeaPosition = new TeaPositionClosed(event.transaction.hash);
+  closedTeaPosition.vault = vault.id;
+  closedTeaPosition.user = userAddress;
+
+  // Get collateral token decimals from the Token entity
+  const collateralToken = Token.load(vault.collateralToken);
+  const collateralDecimals = collateralToken ? collateralToken.decimals : 18;
+
+  const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
   const tokensBurned = event.params.tokenIn;
 
-  // Calculate proportion being burned
-  const burnProportion = tokensBurned.toBigDecimal().div(teaPosition.balance.toBigDecimal());
+  // Calculate closed TEA position values based on proportion burned
+  closedTeaPosition.collateralDeposited = teaPosition.collateralTotal
+    .times(tokensBurned)
+    .div(teaPosition.balance);
 
-  // Calculate amounts to reduce based on proportion
-  const collateralToReduce = BigInt.fromString(
-    teaPosition.collateralTotal.toBigDecimal().times(burnProportion).truncate(0).toString()
-  );
-  const dollarToReduce = teaPosition.dollarTotal.times(burnProportion);
-  const debtTokenToReduce = BigInt.fromString(
-    teaPosition.debtTokenTotal.toBigDecimal().times(burnProportion).truncate(0).toString()
-  );
+  // Calculate dollar deposited as BigDecimal
+  const dollarDeposited = teaPosition.dollarTotal
+    .times(tokensBurned.toBigDecimal())
+    .div(teaPosition.balance.toBigDecimal());
+
+  closedTeaPosition.dollarDeposited = dollarDeposited;
+  closedTeaPosition.collateralWithdrawn = event.params.collateralWithdrawn;
+
+  const dollarWithdrawn = closedTeaPosition.collateralWithdrawn
+    .toBigDecimal()
+    .times(collateralPriceUsd)
+    .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
+  closedTeaPosition.dollarWithdrawn = dollarWithdrawn;
+  closedTeaPosition.timestamp = event.block.timestamp;
+
+  // Calculate proportional debt token amount to reduce
+  const debtTokenBurned = teaPosition.debtTokenTotal
+    .times(tokensBurned)
+    .div(teaPosition.balance);
 
   // Update TEA position
-  teaPosition.collateralTotal = teaPosition.collateralTotal.minus(collateralToReduce);
-  teaPosition.dollarTotal = teaPosition.dollarTotal.minus(dollarToReduce);
-  teaPosition.debtTokenTotal = teaPosition.debtTokenTotal.minus(debtTokenToReduce);
+  teaPosition.collateralTotal = teaPosition.collateralTotal.minus(closedTeaPosition.collateralDeposited);
+  teaPosition.dollarTotal = teaPosition.dollarTotal.minus(dollarDeposited);
+  teaPosition.debtTokenTotal = teaPosition.debtTokenTotal.minus(debtTokenBurned);
   teaPosition.balance = teaPosition.balance.minus(tokensBurned);
 
   // Remove position if balance becomes zero, otherwise save it
@@ -545,6 +570,8 @@ function processTeaBurn(event: Burn, vault: Vault): void {
   } else {
     teaPosition.save();
   }
+
+  closedTeaPosition.save();
 }
 
 // TEA transfer handlers (consolidated from tea.ts)

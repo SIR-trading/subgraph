@@ -60,6 +60,7 @@ type TeaPosition @entity(immutable: false) {
   dollarTotal: BigDecimal!
   debtTokenTotal: BigInt!
   lockEnd: BigInt! # Timestamp when TEA becomes unlocked (0 = no lock)
+  createdAt: BigInt! # Block timestamp of first mint (resets after full burn)
 }
 
 type ApePosition @entity(immutable: false) {
@@ -70,9 +71,21 @@ type ApePosition @entity(immutable: false) {
   collateralTotal: BigInt!
   dollarTotal: BigDecimal!
   debtTokenTotal: BigInt!
+  createdAt: BigInt! # Block timestamp of first mint (resets after full burn)
 }
 
 type ApePositionClosed @entity(immutable: true) {
+  id: Bytes!
+  vault: Vault! @link
+  user: Bytes!
+  collateralDeposited: BigInt!
+  dollarDeposited: BigDecimal!
+  collateralWithdrawn: BigInt!
+  dollarWithdrawn: BigDecimal!
+  timestamp: BigInt!
+}
+
+type TeaPositionClosed @entity(immutable: true) {
   id: Bytes!
   vault: Vault! @link
   user: Bytes!
