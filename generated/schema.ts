@@ -165,8 +165,8 @@ export class TokenPairVolatility extends Entity {
     this.set("id", Value.fromBytes(value));
   }
 
-  get collateralToken(): Bytes {
-    let value = this.get("collateralToken");
+  get token0(): Bytes {
+    let value = this.get("token0");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -174,12 +174,12 @@ export class TokenPairVolatility extends Entity {
     }
   }
 
-  set collateralToken(value: Bytes) {
-    this.set("collateralToken", Value.fromBytes(value));
+  set token0(value: Bytes) {
+    this.set("token0", Value.fromBytes(value));
   }
 
-  get debtToken(): Bytes {
-    let value = this.get("debtToken");
+  get token1(): Bytes {
+    let value = this.get("token1");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -187,8 +187,8 @@ export class TokenPairVolatility extends Entity {
     }
   }
 
-  set debtToken(value: Bytes) {
-    this.set("debtToken", Value.fromBytes(value));
+  set token1(value: Bytes) {
+    this.set("token1", Value.fromBytes(value));
   }
 
   get ewmaN(): BigDecimal {

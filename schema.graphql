@@ -8,14 +8,14 @@ type Token @entity(immutable: false) {
 }
 
 type TokenPairVolatility @entity(immutable: false) {
-  id: Bytes!                       # sorted(collateral, debt) concatenated
-  collateralToken: Token! @link
-  debtToken: Token! @link
+  id: Bytes!                       # sorted(token0, token1) concatenated
+  token0: Token! @link             # smaller address (sorted)
+  token1: Token! @link             # larger address (sorted)
   ewmaN: BigDecimal!               # EWMA numerator state
   ewmaD: BigDecimal!               # EWMA denominator state
-  lastPrice: BigInt!               # Oracle int64 price
+  lastPrice: BigInt!               # Oracle tick in Q21.42 format (always token0/token1 direction)
   lastTimestamp: BigInt!           # last update timestamp
-  volatility30d: BigDecimal!       # computed 30-day volatility
+  volatilityAnnual: BigDecimal!    # computed annualized volatility
   vaultCount: Int!                 # vaults using this pair
 }
 
