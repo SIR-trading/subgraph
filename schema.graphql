@@ -11,11 +11,10 @@ type TokenPairVolatility @entity(immutable: false) {
   id: Bytes!                       # sorted(token0, token1) concatenated
   token0: Token! @link             # smaller address (sorted)
   token1: Token! @link             # larger address (sorted)
-  ewmaN: BigDecimal!               # EWMA numerator state
-  ewmaD: BigDecimal!               # EWMA denominator state
+  ewmaVarianceRate: BigDecimal!    # EWMA of variance rate (variance per year)
   lastPrice: BigInt!               # Oracle tick in Q21.42 format (always token0/token1 direction)
   lastTimestamp: BigInt!           # last update timestamp
-  volatilityAnnual: BigDecimal!    # computed annualized volatility
+  volatilityAnnual: BigDecimal!    # computed annualized volatility = sqrt(ewmaVarianceRate)
   vaultCount: Int!                 # vaults using this pair
 }
 
@@ -39,11 +38,18 @@ type Vault @entity(immutable: false) {
   # Denormalized from linked TokenPairVolatility for sorting
   volatilityAnnual: BigDecimal!
 
-  # 30-day EWMA of LP APY for sorting (updated on each fee event)
+  # 30-day EWMA of LP APY for sorting (continuous annualized rate, updated on each fee event)
   lpApyEwma: BigDecimal!
-  lpApyEwmaN: BigDecimal!  # EWMA numerator state
-  lpApyEwmaD: BigDecimal!  # EWMA denominator state
   lpApyLastTimestamp: BigInt!  # Last fee timestamp
+
+  feesIds: [Bytes!]!
+}
+
+type Fee @entity(immutable: false) {
+  id: Bytes!
+  vaultId: Bytes!
+  timestamp: BigInt!
+  lpApy: BigDecimal!
 }
 
 type UsdRefreshState @entity {

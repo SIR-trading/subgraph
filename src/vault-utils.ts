@@ -34,11 +34,10 @@ export function loadOrCreateVault(vaultId: Bytes): Vault {
     vault.volatility = null;
     // Denormalized volatility for sorting
     vault.volatilityAnnual = BigDecimal.fromString("0");
-    // LP APY EWMA state for sorting
+    // LP APY EWMA state for sorting (stores continuous annualized rate)
     vault.lpApyEwma = BigDecimal.fromString("0");
-    vault.lpApyEwmaN = BigDecimal.fromString("0");
-    vault.lpApyEwmaD = BigDecimal.fromString("0");
     vault.lpApyLastTimestamp = BigInt.fromI32(0);
+    vault.feesIds = [];
   }
   return vault;
 }

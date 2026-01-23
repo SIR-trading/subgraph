@@ -1,9 +1,5 @@
 import { BigDecimal, BigInt } from "@graphprotocol/graph-ts";
 
-// Constants for EWMA volatility calculation
-export const H_SECONDS_ANNUAL = BigDecimal.fromString("31536000"); // 365 days in seconds
-export const TAU = BigDecimal.fromString("864864.864864865"); // ~10 day decay time constant
-
 // Constants for Q21.42 tick price format from Oracle
 // The oracle returns tickPriceX42 where: tick = log_1.0001(price) * 2^42
 export const LN_1_0001 = BigDecimal.fromString("0.000099995000333308"); // ln(1.0001)

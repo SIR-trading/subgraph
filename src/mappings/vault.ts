@@ -1,74 +1,34 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ApePositionClosed, Token, TeaPosition, TeaPositionClosed } from "../../generated/schema";
+import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed } from "../../generated/schema";
 import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store } from "@graphprotocol/graph-ts";
 import { sirAddress, vaultAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
-import {
-  loadOrCreateVault,
-  calculateVaultUsdcValue,
-  updateHighestVaultId,
-  refreshNextStaleVault
-} from "../vault-utils";
-import {
-  Burn,
-  Mint,
-  ReservesChanged,
-  VaultNewTax,
-} from "../../generated/Vault/Vault";
-import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
-import { exp } from "../math-utils";
-
-// 30-day decay time constant for LP APY EWMA (in seconds)
-const LP_APY_TAU = BigDecimal.fromString("2592000");
 
 /**
- * Updates the 30-day EWMA of LP APY for a vault
- * Uses exponential weighting to smooth APY over time
- *
- * Algorithm:
- * a = exp(-dt / tau)          # decay factor
- * N = a * N_prev + apy        # numerator update
- * D = a * D_prev + 1          # denominator update
- * lpApyEwma = N / D           # weighted average
+ * Generates a unique Fee entity ID based on vault ID and timestamp
+ * Format: vaultId-timestamp to enable time-based filtering
  */
-function updateLpApyEwma(vault: Vault, newLpApy: BigDecimal, timestamp: BigInt): void {
-  if (vault.lpApyLastTimestamp.equals(BigInt.fromI32(0))) {
-    // First observation
-    vault.lpApyEwmaN = newLpApy;
-    vault.lpApyEwmaD = BigDecimal.fromString("1");
-    vault.lpApyLastTimestamp = timestamp;
-    vault.lpApyEwma = newLpApy;
-    return;
-  }
-
-  // Calculate decay factor: a = exp(-dt / tau)
-  const dt = timestamp.minus(vault.lpApyLastTimestamp).toBigDecimal();
-  const decayExponent = dt.div(LP_APY_TAU).neg();
-  const decayFactor = exp(decayExponent);
-
-  // Update EWMA: N = a * N_prev + apy, D = a * D_prev + 1
-  vault.lpApyEwmaN = decayFactor.times(vault.lpApyEwmaN).plus(newLpApy);
-  vault.lpApyEwmaD = decayFactor.times(vault.lpApyEwmaD).plus(BigDecimal.fromString("1"));
-  vault.lpApyLastTimestamp = timestamp;
-
-  // Compute EWMA: lpApyEwma = N / D
-  if (vault.lpApyEwmaD.gt(BigDecimal.fromString("0"))) {
-    vault.lpApyEwma = vault.lpApyEwmaN.div(vault.lpApyEwmaD);
-  }
+function generateFeesId(vaultId: Bytes, timestamp: BigInt): Bytes {
+  return Bytes.fromHexString(vaultId.toHexString() + bigIntToHex(timestamp).slice(2));
 }
 
 /**
- * Processes LP fees and updates the EWMA APY for server-side sorting
+ * Creates or updates a Fee entity and adds it to the vault's fees tracking
  * Calculates LP APY based on fees deposited divided by tea collateral for LPers
+ * Aggregates APYs when multiple fees have the same timestamp
  */
-function processLpFees(
+function createFeesEntity(
+  vaultId: Bytes,
   vault: Vault,
   collateralFeeToLPers: BigInt,
   timestamp: BigInt
 ): void {
+  // Generate ID for this fees entry
+  const feesId = generateFeesId(vaultId, timestamp);
+
   // Calculate LP APY: fees deposited divided by tea collateral
   let newLpApy = BigDecimal.fromString("0");
 
@@ -85,8 +45,140 @@ function processLpFees(
     newLpApy = feesDecimal.div(baseTeaCollateralDecimal);
   }
 
-  // Update the EWMA for server-side sorting
-  updateLpApyEwma(vault, newLpApy, timestamp);
+  // Check if fees entity already exists for this timestamp
+  let fees = Fee.load(feesId);
+  if (fees) {
+    // Aggregate APYs when multiple fees have the same timestamp
+    fees.lpApy = fees.lpApy.plus(newLpApy);
+    fees.save();
+  } else {
+    // Create new Fee entity
+    fees = new Fee(feesId);
+    fees.vaultId = vaultId;
+    fees.timestamp = timestamp;
+    fees.lpApy = newLpApy;
+    fees.save();
+
+    // Add the fees ID to the vault's tracking array (keep time-ordered)
+    const currentFeesIds = vault.feesIds;
+    currentFeesIds.push(feesId);
+    vault.feesIds = currentFeesIds;
+  }
+
+  // Clean up fees older than 1 month (2592000 seconds = 30 days)
+  cleanupOldFees(vault, timestamp);
+
+  vault.save();
+}
+
+/**
+ * Removes fees entities older than 1 month and updates vault's fees tracking
+ * Optimized using shift() to remove old entries from the front of the array
+ */
+function cleanupOldFees(vault: Vault, currentTimestamp: BigInt): void {
+  const oneMonthInSeconds = BigInt.fromI32(2592000); // 30 days * 24 hours * 60 minutes * 60 seconds
+  const cutoffTimestamp = currentTimestamp.minus(oneMonthInSeconds);
+
+  const currentFeesIds = vault.feesIds;
+
+  // Since fees are ordered by time, remove old ones from the front using shift()
+  while (currentFeesIds.length > 0) {
+    const oldestFeesId = currentFeesIds[0];
+    const fees = Fee.load(oldestFeesId);
+
+    if (fees && fees.timestamp.lt(cutoffTimestamp)) {
+      // Remove old fees entry from storage and array
+      store.remove("Fee", oldestFeesId.toHexString());
+      currentFeesIds.shift(); // Remove from front of array
+    } else {
+      // Found a recent fee (within 1 month), all subsequent ones are also recent
+      break;
+    }
+  }
+
+  vault.feesIds = currentFeesIds;
+}
+import {
+  loadOrCreateVault,
+  calculateVaultUsdcValue,
+  updateHighestVaultId,
+  refreshNextStaleVault
+} from "../vault-utils";
+import {
+  Burn,
+  Mint,
+  ReservesChanged,
+  VaultNewTax,
+} from "../../generated/Vault/Vault";
+import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
+import { ln, exp } from "../math-utils";
+
+// Constants for EWMA calculation (30-day half-life)
+const SECONDS_PER_YEAR = BigDecimal.fromString("31557600"); // 365.25 days
+const LAMBDA = BigDecimal.fromString("8.445"); // ln(2) / (30/365.25) ≈ 8.445
+
+/**
+ * Updates LP APY using kernel density estimator for impulse processes.
+ *
+ * Formula: r̂_i = λ × x_i + exp(-λ × dt) × r̂_{i-1}
+ *
+ * This handles any dt value correctly, including dt=0 (same-timestamp fees).
+ * When dt=0, exp(-λ × 0) = 1, so the formula becomes r̂_i = λ × x_i + r̂_{i-1},
+ * which correctly accumulates same-timestamp impulses.
+ *
+ * The stored lpApyEwma is a continuous annualized rate.
+ * App converts to APY: APY = exp(r̂) - 1
+ */
+function updateLpApyEwma(vault: Vault, feeAmount: BigInt, navBefore: BigInt, timestamp: BigInt): void {
+  const fee = feeAmount.toBigDecimal();
+  const nav = navBefore.toBigDecimal();
+  const one = BigDecimal.fromString("1");
+  const zero = BigDecimal.fromString("0");
+
+  if (nav.le(zero)) return;
+
+  // Compute log return: x = ln(1 + fee/nav)
+  const G = one.plus(fee.div(nav));
+  const x = ln(G);
+
+  // Compute dt from last fee timestamp
+  const dtSeconds = timestamp.minus(vault.lpApyLastTimestamp).toBigDecimal();
+  const dtYears = dtSeconds.div(SECONDS_PER_YEAR);
+
+  // Kernel density estimator: r̂_i = λ × x_i + exp(-λ × dt) × r̂_{i-1}
+  const decay = exp(LAMBDA.neg().times(dtYears));
+  const impulseContribution = LAMBDA.times(x);
+
+  if (vault.lpApyLastTimestamp.equals(BigInt.fromI32(0))) {
+    // First fee: no previous estimate to decay
+    vault.lpApyEwma = impulseContribution;
+  } else {
+    vault.lpApyEwma = impulseContribution.plus(decay.times(vault.lpApyEwma));
+  }
+
+  vault.lpApyLastTimestamp = timestamp;
+}
+
+/**
+ * Processes LP fees and updates the EWMP APY for server-side sorting
+ * NAV = reserveLPers before fees were added (the base for return calculation)
+ * Also creates Fee entities for historical tracking
+ */
+function processLpFees(
+  vault: Vault,
+  collateralFeeToLPers: BigInt,
+  timestamp: BigInt
+): void {
+  // nav = reserveLPers before fees were added
+  // Since ReservesChanged comes before Mint/Burn, reserveLPers already includes the fees
+  const navBefore = vault.reserveLPers.minus(collateralFeeToLPers);
+
+  if (navBefore.gt(BigInt.fromI32(0))) {
+    updateLpApyEwma(vault, collateralFeeToLPers, navBefore, timestamp);
+  }
+
+  // Create Fee entity for historical tracking
+  createFeesEntity(vault.id, vault, collateralFeeToLPers, timestamp);
 
   vault.save();
 }

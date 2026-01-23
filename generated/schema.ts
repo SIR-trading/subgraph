@@ -191,8 +191,8 @@ export class TokenPairVolatility extends Entity {
     this.set("token1", Value.fromBytes(value));
   }
 
-  get ewmaN(): BigDecimal {
-    let value = this.get("ewmaN");
+  get ewmaVarianceRate(): BigDecimal {
+    let value = this.get("ewmaVarianceRate");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -200,21 +200,8 @@ export class TokenPairVolatility extends Entity {
     }
   }
 
-  set ewmaN(value: BigDecimal) {
-    this.set("ewmaN", Value.fromBigDecimal(value));
-  }
-
-  get ewmaD(): BigDecimal {
-    let value = this.get("ewmaD");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigDecimal();
-    }
-  }
-
-  set ewmaD(value: BigDecimal) {
-    this.set("ewmaD", Value.fromBigDecimal(value));
+  set ewmaVarianceRate(value: BigDecimal) {
+    this.set("ewmaVarianceRate", Value.fromBigDecimal(value));
   }
 
   get lastPrice(): BigInt {
@@ -523,32 +510,6 @@ export class Vault extends Entity {
     this.set("lpApyEwma", Value.fromBigDecimal(value));
   }
 
-  get lpApyEwmaN(): BigDecimal {
-    let value = this.get("lpApyEwmaN");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigDecimal();
-    }
-  }
-
-  set lpApyEwmaN(value: BigDecimal) {
-    this.set("lpApyEwmaN", Value.fromBigDecimal(value));
-  }
-
-  get lpApyEwmaD(): BigDecimal {
-    let value = this.get("lpApyEwmaD");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigDecimal();
-    }
-  }
-
-  set lpApyEwmaD(value: BigDecimal) {
-    this.set("lpApyEwmaD", Value.fromBigDecimal(value));
-  }
-
   get lpApyLastTimestamp(): BigInt {
     let value = this.get("lpApyLastTimestamp");
     if (!value || value.kind == ValueKind.NULL) {
@@ -560,6 +521,124 @@ export class Vault extends Entity {
 
   set lpApyLastTimestamp(value: BigInt) {
     this.set("lpApyLastTimestamp", Value.fromBigInt(value));
+  }
+
+  get lpApyPendingTimestamp(): BigInt {
+    let value = this.get("lpApyPendingTimestamp");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set lpApyPendingTimestamp(value: BigInt) {
+    this.set("lpApyPendingTimestamp", Value.fromBigInt(value));
+  }
+
+  get lpApyPendingLogReturn(): BigDecimal {
+    let value = this.get("lpApyPendingLogReturn");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set lpApyPendingLogReturn(value: BigDecimal) {
+    this.set("lpApyPendingLogReturn", Value.fromBigDecimal(value));
+  }
+
+  get feesIds(): Array<Bytes> {
+    let value = this.get("feesIds");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytesArray();
+    }
+  }
+
+  set feesIds(value: Array<Bytes>) {
+    this.set("feesIds", Value.fromBytesArray(value));
+  }
+}
+
+export class Fee extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Fee entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type Fee must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("Fee", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static loadInBlock(id: Bytes): Fee | null {
+    return changetype<Fee | null>(store.get_in_block("Fee", id.toHexString()));
+  }
+
+  static load(id: Bytes): Fee | null {
+    return changetype<Fee | null>(store.get("Fee", id.toHexString()));
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get vaultId(): Bytes {
+    let value = this.get("vaultId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set vaultId(value: Bytes) {
+    this.set("vaultId", Value.fromBytes(value));
+  }
+
+  get timestamp(): BigInt {
+    let value = this.get("timestamp");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set timestamp(value: BigInt) {
+    this.set("timestamp", Value.fromBigInt(value));
+  }
+
+  get lpApy(): BigDecimal {
+    let value = this.get("lpApy");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set lpApy(value: BigDecimal) {
+    this.set("lpApy", Value.fromBigDecimal(value));
   }
 }
 

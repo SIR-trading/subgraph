@@ -116,32 +116,68 @@ Historical record of completed auctions.
 
 ## Key Concepts
 
-### Volatility Estimator
+### LP APY Estimator (Kernel Density)
 
-The subgraph computes annualized volatility for each token pair using an EWMA (Exponentially Weighted Moving Average) algorithm.
+LP APY is calculated using a **kernel density estimator** for impulse processes with a 30-day half-life. This treats fee events as discrete impulses rather than returns spread over time intervals.
+
+#### Definitions
+- `fee_i`: fee paid at time t_i
+- `nav_i`: NAV just before fee (`reserveLPers - fee`)
+- `dt_i`: elapsed time since previous fee, in years (`dt_i = (t_i - t_{i-1}) / 31,557,600`)
+- `H = 30/365.25`: half-life in years
+- `λ = ln(2) / H ≈ 8.445`: decay constant (units: 1/year)
+
+#### Algorithm
+```
+x_i = ln(1 + fee_i / nav_i)                       # log return
+decay_i = exp(-λ × dt_i)                          # exponential decay
+r̂_i = λ × x_i + decay_i × r̂_{i-1}                # kernel density update
+```
+
+The stored `lpApyEwma` is the continuous annualized rate `r̂`. The decay constant `λ` (with units 1/year) converts dimensionless log returns directly to annual rates. The exponential decay `exp(-λ × dt)` handles time-weighting.
+
+The formula handles any `dt` value correctly, including `dt=0` (same-timestamp fees). When `dt=0`, `exp(-λ × 0) = 1`, so the formula becomes `r̂_i = λ × x_i + r̂_{i-1}`, which correctly accumulates same-timestamp impulses.
+
+#### Conversion to APY (in App)
+```
+APY = exp(r̂) - 1
+```
+
+Located in `App/src/app/api/vault-metrics/route.ts` → `continuousRateToApy()`
+
+#### Key Files
+- `src/mappings/vault.ts` → `updateLpApyEwma()`
+- `src/math-utils.ts` → `ln()`, `exp()`
+
+---
+
+### Volatility Estimator (EWMA)
+
+The subgraph computes annualized volatility for each token pair using an EWMA (Exponentially Weighted Moving Average) algorithm with a 30-day half-life.
 
 #### TokenPairVolatility Entity
 - `token0` / `token1`: Tokens sorted by address (token0 < token1) to ensure consistent price direction
 - `lastPrice`: Oracle tick in Q21.42 format (not a price ratio)
-- `volatilityAnnual`: Computed annualized volatility (e.g., 1.0 = 100%)
+- `ewmaVarianceRate`: EWMA of annualized variance rate
+- `volatilityAnnual`: Computed annualized volatility = sqrt(ewmaVarianceRate)
 
 #### Oracle Price Format (Q21.42)
 The Oracle returns `tickPriceX42 = log_1.0001(price) × 2^42`, not a direct price ratio. This is a logarithmic tick scaled by 2^42.
 
-#### EWMA Algorithm
+#### Algorithm
 ```
-r_i = (tick_i - tick_{i-1}) × ln(1.0001) / 2^42    # log return from tick diff
-α_i = exp(-Δt_i / τ)                               # decay factor (~10 day half-life)
-N_i = α_i × N_{i-1} + r_i²                         # EWMA numerator
-D_i = α_i × D_{i-1} + Δt_i                         # EWMA denominator
-σ_annual = sqrt(N_i / D_i × H)                     # annualized volatility
+r_i = (tick_i - tick_{i-1}) × ln(1.0001) / 2^42   # log return from tick diff
+v_i = r_i² / dt_i                                 # annualized variance rate (dt in years)
+α_i = 1 - exp(-λ × dt_i)                          # time-corrected weight
+v̂_i = (1 - α_i) × v̂_{i-1} + α_i × v_i            # EWMA of variance rate
+σ_annual = sqrt(v̂_i)                              # annualized volatility
 ```
 
-#### Constants (math-utils.ts)
+#### Constants
 | Constant | Value | Description |
 |----------|-------|-------------|
-| `H_SECONDS_ANNUAL` | 31,536,000 | 365 days in seconds |
-| `TAU` | 864,864.86 | ~10 day decay time constant |
+| `SECONDS_PER_YEAR` | 31,557,600 | 365.25 days in seconds |
+| `LAMBDA` | 8.445 | ln(2) / (30/365.25) for 30-day half-life |
 | `LN_1_0001` | 0.0000999950... | ln(1.0001) for tick conversion |
 | `SCALE_2_42` | 4,398,046,511,104 | 2^42 for Q21.42 format |
 
@@ -153,6 +189,10 @@ D_i = α_i × D_{i-1} + Δt_i                         # EWMA denominator
 | 200% | 7.39x or 0.14x |
 
 The 2.72x factor comes from e (Euler's number) since we use natural logarithm.
+
+#### Key Files
+- `src/volatility-utils.ts` → `updateVolatility()`
+- `src/math-utils.ts` → `exp()`, `sqrt()`, `LN_1_0001`, `SCALE_2_42`
 
 ### Leverage Tiers
 - Positive values (1-3): Long positions with increasing leverage
