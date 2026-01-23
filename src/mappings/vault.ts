@@ -1,9 +1,9 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed } from "../../generated/schema";
+import { ApePosition, Vault, ApePositionClosed, Token, TeaPosition, TeaPositionClosed } from "../../generated/schema";
 import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, BigDecimal, DataSourceContext, store, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store } from "@graphprotocol/graph-ts";
 import { sirAddress, vaultAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
 import {
@@ -19,97 +19,76 @@ import {
   VaultNewTax,
 } from "../../generated/Vault/Vault";
 import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
+import { exp } from "../math-utils";
+
+// 30-day decay time constant for LP APY EWMA (in seconds)
+const LP_APY_TAU = BigDecimal.fromString("2592000");
 
 /**
- * Generates a unique Fee entity ID based on vault ID and timestamp
- * Format: vaultId-timestamp to enable time-based filtering
+ * Updates the 30-day EWMA of LP APY for a vault
+ * Uses exponential weighting to smooth APY over time
+ *
+ * Algorithm:
+ * a = exp(-dt / tau)          # decay factor
+ * N = a * N_prev + apy        # numerator update
+ * D = a * D_prev + 1          # denominator update
+ * lpApyEwma = N / D           # weighted average
  */
-function generateFeesId(vaultId: Bytes, timestamp: BigInt): Bytes {
-  return Bytes.fromHexString(vaultId.toHexString() + bigIntToHex(timestamp).slice(2));
+function updateLpApyEwma(vault: Vault, newLpApy: BigDecimal, timestamp: BigInt): void {
+  if (vault.lpApyLastTimestamp.equals(BigInt.fromI32(0))) {
+    // First observation
+    vault.lpApyEwmaN = newLpApy;
+    vault.lpApyEwmaD = BigDecimal.fromString("1");
+    vault.lpApyLastTimestamp = timestamp;
+    vault.lpApyEwma = newLpApy;
+    return;
+  }
+
+  // Calculate decay factor: a = exp(-dt / tau)
+  const dt = timestamp.minus(vault.lpApyLastTimestamp).toBigDecimal();
+  const decayExponent = dt.div(LP_APY_TAU).neg();
+  const decayFactor = exp(decayExponent);
+
+  // Update EWMA: N = a * N_prev + apy, D = a * D_prev + 1
+  vault.lpApyEwmaN = decayFactor.times(vault.lpApyEwmaN).plus(newLpApy);
+  vault.lpApyEwmaD = decayFactor.times(vault.lpApyEwmaD).plus(BigDecimal.fromString("1"));
+  vault.lpApyLastTimestamp = timestamp;
+
+  // Compute EWMA: lpApyEwma = N / D
+  if (vault.lpApyEwmaD.gt(BigDecimal.fromString("0"))) {
+    vault.lpApyEwma = vault.lpApyEwmaN.div(vault.lpApyEwmaD);
+  }
 }
 
 /**
- * Creates or updates a Fee entity and adds it to the vault's fees tracking
+ * Processes LP fees and updates the EWMA APY for server-side sorting
  * Calculates LP APY based on fees deposited divided by tea collateral for LPers
- * Aggregates APYs when multiple fees have the same timestamp
  */
-function createFeesEntity(
-  vaultId: Bytes,
+function processLpFees(
   vault: Vault,
   collateralFeeToLPers: BigInt,
   timestamp: BigInt
 ): void {
-  // Generate ID for this fees entry
-  const feesId = generateFeesId(vaultId, timestamp);
-  
   // Calculate LP APY: fees deposited divided by tea collateral
   let newLpApy = BigDecimal.fromString("0");
-  
+
   // Since ReservesChanged comes before Mint/Burn, reserveLPers already includes the fees
   // We need to subtract the fees to get the base collateral amount for accurate APY calculation
   const baseTeaCollateral = vault.reserveLPers.minus(collateralFeeToLPers);
-  
+
   if (baseTeaCollateral.gt(BigInt.fromI32(0))) {
     // Convert fees to BigDecimal for precision
     const feesDecimal = collateralFeeToLPers.toBigDecimal();
     const baseTeaCollateralDecimal = baseTeaCollateral.toBigDecimal();
-    
+
     // Calculate APY as fees / base tea collateral (before fees were added)
     newLpApy = feesDecimal.div(baseTeaCollateralDecimal);
   }
-  
-  // Check if fees entity already exists for this timestamp
-  let fees = Fee.load(feesId);
-  if (fees) {
-    // Aggregate APYs when multiple fees have the same timestamp
-    fees.lpApy = fees.lpApy.plus(newLpApy);
-    fees.save();
-  } else {
-    // Create new Fee entity
-    fees = new Fee(feesId);
-    fees.vaultId = vaultId;
-    fees.timestamp = timestamp;
-    fees.lpApy = newLpApy;
-    fees.save();
-    
-    // Add the fees ID to the vault's tracking array (keep time-ordered)
-    const currentFeesIds = vault.feesIds;
-    currentFeesIds.push(feesId);
-    vault.feesIds = currentFeesIds;
-  }
-  
-  // Clean up fees older than 1 month (2592000 seconds = 30 days)
-  cleanupOldFees(vault, timestamp);
-  
-  vault.save();
-}
 
-/**
- * Removes fees entities older than 1 month and updates vault's fees tracking
- * Optimized using shift() to remove old entries from the front of the array
- */
-function cleanupOldFees(vault: Vault, currentTimestamp: BigInt): void {
-  const oneMonthInSeconds = BigInt.fromI32(2592000); // 30 days * 24 hours * 60 minutes * 60 seconds
-  const cutoffTimestamp = currentTimestamp.minus(oneMonthInSeconds);
-  
-  const currentFeesIds = vault.feesIds;
-  
-  // Since fees are ordered by time, remove old ones from the front using shift()
-  while (currentFeesIds.length > 0) {
-    const oldestFeesId = currentFeesIds[0];
-    const fees = Fee.load(oldestFeesId);
-    
-    if (fees && fees.timestamp.lt(cutoffTimestamp)) {
-      // Remove old fees entry from storage and array
-      store.remove("Fee", oldestFeesId.toHexString());
-      currentFeesIds.shift(); // Remove from front of array
-    } else {
-      // Found a recent fee (within 1 month), all subsequent ones are also recent
-      break;
-    }
-  }
-  
-  vault.feesIds = currentFeesIds;
+  // Update the EWMA for server-side sorting
+  updateLpApyEwma(vault, newLpApy, timestamp);
+
+  vault.save();
 }
 
 export function handleVaultTax(event: VaultNewTax): void {
@@ -244,17 +223,12 @@ export function handleMint(event: Mint): void {
   const isAPE = event.params.isAPE;
 
   if (isAPE) {
-    // Check if TEA supply is 0 - if so, skip fees creation as per requirement
+    // Check if TEA supply is 0 - if so, skip fee processing as per requirement
     if (vault.teaSupply.gt(BigInt.fromI32(0))) {
-      // Create fees entity when APE is minted and TEA supply > 0
+      // Process LP fees when APE is minted and TEA supply > 0
       const collateralFeeToLPers = event.params.collateralFeeToLPers;
       if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
-        createFeesEntity(
-          vault.id,
-          vault,
-          collateralFeeToLPers,
-          event.block.timestamp
-        );
+        processLpFees(vault, collateralFeeToLPers, event.block.timestamp);
       }
     }
 
@@ -420,16 +394,10 @@ export function handleBurn(event: Burn): void {
   const isAPE = event.params.isAPE;
 
   if (isAPE) {
-    // Handle APE burn
-    // Create fees entity when APE is burned (teaSupply is always > 0 for burns)
+    // Handle APE burn - process LP fees (teaSupply is always > 0 for burns)
     const collateralFeeToLPers = event.params.collateralFeeToLPers;
     if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
-      createFeesEntity(
-        vault.id,
-        vault,
-        collateralFeeToLPers,
-        event.block.timestamp
-      );
+      processLpFees(vault, collateralFeeToLPers, event.block.timestamp);
     }
 
     // Process the APE position burn

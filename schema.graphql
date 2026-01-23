@@ -34,21 +34,22 @@ type Vault @entity(immutable: false) {
   tax: BigInt!
   rate: BigInt!
   ape: Token! @link
-  feesIds: [Bytes!]!
   volatility: TokenPairVolatility @link  # 30-day realized volatility for this token pair
+
+  # Denormalized from linked TokenPairVolatility for sorting
+  volatilityAnnual: BigDecimal!
+
+  # 30-day EWMA of LP APY for sorting (updated on each fee event)
+  lpApyEwma: BigDecimal!
+  lpApyEwmaN: BigDecimal!  # EWMA numerator state
+  lpApyEwmaD: BigDecimal!  # EWMA denominator state
+  lpApyLastTimestamp: BigInt!  # Last fee timestamp
 }
 
 type UsdRefreshState @entity {
   id: Bytes! # "usd-refresh" singleton
   nextVaultIdToRefresh: BigInt! # Next vault ID number in rotation (1, 2, 3...)
   highestVaultId: BigInt! # Highest vault ID created, for wrap-around
-}
-
-type Fee @entity(immutable: false) {
-  id: Bytes!
-  vaultId: Bytes!
-  timestamp: BigInt!
-  lpApy: BigDecimal!
 }
 
 type TeaPosition @entity(immutable: false) {

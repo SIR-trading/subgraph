@@ -162,6 +162,8 @@ export function updateVolatility(
  *
  * IMPORTANT: Always fetches price in canonical direction (token0, token1)
  * to ensure consistent price observations regardless of vault token ordering
+ *
+ * Also copies the volatilityAnnual to the vault for server-side sorting
  */
 export function updateVaultVolatility(vault: Vault, timestamp: BigInt): void {
   // Skip if vault doesn't have a volatility entity linked
@@ -190,6 +192,10 @@ export function updateVaultVolatility(vault: Vault, timestamp: BigInt): void {
 
   // Update the volatility estimator
   updateVolatility(volatilityEntity, currentPrice, timestamp);
+
+  // Copy volatilityAnnual to vault for server-side sorting
+  // vault.save() happens in the calling handler
+  vault.volatilityAnnual = volatilityEntity.volatilityAnnual;
 }
 
 /**

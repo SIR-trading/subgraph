@@ -41,7 +41,7 @@ const CONTRACT_ADDRESSES = {
   "megaeth": {
     chainId: 4326,
     uniswapV3Factory: "0x68b34591f662508076927803c567Cc8006988a09",
-    usdStablecoin: "0xFAfDdbb3FC7688494971a79cc65DCa3EF82079E7", // USDC
+    usdStablecoin: "0xFAfDdbb3FC7688494971a79cc65DCa3EF82079E7", // USDM
     weth: "0x4200000000000000000000000000000000000006",
     startBlock: "9441481"
   },
