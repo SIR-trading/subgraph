@@ -4,38 +4,51 @@ const fs = require("fs");
 // Network-specific contract addresses
 const CONTRACT_ADDRESSES = {
   mainnet: {
+    chainId: 1,
     uniswapV3Factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
-    usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    usdStablecoin: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     startBlock: "22931060"
   },
   sepolia: {
+    chainId: 11155111,
     uniswapV3Factory: "0x0227628f3F023bb0B980b67D528571c95c6DaC1c",
-    usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    usdStablecoin: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
     weth: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
     startBlock: "8619003"
   },
   hyperevm: {
+    chainId: 999,
     uniswapV3Factory: "0xB1c0fa0B789320044A6F623cFe5eBda9562602E3",
-    usdc: "0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb", // USDT0 as proxy for USD
+    usdStablecoin: "0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb", // USDT0
     weth: "0x5555555555555555555555555555555555555555", // WHYPE (wrapped HYPE)
     startBlock: "17597148"
   },
   "hyperevm-testnet": {
+    chainId: 998,
     uniswapV3Factory: "0x22B0768972bB7f1F5ea7a8740BB8f94b32483826",
-    usdc: "0xd9CBEC81df392A88AEff575E962d149d57F4d6bc",
+    usdStablecoin: "0xd9CBEC81df392A88AEff575E962d149d57F4d6bc", // USDC
     weth: "0xADcb2f358Eae6492F61A5F87eb8893d09391d160", // WHYPE (wrapped HYPE)
     startBlock: "31893543"
   },
   "megaeth-testnet-v2": {
+    chainId: 6342,
     uniswapV3Factory: "0x94996d371622304F2eB85df1eb7f328F7B317C3E",
-    usdc: "0x56C00C15453DcbE86faBa6147cf02E2C64c74959",
+    usdStablecoin: "0x56C00C15453DcbE86faBa6147cf02E2C64c74959", // USDC
     weth: "0x4200000000000000000000000000000000000006",
     startBlock: "8354242"
   },
+  "megaeth": {
+    chainId: 4326,
+    uniswapV3Factory: "0x68b34591f662508076927803c567Cc8006988a09",
+    usdStablecoin: "0xFAfDdbb3FC7688494971a79cc65DCa3EF82079E7", // USDC
+    weth: "0x4200000000000000000000000000000000000006",
+    startBlock: "9441481"
+  },
   localhost: {
+    chainId: 31337,
     uniswapV3Factory: process.env.UNISWAP_V3_FACTORY_ADDRESS,
-    usdc: process.env.USDC_ADDRESS,
+    usdStablecoin: process.env.USDC_ADDRESS,
     weth: process.env.WETH_ADDRESS,
     startBlock: "0"
   }
@@ -93,7 +106,7 @@ export const oracleAddress = "${process.env.ORACLE_ADDRESS}";
 export const uniswapV3FactoryAddress = "${addresses.uniswapV3Factory}";
 
 // Network-specific token addresses
-export const usdcAddress = "${addresses.usdc}";
+export const usdStablecoinAddress = "${addresses.usdStablecoin}";
 export const wethAddress = "${addresses.weth}";
 `;
 

@@ -1,5 +1,5 @@
 import { Address, BigInt, BigDecimal, Bytes, ethereum } from "@graphprotocol/graph-ts";
-import { usdcAddress, wethAddress, uniswapV3FactoryAddress } from "./contracts";
+import { usdStablecoinAddress, wethAddress, uniswapV3FactoryAddress } from "./contracts";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
 import { Token } from "../generated/schema";
 
@@ -148,7 +148,7 @@ class UniswapV3Pool__slot0Result {
   }
 }
 
-export const USDC = Address.fromString(usdcAddress);
+export const USD_STABLECOIN = Address.fromString(usdStablecoinAddress);
 export const WETH = Address.fromString(wethAddress);
 export const UNISWAP_V3_FACTORY = Address.fromString(uniswapV3FactoryAddress);
 
@@ -163,20 +163,20 @@ export function getTokenUsdcPrice(tokenAddress: Address, blockNumber: BigInt | n
 
   let price: BigDecimal;
   
-  if (tokenAddress.equals(USDC)) {
+  if (tokenAddress.equals(USD_STABLECOIN)) {
     price = BigDecimal.fromString("1");
   } else if (tokenAddress.equals(WETH)) {
-    price = getBestPoolPrice(WETH, USDC);
+    price = getBestPoolPrice(WETH, USD_STABLECOIN);
   } else {
-    // Try direct USDC pair first
-    const directPrice = getBestPoolPrice(tokenAddress, USDC);
+    // Try direct USD stablecoin pair first
+    const directPrice = getBestPoolPrice(tokenAddress, USD_STABLECOIN);
     if (directPrice.gt(BigDecimal.fromString("0"))) {
       price = directPrice;
     } else {
       // Fallback to WETH route
-      const wethToUsdcPrice = getBestPoolPrice(WETH, USDC);
+      const wethToUsdPrice = getBestPoolPrice(WETH, USD_STABLECOIN);
       const tokenToWethPrice = getBestPoolPrice(tokenAddress, WETH);
-      price = tokenToWethPrice.times(wethToUsdcPrice);
+      price = tokenToWethPrice.times(wethToUsdPrice);
     }
   }
   

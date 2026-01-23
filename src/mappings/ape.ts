@@ -79,6 +79,7 @@ export function handleTransferFrom(event: Transfer): void {
       recipientPosition.collateralTotal = BigInt.fromString(collateralToTransfer.truncate(0).toString());
       recipientPosition.dollarTotal = dollarToTransfer;
       recipientPosition.debtTokenTotal = BigInt.fromString(debtTokenToTransfer.truncate(0).toString());
+      recipientPosition.createdAt = event.block.timestamp;
       recipientPosition.save();
     }
   } else {

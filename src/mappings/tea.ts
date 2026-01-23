@@ -25,7 +25,7 @@ export function handleSingleTransfer(event: TransferSingle): void {
   const senderAddress = event.params.from;
   const vaultId = event.params.id;
 
-  handleTeaTransfer(vaultId, recipientAddress, senderAddress, transferAmount);
+  handleTeaTransfer(vaultId, recipientAddress, senderAddress, transferAmount, event.block.timestamp);
 }
 
 /**
@@ -135,6 +135,7 @@ function updateRecipientPosition(
   collateralToTransfer: BigInt,
   dollarToTransfer: BigDecimal,
   debtTokenToTransfer: BigInt,
+  blockTimestamp: BigInt,
 ): void {
   const recipientPositionId = generateUserPositionId(recipientAddress, vaultId);
   const existingPosition = TeaPosition.load(recipientPositionId);
@@ -156,7 +157,7 @@ function updateRecipientPosition(
   } else {
     // Create new position with transferred amounts
     const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
-    createNewTeaPosition(recipientAddress, vaultId, transferAmount, vaultContract);
+    createNewTeaPosition(recipientAddress, vaultId, transferAmount, vaultContract, blockTimestamp);
     const newPosition = TeaPosition.load(recipientPositionId);
     if (newPosition) {
       newPosition.collateralTotal = collateralToTransfer;
@@ -182,6 +183,7 @@ function createNewTeaPosition(
   vaultId: BigInt,
   initialBalance: BigInt,
   vaultContract: Vault,
+  blockTimestamp: BigInt,
 ): void {
   const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
   const vaultParamsResult = vaultContract.try_paramsById(vaultId);
@@ -204,6 +206,7 @@ function createNewTeaPosition(
   newPosition.dollarTotal = BigDecimal.fromString("0");
   newPosition.debtTokenTotal = BigInt.fromI32(0);
   newPosition.lockEnd = BigInt.fromI32(0);
+  newPosition.createdAt = blockTimestamp;
 
   newPosition.save();
 }
@@ -217,6 +220,7 @@ function handleTeaTransfer(
   recipientAddress: Address,
   senderAddress: Address,
   transferAmount: BigInt,
+  blockTimestamp: BigInt,
 ): void {
   const vaultContract = Vault.bind(Address.fromString(vaultAddress));
   const vaultAddressBytes = Address.fromString(vaultAddress);
@@ -275,7 +279,7 @@ function handleTeaTransfer(
   }
 
   // Update or create recipient's position with cost basis
-  updateRecipientPosition(vaultId, recipientAddress, transferAmount, vaultContract, collateralToTransfer, dollarToTransfer, debtTokenToTransfer);
+  updateRecipientPosition(vaultId, recipientAddress, transferAmount, vaultContract, collateralToTransfer, dollarToTransfer, debtTokenToTransfer, blockTimestamp);
 }
 
 export function handleBatchTransfer(event: TransferBatch): void {
@@ -285,6 +289,6 @@ export function handleBatchTransfer(event: TransferBatch): void {
   const amounts = event.params.amounts;
   for (let i = 0; i++; i < vaults.length) {
     const amount = amounts[i];
-    handleTeaTransfer(vaults[i], to, from, amount);
+    handleTeaTransfer(vaults[i], to, from, amount, event.block.timestamp);
   }
 }
