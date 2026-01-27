@@ -125,6 +125,9 @@ type Auction @entity(immutable: false) {
   highestBidder: Bytes!
   startTime: BigInt!
   isClaimed: Boolean!
+  bidderCount: Int!          # Number of unique bidders
+  amountUsd: BigDecimal!     # USD value of auctioned tokens (at time of winning bid)
+  highestBidUsd: BigDecimal! # USD value of winning bid (at time of bid)
   participants: [AuctionsParticipant!] @derivedFrom(field: "auctionId")
 }
 

@@ -1508,6 +1508,45 @@ export class Auction extends Entity {
     this.set("isClaimed", Value.fromBoolean(value));
   }
 
+  get bidderCount(): i32 {
+    let value = this.get("bidderCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set bidderCount(value: i32) {
+    this.set("bidderCount", Value.fromI32(value));
+  }
+
+  get amountUsd(): BigDecimal {
+    let value = this.get("amountUsd");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set amountUsd(value: BigDecimal) {
+    this.set("amountUsd", Value.fromBigDecimal(value));
+  }
+
+  get highestBidUsd(): BigDecimal {
+    let value = this.get("highestBidUsd");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set highestBidUsd(value: BigDecimal) {
+    this.set("highestBidUsd", Value.fromBigDecimal(value));
+  }
+
   get participants(): AuctionsParticipantLoader {
     return new AuctionsParticipantLoader(
       "Auction",

@@ -19,7 +19,7 @@ import {
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
-import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, loadOrCreateUserStats, loadOrCreateStakingStats } from "../helpers";
+import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, loadOrCreateUserStats, loadOrCreateStakingStats, getTokenUsdcPrice } from "../helpers";
 import { ln, updateEwma } from "../math-utils";
 
 // ===== DIVIDEND HANDLERS =====
@@ -171,6 +171,9 @@ export function handleAuctionStarted(event: AuctionStarted): void {
   auction.highestBid = BigInt.zero();
   auction.highestBidder = Address.zero();
   auction.isClaimed = false;
+  auction.bidderCount = 0;
+  auction.amountUsd = BigDecimal.fromString("0");
+  auction.highestBidUsd = BigDecimal.fromString("0");
   auction.save();
 
   // Update CurrentAuction lookup
@@ -203,11 +206,12 @@ export function handleBidReceived(event: BidReceived): void {
   const userID = Bytes.fromHexString(auction.id.toHexString() + event.params.bidder.toHexString());
   let participant = AuctionsParticipant.load(userID);
 
-  if (!participant) {
+  if (participant == null) {
     participant = new AuctionsParticipant(userID);
     participant.auctionId = auction.id;
     participant.user = event.params.bidder;
     participant.bid = BigInt.zero();
+    auction.bidderCount = auction.bidderCount + 1;
   }
 
   // Update participant's bid
@@ -218,8 +222,24 @@ export function handleBidReceived(event: BidReceived): void {
   if (event.params.newBid.gt(auction.highestBid)) {
     auction.highestBid = event.params.newBid;
     auction.highestBidder = event.params.bidder;
-    auction.save();
+
+    // Calculate USD values for bid and lot at this block
+    const wethAddr = Address.fromString(wethAddress);
+    const nativePriceUsd = getTokenUsdcPrice(wethAddr, event.block.number);
+
+    // Bid is in native token (18 decimals)
+    const bidDecimal = event.params.newBid.toBigDecimal();
+    const ethDecimals = BigInt.fromI32(10).pow(18).toBigDecimal();
+    auction.highestBidUsd = bidDecimal.times(nativePriceUsd).div(ethDecimals);
+
+    // Lot amount in auctioned token's decimals
+    const tokenEntity = loadOrCreateToken(event.params.token);
+    const tokenPriceUsd = getTokenUsdcPrice(event.params.token, event.block.number);
+    const tokenDecimals = BigInt.fromI32(10).pow(u8(tokenEntity.decimals)).toBigDecimal();
+    auction.amountUsd = auction.amount.toBigDecimal().times(tokenPriceUsd).div(tokenDecimals);
   }
+
+  auction.save();
 }
 
 export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void {
