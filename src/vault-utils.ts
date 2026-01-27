@@ -37,6 +37,11 @@ export function loadOrCreateVault(vaultId: Bytes): Vault {
     // LP APY EWMA state for sorting (stores continuous annualized rate)
     vault.lpApyEwma = BigDecimal.fromString("0");
     vault.lpApyLastTimestamp = BigInt.fromI32(0);
+    // Volume EWMA state (annualized volume rates with 1d, 7d, 30d half-lives)
+    vault.volumeUsdEwma1d = BigDecimal.fromString("0");
+    vault.volumeUsdEwma7d = BigDecimal.fromString("0");
+    vault.volumeUsdEwma30d = BigDecimal.fromString("0");
+    vault.volumeLastTimestamp = BigInt.fromI32(0);
     vault.feesIds = [];
   }
   return vault;

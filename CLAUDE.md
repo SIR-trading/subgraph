@@ -194,6 +194,65 @@ The 2.72x factor comes from e (Euler's number) since we use natural logarithm.
 - `src/volatility-utils.ts` → `updateVolatility()`
 - `src/math-utils.ts` → `exp()`, `sqrt()`, `LN_1_0001`, `SCALE_2_42`
 
+---
+
+### Volume Estimator (EWMA)
+
+The subgraph tracks USD trading volume using EWMA (Exponentially Weighted Moving Average) with three different half-lives: 1-day, 7-day, and 30-day. This provides smooth, time-weighted volume metrics that naturally decay without activity.
+
+#### Volume Sources
+Volume is tracked from all mint and burn events:
+- **APE Mint**: `collateralIn + collateralFeeToLPers + collateralFeeToStakers`
+- **APE Burn**: `collateralWithdrawn + collateralFeeToLPers`
+- **TEA Mint**: `collateralIn + collateralFeeToLPers`
+- **TEA Burn**: `collateralWithdrawn`
+
+All values are converted to USD using Uniswap V3 price oracles.
+
+#### Entities
+
+**Vault** (per-vault volume):
+- `volumeUsdEwma1d`: 1-day half-life EWMA (annualized rate)
+- `volumeUsdEwma7d`: 7-day half-life EWMA (annualized rate)
+- `volumeUsdEwma30d`: 30-day half-life EWMA (annualized rate)
+- `volumeLastTimestamp`: Timestamp of last volume event
+
+**VolumeStats** (global volume, singleton):
+- `totalVolumeUsd1d`: Global 1-day half-life EWMA
+- `totalVolumeUsd7d`: Global 7-day half-life EWMA
+- `totalVolumeUsd30d`: Global 30-day half-life EWMA
+- `lastTimestamp`: Timestamp of last global volume update
+
+#### Algorithm
+```
+v_i = volume / dt_years                    # annualized volume rate
+α_i = 1 - exp(-λ × dt_i)                   # time-corrected weight
+ewma_new = (1 - α_i) × ewma_prev + α_i × v_i
+```
+
+For the first event (no previous timestamp), initialize with: `ewma = λ × volume`
+
+For `dt=0` (same-timestamp events): `ewma_new = ewma_prev + λ × volume`
+
+#### Constants
+| Constant | Value | Half-life | Description |
+|----------|-------|-----------|-------------|
+| `LAMBDA_1D` | 253.35 | 1 day | ln(2) / (1/365.25) |
+| `LAMBDA_7D` | 36.19 | 7 days | ln(2) / (7/365.25) |
+| `LAMBDA_30D` | 8.445 | 30 days | ln(2) / (30/365.25) |
+| `SECONDS_PER_YEAR` | 31,557,600 | - | 365.25 days in seconds |
+
+#### Conversion to Daily Volume (in App)
+The stored EWMA values are annualized rates. To convert to daily volume:
+```
+dailyVolume = ewma / 365.25
+```
+
+#### Key Files
+- `src/volume-utils.ts` → `updateVolumeEwma()`, `updateGlobalVolumeEwma()`, `loadOrCreateVolumeStats()`
+- `src/mappings/vault.ts` → `calculateVolumeUsd()`, volume tracking in `handleMint()` and `handleBurn()`
+- `src/math-utils.ts` → `exp()`
+
 ### Leverage Tiers
 - Positive values (1-3): Long positions with increasing leverage
 - Negative values (-1 to -3): Short positions with increasing leverage

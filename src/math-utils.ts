@@ -158,3 +158,43 @@ export function abs(x: BigDecimal): BigDecimal {
   const zero = BigDecimal.fromString("0");
   return x.lt(zero) ? x.neg() : x;
 }
+
+// Constants for EWMA calculation (30-day half-life)
+export const SECONDS_PER_YEAR = BigDecimal.fromString("31557600"); // 365.25 days
+export const LAMBDA_30D = BigDecimal.fromString("8.445"); // ln(2) / (30/365.25) ≈ 8.445
+
+/**
+ * Generic kernel density estimator (EWMA) update for impulse processes.
+ *
+ * Formula: r̂_i = λ × x_i + exp(-λ × dt) × r̂_{i-1}
+ *
+ * When lastTimestamp is 0 (first event), returns λ × x (no prior to decay).
+ * When dt=0 (same-timestamp events), exp(0)=1, so impulses accumulate correctly.
+ *
+ * @param currentEwma  Previous EWMA value
+ * @param x            Log return for this impulse: ln(1 + fee/nav)
+ * @param lastTimestamp Previous event timestamp (BigInt, seconds)
+ * @param currentTimestamp Current event timestamp (BigInt, seconds)
+ * @param lambda       Decay parameter (default: LAMBDA_30D)
+ * @returns Updated EWMA value
+ */
+export function updateEwma(
+  currentEwma: BigDecimal,
+  x: BigDecimal,
+  lastTimestamp: BigInt,
+  currentTimestamp: BigInt,
+  lambda: BigDecimal = LAMBDA_30D
+): BigDecimal {
+  const impulseContribution = lambda.times(x);
+
+  if (lastTimestamp.equals(BigInt.fromI32(0))) {
+    // First event: no previous estimate to decay
+    return impulseContribution;
+  }
+
+  const dtSeconds = currentTimestamp.minus(lastTimestamp).toBigDecimal();
+  const dtYears = dtSeconds.div(SECONDS_PER_YEAR);
+  const decay = exp(lambda.neg().times(dtYears));
+
+  return impulseContribution.plus(decay.times(currentEwma));
+}

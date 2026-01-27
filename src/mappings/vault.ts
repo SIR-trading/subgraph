@@ -5,7 +5,7 @@ import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store } from "@graphprotocol/graph-ts";
 import { sirAddress, vaultAddress } from "../contracts";
-import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId } from "../helpers";
+import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId, loadOrCreateUserStats } from "../helpers";
 
 /**
  * Generates a unique Fee entity ID based on vault ID and timestamp
@@ -111,11 +111,37 @@ import {
   VaultNewTax,
 } from "../../generated/Vault/Vault";
 import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
-import { ln, exp } from "../math-utils";
+import { updateVolumeEwma, updateGlobalVolumeEwma } from "../volume-utils";
+import { ln, updateEwma } from "../math-utils";
 
-// Constants for EWMA calculation (30-day half-life)
-const SECONDS_PER_YEAR = BigDecimal.fromString("31557600"); // 365.25 days
-const LAMBDA = BigDecimal.fromString("8.445"); // ln(2) / (30/365.25) ≈ 8.445
+/**
+ * Calculates USD value of a collateral amount for volume tracking.
+ * Returns value scaled by 10^6 (USD with 6 decimal places).
+ *
+ * @param collateralAmount Amount in collateral token units
+ * @param vault The vault entity (for collateral token reference)
+ * @param blockNumber Current block number for price lookup
+ * @returns USD value as BigDecimal (scaled by 10^6)
+ */
+function calculateVolumeUsd(collateralAmount: BigInt, vault: Vault, blockNumber: BigInt): BigDecimal {
+  if (collateralAmount.le(BigInt.fromI32(0))) {
+    return BigDecimal.fromString("0");
+  }
+
+  // Get collateral token decimals
+  const collateralToken = Token.load(vault.collateralToken);
+  const collateralDecimals = collateralToken ? collateralToken.decimals : 18;
+
+  // Get USD price for collateral
+  const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, blockNumber);
+
+  // Calculate USD value: (amount * price) / 10^decimals * 10^6
+  const amountDecimal = collateralAmount.toBigDecimal();
+  const decimalsMultiplier = BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal();
+
+  // Result is USD value scaled by 10^6
+  return amountDecimal.times(collateralPriceUsd).div(decimalsMultiplier).times(BigDecimal.fromString("1000000"));
+}
 
 /**
  * Updates LP APY using kernel density estimator for impulse processes.
@@ -141,21 +167,7 @@ function updateLpApyEwma(vault: Vault, feeAmount: BigInt, navBefore: BigInt, tim
   const G = one.plus(fee.div(nav));
   const x = ln(G);
 
-  // Compute dt from last fee timestamp
-  const dtSeconds = timestamp.minus(vault.lpApyLastTimestamp).toBigDecimal();
-  const dtYears = dtSeconds.div(SECONDS_PER_YEAR);
-
-  // Kernel density estimator: r̂_i = λ × x_i + exp(-λ × dt) × r̂_{i-1}
-  const decay = exp(LAMBDA.neg().times(dtYears));
-  const impulseContribution = LAMBDA.times(x);
-
-  if (vault.lpApyLastTimestamp.equals(BigInt.fromI32(0))) {
-    // First fee: no previous estimate to decay
-    vault.lpApyEwma = impulseContribution;
-  } else {
-    vault.lpApyEwma = impulseContribution.plus(decay.times(vault.lpApyEwma));
-  }
-
+  vault.lpApyEwma = updateEwma(vault.lpApyEwma, x, vault.lpApyLastTimestamp, timestamp);
   vault.lpApyLastTimestamp = timestamp;
 }
 
@@ -314,6 +326,8 @@ export function handleMint(event: Mint): void {
 
   const isAPE = event.params.isAPE;
 
+  // Calculate volume based on position type
+  let totalVolume: BigInt;
   if (isAPE) {
     // Check if TEA supply is 0 - if so, skip fee processing as per requirement
     if (vault.teaSupply.gt(BigInt.fromI32(0))) {
@@ -326,13 +340,29 @@ export function handleMint(event: Mint): void {
 
     // Process the APE position
     processApeMint(event, vault);
+
+    // APE mint volume: collateralIn + collateralFeeToLPers + collateralFeeToStakers
+    totalVolume = event.params.collateralIn
+      .plus(event.params.collateralFeeToLPers)
+      .plus(event.params.collateralFeeToStakers);
   } else {
     // Process the TEA position
     processTeaMint(event, vault);
+
+    // TEA mint volume: collateralIn + collateralFeeToLPers (no staker fees)
+    totalVolume = event.params.collateralIn
+      .plus(event.params.collateralFeeToLPers);
   }
+
+  // Update volume EWMA (per-vault and global)
+  const volumeUsd = calculateVolumeUsd(totalVolume, vault, event.block.number);
+  updateVolumeEwma(vault, volumeUsd, event.block.timestamp);
+  updateGlobalVolumeEwma(volumeUsd, event.block.timestamp);
 
   // Update volatility for this vault
   updateVaultVolatility(vault, event.block.timestamp);
+
+  vault.save();
 }
 
 /**
@@ -348,6 +378,7 @@ function processApeMint(event: Mint, vault: Vault): void {
 
   // Load or create position
   let position = ApePosition.load(positionId);
+  const isNewPosition = position === null;
   if (!position) {
     position = new ApePosition(positionId);
     position.vault = vault.id;
@@ -357,6 +388,13 @@ function processApeMint(event: Mint, vault: Vault): void {
     position.debtTokenTotal = BigInt.fromI32(0);
     position.balance = BigInt.fromI32(0);
     position.createdAt = event.block.timestamp;
+  }
+
+  // Track new position opening in UserStats
+  if (isNewPosition) {
+    const userStats = loadOrCreateUserStats(userAddress);
+    userStats.apePositionsOpened = userStats.apePositionsOpened + 1;
+    userStats.save();
   }
 
   // Update position with calculated values
@@ -380,6 +418,7 @@ function processTeaMint(event: Mint, vault: Vault): void {
 
   // Load or create position
   let position = TeaPosition.load(positionId);
+  const isNewPosition = position === null;
   if (!position) {
     position = new TeaPosition(positionId);
     position.vault = vault.id;
@@ -390,6 +429,13 @@ function processTeaMint(event: Mint, vault: Vault): void {
     position.balance = BigInt.fromI32(0);
     position.lockEnd = BigInt.fromI32(0);
     position.createdAt = event.block.timestamp;
+  }
+
+  // Track new position opening in UserStats
+  if (isNewPosition) {
+    const userStats = loadOrCreateUserStats(userAddress);
+    userStats.teaPositionsOpened = userStats.teaPositionsOpened + 1;
+    userStats.save();
   }
 
   // Update position with calculated values
@@ -485,6 +531,8 @@ export function handleBurn(event: Burn): void {
 
   const isAPE = event.params.isAPE;
 
+  // Calculate volume based on position type
+  let totalVolume: BigInt;
   if (isAPE) {
     // Handle APE burn - process LP fees (teaSupply is always > 0 for burns)
     const collateralFeeToLPers = event.params.collateralFeeToLPers;
@@ -494,13 +542,27 @@ export function handleBurn(event: Burn): void {
 
     // Process the APE position burn
     processApeBurn(event, vault);
+
+    // APE burn volume: collateralWithdrawn + collateralFeeToLPers
+    totalVolume = event.params.collateralWithdrawn
+      .plus(event.params.collateralFeeToLPers);
   } else {
     // Handle TEA burn
     processTeaBurn(event, vault);
+
+    // TEA burn volume: collateralWithdrawn (no LP fees)
+    totalVolume = event.params.collateralWithdrawn;
   }
+
+  // Update volume EWMA (per-vault and global)
+  const volumeUsd = calculateVolumeUsd(totalVolume, vault, event.block.number);
+  updateVolumeEwma(vault, volumeUsd, event.block.timestamp);
+  updateGlobalVolumeEwma(volumeUsd, event.block.timestamp);
 
   // Update volatility for this vault
   updateVaultVolatility(vault, event.block.timestamp);
+
+  vault.save();
 }
 
 /**
@@ -515,7 +577,8 @@ function processApeBurn(event: Burn, vault: Vault): void {
     return;
   }
 
-  const closedApePosition = new ApePositionClosed(event.transaction.hash);
+  // Fix: use txHash + logIndex for unique ID (prevents overwrites for multiple burns in same tx)
+  const closedApePosition = new ApePositionClosed(event.transaction.hash.concatI32(event.logIndex.toI32()));
   closedApePosition.vault = vault.id;
   closedApePosition.user = userAddress;
 
@@ -553,6 +616,11 @@ function processApeBurn(event: Burn, vault: Vault): void {
     .times(tokensBurned)
     .div(apePosition.balance);
 
+  // Accumulate closed position amounts into UserStats
+  const userStats = loadOrCreateUserStats(userAddress);
+  userStats.apeDollarDeposited = userStats.apeDollarDeposited.plus(dollarDeposited);
+  userStats.apeDollarWithdrawn = userStats.apeDollarWithdrawn.plus(dollarWithdrawn);
+
   // Update current APE position
   apePosition.collateralTotal = apePosition.collateralTotal.minus(closedApePosition.collateralDeposited);
   apePosition.dollarTotal = apePosition.dollarTotal.minus(dollarDeposited);
@@ -561,11 +629,13 @@ function processApeBurn(event: Burn, vault: Vault): void {
 
   // Remove position if balance becomes zero, otherwise save it
   if (apePosition.balance.equals(BigInt.fromI32(0))) {
+    userStats.apePositionsClosed = userStats.apePositionsClosed + 1;
     store.remove("ApePosition", apePosition.id.toHexString());
   } else {
     apePosition.save();
   }
-  
+
+  userStats.save();
   closedApePosition.save();
 }
 
@@ -581,8 +651,8 @@ function processTeaBurn(event: Burn, vault: Vault): void {
     return;
   }
 
-  // Create TeaPositionClosed record (mirrors ApePositionClosed pattern)
-  const closedTeaPosition = new TeaPositionClosed(event.transaction.hash);
+  // Fix: use txHash + logIndex for unique ID (prevents overwrites for multiple burns in same tx)
+  const closedTeaPosition = new TeaPositionClosed(event.transaction.hash.concatI32(event.logIndex.toI32()));
   closedTeaPosition.vault = vault.id;
   closedTeaPosition.user = userAddress;
 
@@ -618,6 +688,11 @@ function processTeaBurn(event: Burn, vault: Vault): void {
     .times(tokensBurned)
     .div(teaPosition.balance);
 
+  // Accumulate closed position amounts into UserStats
+  const userStats = loadOrCreateUserStats(userAddress);
+  userStats.teaDollarDeposited = userStats.teaDollarDeposited.plus(dollarDeposited);
+  userStats.teaDollarWithdrawn = userStats.teaDollarWithdrawn.plus(dollarWithdrawn);
+
   // Update TEA position
   teaPosition.collateralTotal = teaPosition.collateralTotal.minus(closedTeaPosition.collateralDeposited);
   teaPosition.dollarTotal = teaPosition.dollarTotal.minus(dollarDeposited);
@@ -626,11 +701,13 @@ function processTeaBurn(event: Burn, vault: Vault): void {
 
   // Remove position if balance becomes zero, otherwise save it
   if (teaPosition.balance.equals(BigInt.fromI32(0))) {
+    userStats.teaPositionsClosed = userStats.teaPositionsClosed + 1;
     store.remove("TeaPosition", teaPosition.id.toHexString());
   } else {
     teaPosition.save();
   }
 
+  userStats.save();
   closedTeaPosition.save();
 }
 

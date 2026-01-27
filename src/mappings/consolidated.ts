@@ -7,6 +7,7 @@ import {
   AuctionStarted,
   BidReceived,
   DividendsPaid,
+  DividendsClaimed,
   RewardsClaimed,
 } from "../../generated/Sir/Sir";
 import {
@@ -18,7 +19,8 @@ import {
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
-import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken } from "../helpers";
+import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, loadOrCreateUserStats, loadOrCreateStakingStats } from "../helpers";
+import { ln, updateEwma } from "../math-utils";
 
 // ===== DIVIDEND HANDLERS =====
 
@@ -29,7 +31,7 @@ import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken } from "../
 export function handleDividendsPaid(event: DividendsPaid): void {
   // Create unique entity ID using transaction hash
   const dividendsEntity = new Dividend(event.transaction.hash);
-  
+
   // Get current SIR token price in ETH directly from Uniswap pool
   const sirAddress_addr = Address.fromString(sirAddress);
   const wethAddress_addr = Address.fromString(wethAddress);
@@ -44,6 +46,34 @@ export function handleDividendsPaid(event: DividendsPaid): void {
     dividendsEntity.sirEthPrice = sirTokenEthPrice;
   }
   dividendsEntity.save();
+
+  // Update staking APY EWMA
+  // DividendsPaid(uint96 amountETH, uint80 amountStakedSIR)
+  // G = 1 + amountETH / totalStakedValueInETH
+  // where totalStakedValueInETH = amountStakedSIR × SIR/ETH price
+  const zero = BigDecimal.fromString("0");
+  const one = BigDecimal.fromString("1");
+
+  if (sirTokenEthPrice.gt(zero) && event.params.amountStakedSIR.gt(BigInt.fromI32(0))) {
+    const amountETH = event.params.amountETH.toBigDecimal();
+    const stakedSIR = event.params.amountStakedSIR.toBigDecimal();
+    const totalStakedValueInETH = stakedSIR.times(sirTokenEthPrice);
+
+    if (totalStakedValueInETH.gt(zero)) {
+      const G = one.plus(amountETH.div(totalStakedValueInETH));
+      const x = ln(G);
+
+      const stakingStats = loadOrCreateStakingStats();
+      stakingStats.stakingApyEwma = updateEwma(
+        stakingStats.stakingApyEwma,
+        x,
+        stakingStats.lastDividendTimestamp,
+        event.block.timestamp
+      );
+      stakingStats.lastDividendTimestamp = event.block.timestamp;
+      stakingStats.save();
+    }
+  }
 }
 
 /**
@@ -53,7 +83,16 @@ export function handleDividendsPaid(event: DividendsPaid): void {
 export function handleClaim(event: RewardsClaimed): void {
   const vaultId = event.params.vaultId;
   const userAddress = event.params.contributor;
-  
+
+  // Accumulate SIR rewards earned into UserStats
+  const rewards = event.params.rewards;
+  if (rewards.gt(BigInt.fromI32(0))) {
+    const userStats = loadOrCreateUserStats(userAddress);
+    userStats.totalSirEarned = userStats.totalSirEarned.plus(rewards);
+    userStats.sirRewardClaimCount = userStats.sirRewardClaimCount + 1;
+    userStats.save();
+  }
+
   // Get vault contract instance to check balances
   const vaultContract = VaultContract.bind(Address.fromString(vaultAddress));
   const userTeaBalance = vaultContract.balanceOf(userAddress, vaultId);
@@ -62,10 +101,26 @@ export function handleClaim(event: RewardsClaimed): void {
   // Remove user position if both TEA balance and unclaimed rewards are zero
   const hasNoTeaTokens = userTeaBalance.equals(BigInt.fromI32(0));
   const hasNoUnclaimedRewards = userUnclaimedRewards.equals(BigInt.fromI32(0));
-  
+
   if (hasNoTeaTokens && hasNoUnclaimedRewards) {
     const userPositionId = generateUserPositionId(userAddress, vaultId);
     store.remove("TeaPosition", userPositionId.toHexString());
+  }
+}
+
+/**
+ * Handles dividend claims by individual stakers
+ * Accumulates claimed dividends into UserStats
+ */
+export function handleDividendsClaimed(event: DividendsClaimed): void {
+  const staker = event.params.staker;
+  const amount = event.params.amount;
+
+  if (amount.gt(BigInt.fromI32(0))) {
+    const userStats = loadOrCreateUserStats(staker);
+    userStats.totalDividendsClaimed = userStats.totalDividendsClaimed.plus(amount);
+    userStats.dividendClaimCount = userStats.dividendClaimCount + 1;
+    userStats.save();
   }
 }
 

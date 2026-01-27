@@ -42,6 +42,12 @@ type Vault @entity(immutable: false) {
   lpApyEwma: BigDecimal!
   lpApyLastTimestamp: BigInt!  # Last fee timestamp
 
+  # EWMA Volume Tracking (USD, annualized rate)
+  volumeUsdEwma1d: BigDecimal!    # 1-day half-life
+  volumeUsdEwma7d: BigDecimal!    # 7-day half-life
+  volumeUsdEwma30d: BigDecimal!   # 30-day half-life
+  volumeLastTimestamp: BigInt!    # Last volume event timestamp
+
   feesIds: [Bytes!]!
 }
 
@@ -137,4 +143,34 @@ type AuctionStats @entity {
 type CurrentAuction @entity {
   id: Bytes! # token address
   auction: Auction! @link # reference to the current auction for this token
+}
+
+type VolumeStats @entity {
+  id: Bytes!                     # singleton "volume-stats"
+  totalVolumeUsd1d: BigDecimal!  # EWMA of total volume (1-day half-life)
+  totalVolumeUsd7d: BigDecimal!  # EWMA of total volume (7-day half-life)
+  totalVolumeUsd30d: BigDecimal! # EWMA of total volume (30-day half-life)
+  lastTimestamp: BigInt!         # Last update timestamp for EWMA decay
+}
+
+type UserStats @entity(immutable: false) {
+  id: Bytes!                          # User address
+  totalSirEarned: BigInt!             # Cumulative SIR from RewardsClaimed (12 decimals)
+  sirRewardClaimCount: Int!
+  totalDividendsClaimed: BigInt!      # Cumulative native token from DividendsClaimed (18 decimals)
+  dividendClaimCount: Int!
+  apePositionsOpened: Int!
+  apePositionsClosed: Int!
+  apeDollarDeposited: BigDecimal!     # Cumulative USD deposited (closed positions)
+  apeDollarWithdrawn: BigDecimal!     # Cumulative USD withdrawn (closed positions)
+  teaPositionsOpened: Int!
+  teaPositionsClosed: Int!
+  teaDollarDeposited: BigDecimal!
+  teaDollarWithdrawn: BigDecimal!
+}
+
+type StakingStats @entity(immutable: false) {
+  id: Bytes!                          # singleton "staking-stats"
+  stakingApyEwma: BigDecimal!         # 30-day EWMA of staking APY (continuous annualized rate)
+  lastDividendTimestamp: BigInt!       # Last DividendsPaid event timestamp
 }

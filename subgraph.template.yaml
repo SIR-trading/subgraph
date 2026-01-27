@@ -76,6 +76,8 @@ dataSources:
         - Vault
         - ApePosition
         - ApePositionClosed
+        - TeaPositionClosed
+        - UserStats
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
@@ -120,6 +122,8 @@ dataSources:
         - AuctionsParticipant
         - AuctionStats
         - CurrentAuction
+        - UserStats
+        - StakingStats
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
@@ -140,6 +144,8 @@ dataSources:
         # Dividend and claim events
         - event: DividendsPaid(uint96,uint80)
           handler: handleDividendsPaid
+        - event: DividendsClaimed(indexed address,uint96)
+          handler: handleDividendsClaimed
         - event: RewardsClaimed(indexed address,indexed uint256,uint80)
           handler: handleClaim
         # Auction events

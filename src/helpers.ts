@@ -1,7 +1,7 @@
 import { Address, BigInt, BigDecimal, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { usdStablecoinAddress, wethAddress, uniswapV3FactoryAddress } from "./contracts";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
-import { Token } from "../generated/schema";
+import { Token, UserStats, StakingStats } from "../generated/schema";
 
 // Price cache to avoid redundant calculations within the same block
 class PriceCache {
@@ -384,6 +384,47 @@ export function getDirectTokenPrice(
 
   // Get direct price from Uniswap V3 pool
   return getBestPoolPrice(tokenInAddress, tokenOutAddress);
+}
+
+const STAKING_STATS_ID = Bytes.fromUTF8("staking-stats");
+
+/**
+ * Loads or creates a UserStats entity for a given user address.
+ * Initializes all cumulative fields to zero.
+ */
+export function loadOrCreateUserStats(userAddress: Bytes): UserStats {
+  let stats = UserStats.load(userAddress);
+  if (!stats) {
+    stats = new UserStats(userAddress);
+    stats.totalSirEarned = BigInt.fromI32(0);
+    stats.sirRewardClaimCount = 0;
+    stats.totalDividendsClaimed = BigInt.fromI32(0);
+    stats.dividendClaimCount = 0;
+    stats.apePositionsOpened = 0;
+    stats.apePositionsClosed = 0;
+    stats.apeDollarDeposited = BigDecimal.fromString("0");
+    stats.apeDollarWithdrawn = BigDecimal.fromString("0");
+    stats.teaPositionsOpened = 0;
+    stats.teaPositionsClosed = 0;
+    stats.teaDollarDeposited = BigDecimal.fromString("0");
+    stats.teaDollarWithdrawn = BigDecimal.fromString("0");
+    stats.save();
+  }
+  return stats;
+}
+
+/**
+ * Loads or creates the StakingStats singleton entity.
+ */
+export function loadOrCreateStakingStats(): StakingStats {
+  let stats = StakingStats.load(STAKING_STATS_ID);
+  if (!stats) {
+    stats = new StakingStats(STAKING_STATS_ID);
+    stats.stakingApyEwma = BigDecimal.fromString("0");
+    stats.lastDividendTimestamp = BigInt.fromI32(0);
+    stats.save();
+  }
+  return stats;
 }
 
 /**
