@@ -133,6 +133,8 @@ function loadOrCreateStats(): AuctionStats {
   if (!stats) {
     stats = new AuctionStats(STATS_ID);
     stats.totalAuctions = BigInt.zero();
+    stats.totalDiscountUsd = BigDecimal.fromString("0");
+    stats.claimedAuctionsWithBids = BigInt.zero();
     stats.save();
   }
   return stats;
@@ -256,4 +258,24 @@ export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void
 
   auction.isClaimed = true;
   auction.save();
+
+  // Calculate and track discount stats if auction had bids with USD values
+  const zero = BigDecimal.fromString("0");
+  if (auction.highestBid.gt(BigInt.zero()) && auction.amountUsd.gt(zero) && auction.highestBidUsd.gt(zero)) {
+    const discountUsd = auction.amountUsd.minus(auction.highestBidUsd);
+
+    // Update global auction stats
+    const stats = loadOrCreateStats();
+    stats.totalDiscountUsd = stats.totalDiscountUsd.plus(discountUsd);
+    stats.claimedAuctionsWithBids = stats.claimedAuctionsWithBids.plus(BigInt.fromI32(1));
+    stats.save();
+
+    // Update winner's user stats
+    const winnerStats = loadOrCreateUserStats(auction.highestBidder);
+    winnerStats.auctionsWon = winnerStats.auctionsWon + 1;
+    if (discountUsd.gt(zero)) {
+      winnerStats.auctionTotalSavedUsd = winnerStats.auctionTotalSavedUsd.plus(discountUsd);
+    }
+    winnerStats.save();
+  }
 }

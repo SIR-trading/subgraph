@@ -141,6 +141,8 @@ type AuctionsParticipant @entity(immutable: false) {
 type AuctionStats @entity {
   id: Bytes! # singleton "stats"
   totalAuctions: BigInt! # total auctions ever started
+  totalDiscountUsd: BigDecimal! # sum of (amountUsd - highestBidUsd) for claimed auctions
+  claimedAuctionsWithBids: BigInt! # count of claimed auctions that had bids (for averaging)
 }
 
 type CurrentAuction @entity {
@@ -170,6 +172,9 @@ type UserStats @entity(immutable: false) {
   teaPositionsClosed: Int!
   teaDollarDeposited: BigDecimal!
   teaDollarWithdrawn: BigDecimal!
+  # Auction stats
+  auctionsWon: Int!                   # Number of auctions won (claimed)
+  auctionTotalSavedUsd: BigDecimal!   # Total USD saved (market value - bid price)
 }
 
 type StakingStats @entity(immutable: false) {

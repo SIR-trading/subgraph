@@ -408,6 +408,9 @@ export function loadOrCreateUserStats(userAddress: Bytes): UserStats {
     stats.teaPositionsClosed = 0;
     stats.teaDollarDeposited = BigDecimal.fromString("0");
     stats.teaDollarWithdrawn = BigDecimal.fromString("0");
+    // Auction stats
+    stats.auctionsWon = 0;
+    stats.auctionTotalSavedUsd = BigDecimal.fromString("0");
     stats.save();
   }
   return stats;
