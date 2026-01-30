@@ -1142,8 +1142,8 @@ export class ApePositionClosed extends Entity {
     this.set("dollarWithdrawn", Value.fromBigDecimal(value));
   }
 
-  get timestamp(): BigInt {
-    let value = this.get("timestamp");
+  get createdAt(): BigInt {
+    let value = this.get("createdAt");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -1151,8 +1151,21 @@ export class ApePositionClosed extends Entity {
     }
   }
 
-  set timestamp(value: BigInt) {
-    this.set("timestamp", Value.fromBigInt(value));
+  set createdAt(value: BigInt) {
+    this.set("createdAt", Value.fromBigInt(value));
+  }
+
+  get closedAt(): BigInt {
+    let value = this.get("closedAt");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set closedAt(value: BigInt) {
+    this.set("closedAt", Value.fromBigInt(value));
   }
 }
 
@@ -1277,8 +1290,8 @@ export class TeaPositionClosed extends Entity {
     this.set("dollarWithdrawn", Value.fromBigDecimal(value));
   }
 
-  get timestamp(): BigInt {
-    let value = this.get("timestamp");
+  get createdAt(): BigInt {
+    let value = this.get("createdAt");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -1286,8 +1299,21 @@ export class TeaPositionClosed extends Entity {
     }
   }
 
-  set timestamp(value: BigInt) {
-    this.set("timestamp", Value.fromBigInt(value));
+  set createdAt(value: BigInt) {
+    this.set("createdAt", Value.fromBigInt(value));
+  }
+
+  get closedAt(): BigInt {
+    let value = this.get("closedAt");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set closedAt(value: BigInt) {
+    this.set("closedAt", Value.fromBigInt(value));
   }
 }
 
@@ -1694,6 +1720,45 @@ export class AuctionStats extends Entity {
   set totalAuctions(value: BigInt) {
     this.set("totalAuctions", Value.fromBigInt(value));
   }
+
+  get totalDiscountUsd(): BigDecimal {
+    let value = this.get("totalDiscountUsd");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set totalDiscountUsd(value: BigDecimal) {
+    this.set("totalDiscountUsd", Value.fromBigDecimal(value));
+  }
+
+  get claimedAuctionsWithBids(): BigInt {
+    let value = this.get("claimedAuctionsWithBids");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set claimedAuctionsWithBids(value: BigInt) {
+    this.set("claimedAuctionsWithBids", Value.fromBigInt(value));
+  }
+
+  get uniqueWinners(): BigInt {
+    let value = this.get("uniqueWinners");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set uniqueWinners(value: BigInt) {
+    this.set("uniqueWinners", Value.fromBigInt(value));
+  }
 }
 
 export class CurrentAuction extends Entity {
@@ -2046,6 +2111,32 @@ export class UserStats extends Entity {
 
   set teaDollarWithdrawn(value: BigDecimal) {
     this.set("teaDollarWithdrawn", Value.fromBigDecimal(value));
+  }
+
+  get auctionsWon(): i32 {
+    let value = this.get("auctionsWon");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set auctionsWon(value: i32) {
+    this.set("auctionsWon", Value.fromI32(value));
+  }
+
+  get auctionTotalSavedUsd(): BigDecimal {
+    let value = this.get("auctionTotalSavedUsd");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set auctionTotalSavedUsd(value: BigDecimal) {
+    this.set("auctionTotalSavedUsd", Value.fromBigDecimal(value));
   }
 }
 

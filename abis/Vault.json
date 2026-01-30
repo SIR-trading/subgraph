@@ -1034,6 +1034,12 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "portionLockTime",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
       }
     ],
     "anonymous": false

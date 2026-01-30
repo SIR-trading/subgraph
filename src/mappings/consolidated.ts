@@ -77,34 +77,47 @@ export function handleDividendsPaid(event: DividendsPaid): void {
 }
 
 /**
- * Handles reward claims for TEA token holders
- * Removes user position if both TEA balance and unclaimed rewards are zero
+ * Handles reward claims for LP and contributors
+ * - vaultId = 0: Contributor rewards (from contributorMint/contributorMintAndStake)
+ * - vaultId > 0: LP rewards (from lperMint/lperMintAndStake)
+ * For LP claims, removes user position if both TEA balance and unclaimed rewards are zero
  */
 export function handleClaim(event: RewardsClaimed): void {
   const vaultId = event.params.vaultId;
   const userAddress = event.params.contributor;
-
-  // Accumulate SIR rewards earned into UserStats
   const rewards = event.params.rewards;
+
   if (rewards.gt(BigInt.fromI32(0))) {
     const userStats = loadOrCreateUserStats(userAddress);
-    userStats.totalSirEarned = userStats.totalSirEarned.plus(rewards);
-    userStats.sirRewardClaimCount = userStats.sirRewardClaimCount + 1;
+
+    // vaultId = 0 means contributor rewards, otherwise LP rewards
+    if (vaultId.equals(BigInt.fromI32(0))) {
+      // Contributor rewards
+      userStats.totalContributorSirEarned = userStats.totalContributorSirEarned.plus(rewards);
+      userStats.contributorClaimCount = userStats.contributorClaimCount + 1;
+    } else {
+      // LP rewards
+      userStats.totalSirEarned = userStats.totalSirEarned.plus(rewards);
+      userStats.sirRewardClaimCount = userStats.sirRewardClaimCount + 1;
+    }
     userStats.save();
   }
 
-  // Get vault contract instance to check balances
-  const vaultContract = VaultContract.bind(Address.fromString(vaultAddress));
-  const userTeaBalance = vaultContract.balanceOf(userAddress, vaultId);
-  const userUnclaimedRewards = vaultContract.unclaimedRewards(vaultId, userAddress);
+  // Only check TEA position cleanup for LP claims (vaultId > 0)
+  if (vaultId.gt(BigInt.fromI32(0))) {
+    // Get vault contract instance to check balances
+    const vaultContract = VaultContract.bind(Address.fromString(vaultAddress));
+    const userTeaBalance = vaultContract.balanceOf(userAddress, vaultId);
+    const userUnclaimedRewards = vaultContract.unclaimedRewards(vaultId, userAddress);
 
-  // Remove user position if both TEA balance and unclaimed rewards are zero
-  const hasNoTeaTokens = userTeaBalance.equals(BigInt.fromI32(0));
-  const hasNoUnclaimedRewards = userUnclaimedRewards.equals(BigInt.fromI32(0));
+    // Remove user position if both TEA balance and unclaimed rewards are zero
+    const hasNoTeaTokens = userTeaBalance.equals(BigInt.fromI32(0));
+    const hasNoUnclaimedRewards = userUnclaimedRewards.equals(BigInt.fromI32(0));
 
-  if (hasNoTeaTokens && hasNoUnclaimedRewards) {
-    const userPositionId = generateUserPositionId(userAddress, vaultId);
-    store.remove("TeaPosition", userPositionId.toHexString());
+    if (hasNoTeaTokens && hasNoUnclaimedRewards) {
+      const userPositionId = generateUserPositionId(userAddress, vaultId);
+      store.remove("TeaPosition", userPositionId.toHexString());
+    }
   }
 }
 
@@ -135,6 +148,7 @@ function loadOrCreateStats(): AuctionStats {
     stats.totalAuctions = BigInt.zero();
     stats.totalDiscountUsd = BigDecimal.fromString("0");
     stats.claimedAuctionsWithBids = BigInt.zero();
+    stats.uniqueWinners = BigInt.zero();
     stats.save();
   }
   return stats;
@@ -264,14 +278,20 @@ export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void
   if (auction.highestBid.gt(BigInt.zero()) && auction.amountUsd.gt(zero) && auction.highestBidUsd.gt(zero)) {
     const discountUsd = auction.amountUsd.minus(auction.highestBidUsd);
 
+    // Load winner's stats first to check if this is their first win
+    const winnerStats = loadOrCreateUserStats(auction.highestBidder);
+    const isFirstWin = winnerStats.auctionsWon == 0;
+
     // Update global auction stats
     const stats = loadOrCreateStats();
     stats.totalDiscountUsd = stats.totalDiscountUsd.plus(discountUsd);
     stats.claimedAuctionsWithBids = stats.claimedAuctionsWithBids.plus(BigInt.fromI32(1));
+    if (isFirstWin) {
+      stats.uniqueWinners = stats.uniqueWinners.plus(BigInt.fromI32(1));
+    }
     stats.save();
 
     // Update winner's user stats
-    const winnerStats = loadOrCreateUserStats(auction.highestBidder);
     winnerStats.auctionsWon = winnerStats.auctionsWon + 1;
     if (discountUsd.gt(zero)) {
       winnerStats.auctionTotalSavedUsd = winnerStats.auctionTotalSavedUsd.plus(discountUsd);

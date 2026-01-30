@@ -95,7 +95,8 @@ type ApePositionClosed @entity(immutable: true) {
   dollarDeposited: BigDecimal!
   collateralWithdrawn: BigInt!
   dollarWithdrawn: BigDecimal!
-  timestamp: BigInt!
+  createdAt: BigInt!  # When position was opened
+  closedAt: BigInt!   # When position was closed
 }
 
 type TeaPositionClosed @entity(immutable: true) {
@@ -106,7 +107,8 @@ type TeaPositionClosed @entity(immutable: true) {
   dollarDeposited: BigDecimal!
   collateralWithdrawn: BigInt!
   dollarWithdrawn: BigDecimal!
-  timestamp: BigInt!
+  createdAt: BigInt!  # When position was opened
+  closedAt: BigInt!   # When position was closed
 }
 
 type Dividend @entity(immutable: true) {
@@ -143,6 +145,7 @@ type AuctionStats @entity {
   totalAuctions: BigInt! # total auctions ever started
   totalDiscountUsd: BigDecimal! # sum of (amountUsd - highestBidUsd) for claimed auctions
   claimedAuctionsWithBids: BigInt! # count of claimed auctions that had bids (for averaging)
+  uniqueWinners: BigInt! # count of unique addresses that have won at least one auction
 }
 
 type CurrentAuction @entity {
@@ -160,8 +163,10 @@ type VolumeStats @entity {
 
 type UserStats @entity(immutable: false) {
   id: Bytes!                          # User address
-  totalSirEarned: BigInt!             # Cumulative SIR from RewardsClaimed (12 decimals)
-  sirRewardClaimCount: Int!
+  totalSirEarned: BigInt!             # Cumulative SIR from LP RewardsClaimed (12 decimals)
+  sirRewardClaimCount: Int!           # Number of LP reward claims
+  totalContributorSirEarned: BigInt!  # Cumulative SIR from contributor RewardsClaimed (12 decimals)
+  contributorClaimCount: Int!         # Number of contributor reward claims
   totalDividendsClaimed: BigInt!      # Cumulative native token from DividendsClaimed (18 decimals)
   dividendClaimCount: Int!
   apePositionsOpened: Int!

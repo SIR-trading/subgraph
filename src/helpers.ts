@@ -398,6 +398,8 @@ export function loadOrCreateUserStats(userAddress: Bytes): UserStats {
     stats = new UserStats(userAddress);
     stats.totalSirEarned = BigInt.fromI32(0);
     stats.sirRewardClaimCount = 0;
+    stats.totalContributorSirEarned = BigInt.fromI32(0);
+    stats.contributorClaimCount = 0;
     stats.totalDividendsClaimed = BigInt.fromI32(0);
     stats.dividendClaimCount = 0;
     stats.apePositionsOpened = 0;

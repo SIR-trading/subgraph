@@ -609,7 +609,8 @@ function processApeBurn(event: Burn, vault: Vault): void {
     .times(collateralPriceUsd)
     .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal()); // Convert to true USD value
   closedApePosition.dollarWithdrawn = dollarWithdrawn;
-  closedApePosition.timestamp = event.block.timestamp;
+  closedApePosition.createdAt = apePosition.createdAt;
+  closedApePosition.closedAt = event.block.timestamp;
 
   // Calculate proportional debt token amount to reduce
   const debtTokenBurned = apePosition.debtTokenTotal
@@ -681,7 +682,8 @@ function processTeaBurn(event: Burn, vault: Vault): void {
     .times(collateralPriceUsd)
     .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
   closedTeaPosition.dollarWithdrawn = dollarWithdrawn;
-  closedTeaPosition.timestamp = event.block.timestamp;
+  closedTeaPosition.createdAt = teaPosition.createdAt;
+  closedTeaPosition.closedAt = event.block.timestamp;
 
   // Calculate proportional debt token amount to reduce
   const debtTokenBurned = teaPosition.debtTokenTotal
