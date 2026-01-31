@@ -253,6 +253,59 @@ dailyVolume = ewma / 365.25
 - `src/mappings/vault.ts` → `calculateVolumeUsd()`, volume tracking in `handleMint()` and `handleBurn()`
 - `src/math-utils.ts` → `exp()`
 
+### Staking APR Estimator (EWMA)
+
+The subgraph computes annualized staking APR for SIR stakers using an EWMA with a 30-day half-life. This uses **simple returns** (not log returns) since dividends are paid out and not auto-compounded.
+
+The estimator is similar to summing yields over 30 days and extrapolating to 1 year, but uses exponential weighting for smoothness.
+
+#### Definitions
+- `d_n`: ETH dividends paid
+- `p_n`: SIR price in ETH (ETH per SIR)
+- `s_n`: total staked SIR
+- `x_n = d_n / (p_n × s_n)`: simple return per dividend
+- `H = 30/365.25`: half-life in years
+- `τ = H / ln(2)`: time constant (~0.1186 years)
+- `λ = 1/τ = ln(2)/H ≈ 8.445`: decay constant (1/year)
+- `D_n = exp(-dt_n/τ) = exp(-λ × dt_n)`: decay factor
+
+#### Recursive Formula
+```
+y_n = x_n/τ + D_n × y_{n-1}
+```
+
+Equivalently (since 1/τ = λ):
+```
+y_n = λ × x_n + D_n × y_{n-1}
+```
+
+The `1/τ` (or `λ`) factor converts the dimensionless return directly to an annualized rate, so `y_n` is the annualized APR.
+
+#### StakingStats Entity
+- `stakingAprEwma`: 30-day EWMA of staking APR (simple annualized rate)
+- `lastDividendTimestamp`: Timestamp of last DividendsPaid event
+
+#### Reading in App (with decay)
+```typescript
+const LAMBDA_30D = 8.445;
+const SECONDS_PER_YEAR = 31_557_600;
+
+function getStakingApr(stakingAprEwma: number, lastDividendTimestamp: number): number {
+  const now = Date.now() / 1000;
+  const dtYears = (now - lastDividendTimestamp) / SECONDS_PER_YEAR;
+  return stakingAprEwma * Math.exp(-LAMBDA_30D * dtYears);  // apply decay
+}
+```
+
+The decay ensures APR naturally decreases if no dividends are paid.
+
+#### Key Files
+- `src/mappings/consolidated.ts` → `handleDividendsPaid()`
+- `src/helpers.ts` → `loadOrCreateStakingStats()`
+- `src/math-utils.ts` → `updateEwma()`
+
+---
+
 ### Leverage Tiers
 - Positive values (1-3): Long positions with increasing leverage
 - Negative values (-1 to -3): Short positions with increasing leverage

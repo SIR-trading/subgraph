@@ -118,10 +118,6 @@ export class Mint__Params {
   get tokenOut(): BigInt {
     return this._event.parameters[6].value.toBigInt();
   }
-
-  get portionLockTime(): i32 {
-    return this._event.parameters[7].value.toI32();
-  }
 }
 
 export class ReservesChanged extends ethereum.Event {

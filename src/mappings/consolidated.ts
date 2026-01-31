@@ -20,7 +20,7 @@ import {
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
 import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, loadOrCreateUserStats, loadOrCreateStakingStats, getTokenUsdcPrice } from "../helpers";
-import { ln, updateEwma } from "../math-utils";
+import { updateEwma } from "../math-utils";
 
 // ===== DIVIDEND HANDLERS =====
 
@@ -47,25 +47,29 @@ export function handleDividendsPaid(event: DividendsPaid): void {
   }
   dividendsEntity.save();
 
-  // Update staking APY EWMA
-  // DividendsPaid(uint96 amountETH, uint80 amountStakedSIR)
-  // G = 1 + amountETH / totalStakedValueInETH
+  // Update staking APR EWMA (simple returns, no compounding)
+  // x = amountETH / totalStakedValueInETH (simple return per dividend)
   // where totalStakedValueInETH = amountStakedSIR × SIR/ETH price
   const zero = BigDecimal.fromString("0");
-  const one = BigDecimal.fromString("1");
 
   if (sirTokenEthPrice.gt(zero) && event.params.amountStakedSIR.gt(BigInt.fromI32(0))) {
-    const amountETH = event.params.amountETH.toBigDecimal();
-    const stakedSIR = event.params.amountStakedSIR.toBigDecimal();
+    // Normalize raw values to human-readable units
+    // amountETH is in wei (18 decimals), stakedSIR is in raw SIR (12 decimals)
+    // sirTokenEthPrice is already in human-readable units (ETH per 1 SIR)
+    const ETH_DECIMALS = BigInt.fromI32(10).pow(18).toBigDecimal();
+    const SIR_DECIMALS = BigInt.fromI32(10).pow(12).toBigDecimal();
+
+    const amountETH = event.params.amountETH.toBigDecimal().div(ETH_DECIMALS);
+    const stakedSIR = event.params.amountStakedSIR.toBigDecimal().div(SIR_DECIMALS);
     const totalStakedValueInETH = stakedSIR.times(sirTokenEthPrice);
 
     if (totalStakedValueInETH.gt(zero)) {
-      const G = one.plus(amountETH.div(totalStakedValueInETH));
-      const x = ln(G);
+      // Simple return (no log) for APR without compounding
+      const x = amountETH.div(totalStakedValueInETH);
 
       const stakingStats = loadOrCreateStakingStats();
-      stakingStats.stakingApyEwma = updateEwma(
-        stakingStats.stakingApyEwma,
+      stakingStats.stakingAprEwma = updateEwma(
+        stakingStats.stakingAprEwma,
         x,
         stakingStats.lastDividendTimestamp,
         event.block.timestamp

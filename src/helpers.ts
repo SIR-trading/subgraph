@@ -425,7 +425,7 @@ export function loadOrCreateStakingStats(): StakingStats {
   let stats = StakingStats.load(STAKING_STATS_ID);
   if (!stats) {
     stats = new StakingStats(STAKING_STATS_ID);
-    stats.stakingApyEwma = BigDecimal.fromString("0");
+    stats.stakingAprEwma = BigDecimal.fromString("0");
     stats.lastDividendTimestamp = BigInt.fromI32(0);
     stats.save();
   }

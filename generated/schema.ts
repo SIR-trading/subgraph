@@ -1983,6 +1983,32 @@ export class UserStats extends Entity {
     this.set("sirRewardClaimCount", Value.fromI32(value));
   }
 
+  get totalContributorSirEarned(): BigInt {
+    let value = this.get("totalContributorSirEarned");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set totalContributorSirEarned(value: BigInt) {
+    this.set("totalContributorSirEarned", Value.fromBigInt(value));
+  }
+
+  get contributorClaimCount(): i32 {
+    let value = this.get("contributorClaimCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set contributorClaimCount(value: i32) {
+    this.set("contributorClaimCount", Value.fromI32(value));
+  }
+
   get totalDividendsClaimed(): BigInt {
     let value = this.get("totalDividendsClaimed");
     if (!value || value.kind == ValueKind.NULL) {
@@ -2183,8 +2209,8 @@ export class StakingStats extends Entity {
     this.set("id", Value.fromBytes(value));
   }
 
-  get stakingApyEwma(): BigDecimal {
-    let value = this.get("stakingApyEwma");
+  get stakingAprEwma(): BigDecimal {
+    let value = this.get("stakingAprEwma");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -2192,8 +2218,8 @@ export class StakingStats extends Entity {
     }
   }
 
-  set stakingApyEwma(value: BigDecimal) {
-    this.set("stakingApyEwma", Value.fromBigDecimal(value));
+  set stakingAprEwma(value: BigDecimal) {
+    this.set("stakingAprEwma", Value.fromBigDecimal(value));
   }
 
   get lastDividendTimestamp(): BigInt {
