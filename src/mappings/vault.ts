@@ -279,6 +279,10 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   vault.leverageTier = event.params.leverageTier;
   vault.exists = true;
 
+  // Track vault creation metadata
+  vault.createdAt = event.block.timestamp;
+  vault.creator = event.transaction.from;
+
   // Link vault to token pair volatility entity
   linkVaultToVolatility(vault);
 

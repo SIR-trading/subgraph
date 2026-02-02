@@ -43,6 +43,9 @@ export function loadOrCreateVault(vaultId: Bytes): Vault {
     vault.volumeUsdEwma30d = BigDecimal.fromString("0");
     vault.volumeLastTimestamp = BigInt.fromI32(0);
     vault.feesIds = [];
+    // Will be set when vault is initialized
+    vault.createdAt = BigInt.fromI32(0);
+    vault.creator = Address.zero();
   }
   return vault;
 }

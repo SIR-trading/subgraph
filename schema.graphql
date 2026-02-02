@@ -34,6 +34,8 @@ type Vault @entity(immutable: false) {
   rate: BigInt!
   ape: Token! @link
   volatility: TokenPairVolatility @link  # 30-day realized volatility for this token pair
+  createdAt: BigInt!        # Block timestamp when vault was initialized
+  creator: Bytes!           # Address that created the vault (event.transaction.from)
 
   # Denormalized from linked TokenPairVolatility for sorting
   volatilityAnnual: BigDecimal!
