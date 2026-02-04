@@ -1,11 +1,11 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed } from "../../generated/schema";
+import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed, UserMonthlyStats } from "../../generated/schema";
 import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
 import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store } from "@graphprotocol/graph-ts";
 import { sirAddress, vaultAddress } from "../contracts";
-import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId, loadOrCreateUserStats } from "../helpers";
+import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId, loadOrCreateUserStats, getMonthStartTimestamp, generateUserMonthlyStatsId } from "../helpers";
 
 /**
  * Generates a unique Fee entity ID based on vault ID and timestamp
@@ -642,6 +642,50 @@ function processApeBurn(event: Burn, vault: Vault): void {
 
   userStats.save();
   closedApePosition.save();
+
+  // Update UserMonthlyStats for leaderboard aggregation
+  const monthStart = getMonthStartTimestamp(event.block.timestamp);
+  const statsId = generateUserMonthlyStatsId(userAddress, monthStart);
+  let monthlyStats = UserMonthlyStats.load(statsId);
+
+  if (!monthlyStats) {
+    monthlyStats = new UserMonthlyStats(statsId);
+    monthlyStats.user = userAddress;
+    monthlyStats.monthStartTimestamp = monthStart;
+    monthlyStats.totalDepositedUsd = BigDecimal.zero();
+    monthlyStats.totalWithdrawnUsd = BigDecimal.zero();
+    monthlyStats.tradeCount = 0;
+    monthlyStats.totalHoldSeconds = BigInt.zero();
+    monthlyStats.bestTradePnlPercentage = BigDecimal.fromString("-999999");
+    monthlyStats.bestTradeDepositedUsd = BigDecimal.zero();
+    monthlyStats.bestTradeWithdrawnUsd = BigDecimal.zero();
+    monthlyStats.bestTradeVault = null;
+    monthlyStats.firstTradeAt = event.block.timestamp;
+    monthlyStats.lastTradeAt = event.block.timestamp;
+  }
+
+  monthlyStats.totalDepositedUsd = monthlyStats.totalDepositedUsd.plus(dollarDeposited);
+  monthlyStats.totalWithdrawnUsd = monthlyStats.totalWithdrawnUsd.plus(dollarWithdrawn);
+  monthlyStats.tradeCount = monthlyStats.tradeCount + 1;
+
+  // Calculate hold duration for this trade
+  const holdSeconds = event.block.timestamp.minus(closedApePosition.createdAt);
+  monthlyStats.totalHoldSeconds = monthlyStats.totalHoldSeconds.plus(holdSeconds);
+  monthlyStats.lastTradeAt = event.block.timestamp;
+
+  // Track best trade by PnL percentage
+  const tradePnlPercentage = dollarDeposited.gt(BigDecimal.zero())
+    ? dollarWithdrawn.minus(dollarDeposited).div(dollarDeposited).times(BigDecimal.fromString("100"))
+    : BigDecimal.zero();
+
+  if (tradePnlPercentage.gt(monthlyStats.bestTradePnlPercentage)) {
+    monthlyStats.bestTradePnlPercentage = tradePnlPercentage;
+    monthlyStats.bestTradeDepositedUsd = dollarDeposited;
+    monthlyStats.bestTradeWithdrawnUsd = dollarWithdrawn;
+    monthlyStats.bestTradeVault = vault.id;
+  }
+
+  monthlyStats.save();
 }
 
 /**

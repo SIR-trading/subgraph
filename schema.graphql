@@ -189,3 +189,27 @@ type StakingStats @entity(immutable: false) {
   stakingAprEwma: BigDecimal!         # 30-day EWMA of staking APR (simple annualized rate, no compounding)
   lastDividendTimestamp: BigInt!       # Last DividendsPaid event timestamp
 }
+
+type UserMonthlyStats @entity(immutable: false) {
+  "Composite ID: user (20 bytes) + monthStart timestamp (8 bytes)"
+  id: Bytes!
+
+  user: Bytes!
+  monthStartTimestamp: BigInt!  # Unix timestamp of first second of month (UTC)
+
+  # Aggregated metrics
+  totalDepositedUsd: BigDecimal!
+  totalWithdrawnUsd: BigDecimal!
+  tradeCount: Int!
+  totalHoldSeconds: BigInt!
+
+  # Best trade tracking (need deposited/withdrawn for % calculation in API)
+  bestTradePnlPercentage: BigDecimal!
+  bestTradeDepositedUsd: BigDecimal!
+  bestTradeWithdrawnUsd: BigDecimal!
+  bestTradeVault: Vault @link
+
+  # Timestamps
+  firstTradeAt: BigInt!
+  lastTradeAt: BigInt!
+}

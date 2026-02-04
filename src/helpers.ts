@@ -1,7 +1,70 @@
-import { Address, BigInt, BigDecimal, Bytes, ethereum } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes, ethereum, ByteArray } from "@graphprotocol/graph-ts";
 import { usdStablecoinAddress, wethAddress, uniswapV3FactoryAddress } from "./contracts";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
 import { Token, UserStats, StakingStats } from "../generated/schema";
+
+/**
+ * Check if a year is a leap year
+ */
+function isLeapYear(year: i32): boolean {
+  return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+/**
+ * Get the number of days in each month for a given year
+ */
+function getDaysInMonths(year: i32): i32[] {
+  if (isLeapYear(year)) {
+    return [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  }
+  return [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+}
+
+/**
+ * Get Unix timestamp of first second of the month containing `timestamp`
+ * AssemblyScript doesn't have Date, so we manually calculate from epoch (1970)
+ */
+export function getMonthStartTimestamp(timestamp: BigInt): BigInt {
+  const SECONDS_PER_DAY: i64 = 86400;
+  let days = timestamp.toI64() / SECONDS_PER_DAY;
+
+  // Calculate year from epoch (1970)
+  let year: i32 = 1970;
+  while (true) {
+    const daysInYear = isLeapYear(year) ? 366 : 365;
+    if (days < daysInYear) break;
+    days -= daysInYear;
+    year++;
+  }
+
+  // Calculate month
+  const daysInMonths = getDaysInMonths(year);
+  let month: i32 = 0;
+  let dayOfMonth = days;
+  while (month < 12 && dayOfMonth >= daysInMonths[month]) {
+    dayOfMonth -= daysInMonths[month];
+    month++;
+  }
+
+  // Compute timestamp of month start by counting days from epoch
+  let monthStartDays: i64 = 0;
+  for (let y: i32 = 1970; y < year; y++) {
+    monthStartDays += isLeapYear(y) ? 366 : 365;
+  }
+  for (let m: i32 = 0; m < month; m++) {
+    monthStartDays += daysInMonths[m];
+  }
+
+  return BigInt.fromI64(monthStartDays * SECONDS_PER_DAY);
+}
+
+/**
+ * Generates a unique ID for UserMonthlyStats entity
+ * Combines user address (20 bytes) with month start timestamp (8 bytes)
+ */
+export function generateUserMonthlyStatsId(user: Bytes, monthStart: BigInt): Bytes {
+  return user.concat(Bytes.fromByteArray(Bytes.fromBigInt(monthStart)));
+}
 
 // Price cache to avoid redundant calculations within the same block
 class PriceCache {
