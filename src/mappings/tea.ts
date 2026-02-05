@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, BigDecimal } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes, BigDecimal, log } from "@graphprotocol/graph-ts";
 import {
   Vault,
   TransferBatch,
@@ -15,17 +15,35 @@ import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
 import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, bigIntToHex, getCollateralUsdPrice } from "../helpers";
 
+// Debug block for stuck subgraph investigation
+const DEBUG_BLOCK = BigInt.fromI32(7449520);
+
 /**
  * Handles ERC1155 single token transfers for TEA positions
  * Updates user balances and vault liquidity tracking
  */
 export function handleSingleTransfer(event: TransferSingle): void {
+  const isDebugBlock = event.block.number.equals(DEBUG_BLOCK);
+
+  if (isDebugBlock) {
+    log.info("handleSingleTransfer START - tx: {}, from: {}, to: {}, vaultId: {}", [
+      event.transaction.hash.toHexString(),
+      event.params.from.toHexString(),
+      event.params.to.toHexString(),
+      event.params.id.toString()
+    ]);
+  }
+
   const transferAmount = event.params.amount;
   const recipientAddress = event.params.to;
   const senderAddress = event.params.from;
   const vaultId = event.params.id;
 
   handleTeaTransfer(vaultId, recipientAddress, senderAddress, transferAmount, event.block.timestamp);
+
+  if (isDebugBlock) {
+    log.info("handleSingleTransfer END - tx: {}", [event.transaction.hash.toHexString()]);
+  }
 }
 
 /**
@@ -285,9 +303,9 @@ function handleTeaTransfer(
 export function handleBatchTransfer(event: TransferBatch): void {
   const vaults = event.params.vaultIds;
   const to = event.params.to;
-  const from = event.params.to;
+  const from = event.params.from;
   const amounts = event.params.amounts;
-  for (let i = 0; i++; i < vaults.length) {
+  for (let i = 0; i < vaults.length; i++) {
     const amount = amounts[i];
     handleTeaTransfer(vaults[i], to, from, amount, event.block.timestamp);
   }

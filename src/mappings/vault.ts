@@ -3,7 +3,10 @@ import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPosi
 import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store, log } from "@graphprotocol/graph-ts";
+
+// Debug block for stuck subgraph investigation
+const DEBUG_BLOCK = BigInt.fromI32(7449520);
 import { sirAddress, vaultAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId, loadOrCreateUserStats, getMonthStartTimestamp, generateUserMonthlyStatsId } from "../helpers";
 
@@ -223,6 +226,15 @@ export function handleVaultTax(event: VaultNewTax): void {
 }
 
 export function handleVaultInitialized(event: VaultInitialized): void {
+  const isDebugBlock = event.block.number.equals(DEBUG_BLOCK);
+
+  if (isDebugBlock) {
+    log.info("handleVaultInitialized START - tx: {}, vaultId: {}", [
+      event.transaction.hash.toHexString(),
+      event.params.vaultId.toString()
+    ]);
+  }
+
   const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
 
   // Load or create vault (vault may have been created by tax event)
@@ -290,13 +302,32 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 
   // Track highest vault ID for round-robin USD refresh
   updateHighestVaultId(event.params.vaultId);
+
+  if (isDebugBlock) {
+    log.info("handleVaultInitialized END - tx: {}, apeAddress: {}", [
+      event.transaction.hash.toHexString(),
+      event.params.ape.toHexString()
+    ]);
+  }
 }
 
 export function handleReservesChanged(event: ReservesChanged): void {
+  const isDebugBlock = event.block.number.equals(DEBUG_BLOCK);
+
+  if (isDebugBlock) {
+    log.info("handleReservesChanged START - tx: {}, vaultId: {}", [
+      event.transaction.hash.toHexString(),
+      event.params.vaultId.toString()
+    ]);
+  }
+
   const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
 
   let vault = Vault.load(vaultId);
   if (!vault) {
+    if (isDebugBlock) {
+      log.info("handleReservesChanged END (no vault) - tx: {}", [event.transaction.hash.toHexString()]);
+    }
     return; // Exit if vault does not exist
   }
 
@@ -308,23 +339,53 @@ export function handleReservesChanged(event: ReservesChanged): void {
   vault.reserveLPers = params.reserveLPers;
   vault.totalValue = total;
 
+  if (isDebugBlock) {
+    log.info("handleReservesChanged before calculateVaultUsdcValue - tx: {}", [event.transaction.hash.toHexString()]);
+  }
+
   // Calculate USD values with caching
   const currentUsdValue = calculateVaultUsdcValue(vault, event.block.number);
   vault.totalValueUsd = currentUsdValue;
+
+  if (isDebugBlock) {
+    log.info("handleReservesChanged before updateVaultVolatility - tx: {}", [event.transaction.hash.toHexString()]);
+  }
 
   // Update volatility for this vault
   updateVaultVolatility(vault, event.block.timestamp);
 
   vault.save();
 
+  if (isDebugBlock) {
+    log.info("handleReservesChanged before refreshNextStaleVault - tx: {}", [event.transaction.hash.toHexString()]);
+  }
+
   // Refresh one other stale vault per event (round-robin)
   refreshNextStaleVault(event.block.number, event.block.timestamp);
+
+  if (isDebugBlock) {
+    log.info("handleReservesChanged END - tx: {}", [event.transaction.hash.toHexString()]);
+  }
 }
 
 export function handleMint(event: Mint): void {
+  const isDebugBlock = event.block.number.equals(DEBUG_BLOCK);
+
+  if (isDebugBlock) {
+    log.info("handleMint START - tx: {}, vaultId: {}, isAPE: {}, minter: {}", [
+      event.transaction.hash.toHexString(),
+      event.params.vaultId.toString(),
+      event.params.isAPE.toString(),
+      event.params.minter.toHexString()
+    ]);
+  }
+
   const vaultId = Bytes.fromHexString(bigIntToHex(event.params.vaultId));
   const vault = Vault.load(vaultId);
   if (!vault) {
+    if (isDebugBlock) {
+      log.info("handleMint END (no vault) - tx: {}", [event.transaction.hash.toHexString()]);
+    }
     return;
   }
 
@@ -338,8 +399,15 @@ export function handleMint(event: Mint): void {
       // Process LP fees when APE is minted and TEA supply > 0
       const collateralFeeToLPers = event.params.collateralFeeToLPers;
       if (collateralFeeToLPers.gt(BigInt.fromI32(0))) {
+        if (isDebugBlock) {
+          log.info("handleMint before processLpFees - tx: {}", [event.transaction.hash.toHexString()]);
+        }
         processLpFees(vault, collateralFeeToLPers, event.block.timestamp);
       }
+    }
+
+    if (isDebugBlock) {
+      log.info("handleMint before processApeMint - tx: {}", [event.transaction.hash.toHexString()]);
     }
 
     // Process the APE position
@@ -350,12 +418,21 @@ export function handleMint(event: Mint): void {
       .plus(event.params.collateralFeeToLPers)
       .plus(event.params.collateralFeeToStakers);
   } else {
+    if (isDebugBlock) {
+      log.info("handleMint before processTeaMint - tx: {}", [event.transaction.hash.toHexString()]);
+    }
+
     // Process the TEA position
     processTeaMint(event, vault);
 
-    // TEA mint volume: collateralIn + collateralFeeToLPers (no staker fees)
+    // TEA mint volume: collateralIn + collateralFeeToLPers + collateralFeeToStakers
     totalVolume = event.params.collateralIn
-      .plus(event.params.collateralFeeToLPers);
+      .plus(event.params.collateralFeeToLPers)
+      .plus(event.params.collateralFeeToStakers);
+  }
+
+  if (isDebugBlock) {
+    log.info("handleMint before updateVolumeEwma - tx: {}", [event.transaction.hash.toHexString()]);
   }
 
   // Update volume EWMA (per-vault and global)
@@ -363,10 +440,18 @@ export function handleMint(event: Mint): void {
   updateVolumeEwma(vault, volumeUsd, event.block.timestamp);
   updateGlobalVolumeEwma(volumeUsd, event.block.timestamp);
 
+  if (isDebugBlock) {
+    log.info("handleMint before updateVaultVolatility - tx: {}", [event.transaction.hash.toHexString()]);
+  }
+
   // Update volatility for this vault
   updateVaultVolatility(vault, event.block.timestamp);
 
   vault.save();
+
+  if (isDebugBlock) {
+    log.info("handleMint END - tx: {}", [event.transaction.hash.toHexString()]);
+  }
 }
 
 /**
@@ -547,15 +632,18 @@ export function handleBurn(event: Burn): void {
     // Process the APE position burn
     processApeBurn(event, vault);
 
-    // APE burn volume: collateralWithdrawn + collateralFeeToLPers
+    // APE burn volume: collateralWithdrawn + collateralFeeToLPers + collateralFeeToStakers
     totalVolume = event.params.collateralWithdrawn
-      .plus(event.params.collateralFeeToLPers);
+      .plus(event.params.collateralFeeToLPers)
+      .plus(event.params.collateralFeeToStakers);
   } else {
     // Handle TEA burn
     processTeaBurn(event, vault);
 
-    // TEA burn volume: collateralWithdrawn (no LP fees)
-    totalVolume = event.params.collateralWithdrawn;
+    // TEA burn volume: collateralWithdrawn + collateralFeeToLPers + collateralFeeToStakers
+    totalVolume = event.params.collateralWithdrawn
+      .plus(event.params.collateralFeeToLPers)
+      .plus(event.params.collateralFeeToStakers);
   }
 
   // Update volume EWMA (per-vault and global)

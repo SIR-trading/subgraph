@@ -1,18 +1,38 @@
 import { ApePosition, Token } from "../../generated/schema";
 import { Transfer } from "../../generated/templates/APE/APE";
-import { Address, BigInt, dataSource, store, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource, store, Bytes, log } from "@graphprotocol/graph-ts";
 import { generateApePositionId, loadOrCreateToken, bigIntToHex } from "../helpers";
 
+// Debug block for stuck subgraph investigation
+const DEBUG_BLOCK = BigInt.fromI32(7449520);
+
 export function handleTransferFrom(event: Transfer): void {
+  const isDebugBlock = event.block.number.equals(DEBUG_BLOCK);
+
+  if (isDebugBlock) {
+    log.info("handleTransferFrom START - tx: {}, from: {}, to: {}, amount: {}", [
+      event.transaction.hash.toHexString(),
+      event.params.from.toHexString(),
+      event.params.to.toHexString(),
+      event.params.amount.toString()
+    ]);
+  }
+
   // Skip mint and burn operations (from/to zero address)
   // These are handled by vault.ts handleMint/handleBurn functions
   const zeroAddress = Address.zero();
   if (event.params.from.equals(zeroAddress) || event.params.to.equals(zeroAddress)) {
+    if (isDebugBlock) {
+      log.info("handleTransferFrom END (skip mint/burn) - tx: {}", [event.transaction.hash.toHexString()]);
+    }
     return;
   }
 
   // Skip self-transfers (no position update needed)
   if (event.params.from.equals(event.params.to)) {
+    if (isDebugBlock) {
+      log.info("handleTransferFrom END (skip self-transfer) - tx: {}", [event.transaction.hash.toHexString()]);
+    }
     return;
   }
 
@@ -86,6 +106,13 @@ export function handleTransferFrom(event: Transfer): void {
     // Sender position doesn't exist - this shouldn't happen in normal operation
     // This indicates a data inconsistency or the position was created outside of our tracking
     // Log and skip this transfer to avoid creating invalid data
+    if (isDebugBlock) {
+      log.info("handleTransferFrom END (no sender position) - tx: {}", [event.transaction.hash.toHexString()]);
+    }
     return;
+  }
+
+  if (isDebugBlock) {
+    log.info("handleTransferFrom END - tx: {}", [event.transaction.hash.toHexString()]);
   }
 }
