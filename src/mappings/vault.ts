@@ -116,6 +116,7 @@ import {
 import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
 import { updateVolumeEwma, updateGlobalVolumeEwma } from "../volume-utils";
 import { ln, updateEwma } from "../math-utils";
+import { lockEndToIndex, applyLockDelta } from "../fenwick-utils";
 
 /**
  * Calculates USD value of a collateral amount for volume tracking.
@@ -517,6 +518,7 @@ function processTeaMint(event: Mint, vault: Vault): void {
     position.debtTokenTotal = BigInt.fromI32(0);
     position.balance = BigInt.fromI32(0);
     position.lockEnd = BigInt.fromI32(0);
+    position.lockIndex = 0;
     position.createdAt = event.block.timestamp;
   }
 
@@ -527,6 +529,10 @@ function processTeaMint(event: Mint, vault: Vault): void {
     userStats.save();
   }
 
+  // Snapshot old balance and lock index BEFORE any modifications
+  const oldBalance = position.balance;
+  const oldIndex = position.lockIndex;
+
   // Update position with calculated values
   position.collateralTotal = position.collateralTotal.plus(updates.collateralDeposited);
   position.dollarTotal = position.dollarTotal.plus(updates.dollarCollateralDeposited);
@@ -536,10 +542,23 @@ function processTeaMint(event: Mint, vault: Vault): void {
   // Fetch lock end from contract
   const vaultContractForLock = VaultContractBinding.bind(Address.fromString(vaultAddress));
   const lockEndResult = vaultContractForLock.try_lockEnd(userAddress, vaultIdBigInt);
+
+  let newIndex = oldIndex; // Default: keep old index if call reverts
   if (!lockEndResult.reverted) {
     position.lockEnd = lockEndResult.value;
+    newIndex = lockEndToIndex(lockEndResult.value);
   }
 
+  // Update Fenwick tree
+  if (!isNewPosition && oldIndex != newIndex && oldBalance.gt(BigInt.fromI32(0))) {
+    // Lock index changed: move existing balance from old index to new index
+    applyLockDelta(vault.id, oldIndex, oldBalance.neg());
+    applyLockDelta(vault.id, newIndex, oldBalance);
+  }
+  // Add newly minted tokens to the new index
+  applyLockDelta(vault.id, newIndex, updates.tokensMinted);
+
+  position.lockIndex = newIndex;
   position.save();
 }
 
@@ -799,6 +818,9 @@ function processTeaBurn(event: Burn, vault: Vault): void {
 
   const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, event.block.number);
   const tokensBurned = event.params.tokenIn;
+
+  // Update Fenwick tree: remove burned tokens from the position's lock index
+  applyLockDelta(vault.id, teaPosition.lockIndex, tokensBurned.neg());
 
   // Calculate closed TEA position values based on proportion burned
   closedTeaPosition.collateralDeposited = teaPosition.collateralTotal

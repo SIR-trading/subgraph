@@ -57,6 +57,7 @@ Represents a user's liquidity provider position in a vault.
 - `collateralTotal`: Total cost basis in collateral token units
 - `dollarTotal`: Total cost basis in USD
 - `debtTokenTotal`: Total cost basis in debt token units
+- `lockIndex`: Fenwick tree index (`0` = unlocked, `-1` = POL/infinite lock, `>0` = `lockEnd - REFERENCE_TIMESTAMP`)
 
 ### ApePosition
 Represents a user's leveraged position in a vault.
@@ -113,6 +114,20 @@ Historical record of completed auctions.
 - `highestBid`: Winning bid amount
 - `highestBidder`: Winner's address
 - `startTime`: When auction started
+
+### FenwickNode
+A node in the per-vault suffix-sum Fenwick tree for lock duration queries.
+- `id`: String `"{vaultId_hex}-fw-{index}"`
+- `vault`: Associated vault (linked Vault entity)
+- `index`: Tree index (seconds offset from `REFERENCE_TIMESTAMP`)
+- `value`: Fenwick tree node value (NOT the raw value at this lock time — it's a partial sum used by the tree structure)
+
+### VaultLockTree
+Per-vault metadata for the Fenwick tree.
+- `id`: Same as vault ID (Bytes)
+- `vault`: Associated vault (linked Vault entity)
+- `polLockedSupply`: TEA with infinite lock, tracked outside the tree (BigInt)
+- `maxIndex`: Highest index ever used in the tree (Int)
 
 ## Key Concepts
 
@@ -303,6 +318,41 @@ The decay ensures APR naturally decreases if no dividends are paid.
 - `src/mappings/consolidated.ts` → `handleDividendsPaid()`
 - `src/helpers.ts` → `loadOrCreateStakingStats()`
 - `src/math-utils.ts` → `updateEwma()`
+
+---
+
+### TEA Lock Duration Queries (Fenwick Tree)
+
+On MegaETH, TEA positions have time locks. A **suffix-sum Fenwick tree** stored as subgraph entities enables O(log n) queries for "total TEA supply locked for >= t more time" without fetching all positions.
+
+#### Design
+- Each unique `lockEnd` becomes index `lockEnd - REFERENCE_TIMESTAMP` (seconds)
+- `REFERENCE_TIMESTAMP` = 1740000000 (~Feb 2025), giving ~68 years of i32 range
+- **Suffix-sum pattern** (matching `Strategy.sol`): update goes backward (`i -= i & (-i)`), query goes forward (`i += i & (-i)`)
+- POL (infinite lock, `lockEnd >= MAX_UINT40`) tracked separately in `VaultLockTree.polLockedSupply`
+- Unlocked positions (`lockIndex = 0`) are not in the tree. Unlocked = `teaSupply - suffixSum(1) - polLockedSupply`
+- Tree never needs updating as time passes — only queries change (higher starting index excludes expired locks)
+
+#### Integration Points
+All updates go through `applyLockDelta(vaultId, index, delta)` which dispatches to the tree or POL supply.
+
+**Critical rule**: Snapshot `oldBalance` and `oldIndex` BEFORE balance is modified to prevent double-counting.
+
+- `processTeaMint` (vault.ts): snapshot → fetch lockEnd → move balance if index changed → add minted tokens
+- `processTeaBurn` (vault.ts): remove burned tokens from position's lock index
+- `handleTeaTransfer` (tea.ts): remove from sender's index, add to recipient's index (with possible index change)
+
+#### Client-Side Query
+```typescript
+const REFERENCE_TIMESTAMP = 1740000000;
+let targetIndex = Math.max(1, Math.floor(Date.now()/1000) + t - REFERENCE_TIMESTAMP);
+// Fetch ~28 FenwickNode entities by ID, sum values, add polLockedSupply
+```
+
+#### Key Files
+- `src/fenwick-utils.ts` → `lockEndToIndex()`, `fenwickUpdate()`, `applyLockDelta()`, `loadOrCreateVaultLockTree()`
+- `src/mappings/vault.ts` → `processTeaMint()`, `processTeaBurn()`
+- `src/mappings/tea.ts` → `handleTeaTransfer()`, `updateRecipientPosition()`
 
 ---
 

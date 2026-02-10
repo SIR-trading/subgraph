@@ -14,6 +14,7 @@ import {
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
 import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, bigIntToHex, getCollateralUsdPrice } from "../helpers";
+import { lockEndToIndex, applyLockDelta, POL_INDEX } from "../fenwick-utils";
 
 // Debug block for stuck subgraph investigation
 const DEBUG_BLOCK = BigInt.fromI32(7449520);
@@ -107,10 +108,21 @@ function updateVaultLiquidity(
   const vault = VaultSchema.load(vaultIdBytes);
   if (!vault) return;
 
-  // Tokens moving TO the vault (locking liquidity)
+  // Tokens moving TO the vault (locking liquidity = POL with infinite lock)
   if (recipientAddress.equals(vaultAddress)) {
     vault.lockedLiquidity = vault.lockedLiquidity.plus(transferAmount);
     vault.save();
+
+    // Update Fenwick tree: POL has infinite lock
+    applyLockDelta(vaultIdBytes, POL_INDEX, transferAmount);
+  }
+
+  // Tokens moving FROM the vault (unlocking POL — should not happen in practice)
+  if (senderAddress.equals(vaultAddress)) {
+    vault.lockedLiquidity = vault.lockedLiquidity.minus(transferAmount);
+    vault.save();
+
+    applyLockDelta(vaultIdBytes, POL_INDEX, transferAmount.neg());
   }
 }
 
@@ -158,7 +170,13 @@ function updateRecipientPosition(
   const recipientPositionId = generateUserPositionId(recipientAddress, vaultId);
   const existingPosition = TeaPosition.load(recipientPositionId);
 
+  const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
+
   if (existingPosition !== null) {
+    // Snapshot old balance and lock index BEFORE modifications
+    const oldBalance = existingPosition.balance;
+    const oldIndex = existingPosition.lockIndex;
+
     // Update existing position with transferred amounts
     existingPosition.balance = existingPosition.balance.plus(transferAmount);
     existingPosition.collateralTotal = existingPosition.collateralTotal.plus(collateralToTransfer);
@@ -166,15 +184,26 @@ function updateRecipientPosition(
     existingPosition.debtTokenTotal = existingPosition.debtTokenTotal.plus(debtTokenToTransfer);
 
     // Fetch updated lock end from contract
+    let newIndex = oldIndex; // Default: keep old index if call reverts
     const lockEndResult = vaultContract.try_lockEnd(recipientAddress, vaultId);
     if (!lockEndResult.reverted) {
       existingPosition.lockEnd = lockEndResult.value;
+      newIndex = lockEndToIndex(lockEndResult.value);
     }
 
+    // Update Fenwick tree
+    if (oldIndex != newIndex && oldBalance.gt(BigInt.fromI32(0))) {
+      // Lock index changed: move existing balance from old index to new index
+      applyLockDelta(vaultIdBytes, oldIndex, oldBalance.neg());
+      applyLockDelta(vaultIdBytes, newIndex, oldBalance);
+    }
+    // Add transferred tokens to new index
+    applyLockDelta(vaultIdBytes, newIndex, transferAmount);
+
+    existingPosition.lockIndex = newIndex;
     existingPosition.save();
   } else {
     // Create new position with transferred amounts
-    const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
     createNewTeaPosition(recipientAddress, vaultId, transferAmount, vaultContract, blockTimestamp);
     const newPosition = TeaPosition.load(recipientPositionId);
     if (newPosition) {
@@ -182,12 +211,17 @@ function updateRecipientPosition(
       newPosition.dollarTotal = dollarToTransfer;
       newPosition.debtTokenTotal = debtTokenToTransfer;
 
-      // Fetch lock end from contract
+      // Fetch lock end from contract and update Fenwick tree
       const lockEndResult = vaultContract.try_lockEnd(recipientAddress, vaultId);
+      let newIndex: i32 = 0;
       if (!lockEndResult.reverted) {
         newPosition.lockEnd = lockEndResult.value;
+        newIndex = lockEndToIndex(lockEndResult.value);
       }
 
+      // Add transferred tokens to the new index
+      applyLockDelta(vaultIdBytes, newIndex, transferAmount);
+      newPosition.lockIndex = newIndex;
       newPosition.save();
     }
   }
@@ -224,6 +258,7 @@ function createNewTeaPosition(
   newPosition.dollarTotal = BigDecimal.fromString("0");
   newPosition.debtTokenTotal = BigInt.fromI32(0);
   newPosition.lockEnd = BigInt.fromI32(0);
+  newPosition.lockIndex = 0;
   newPosition.createdAt = blockTimestamp;
 
   newPosition.save();
@@ -266,7 +301,12 @@ function handleTeaTransfer(
   const senderPosition = TeaPosition.load(senderPositionId);
   const unclaimedRewardsResult = vaultContract.try_unclaimedRewards(vaultId, senderAddress);
 
+  const vaultIdBytes = Bytes.fromHexString(bigIntToHex(vaultId));
+
   if (senderPosition && senderPosition.balance.gt(BigInt.fromI32(0))) {
+    // Remove transferred amount from sender's Fenwick tree index
+    applyLockDelta(vaultIdBytes, senderPosition.lockIndex, transferAmount.neg());
+
     // Calculate proportion being transferred
     const transferProportion = transferAmount.toBigDecimal().div(senderPosition.balance.toBigDecimal());
 

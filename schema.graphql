@@ -75,6 +75,7 @@ type TeaPosition @entity(immutable: false) {
   dollarTotal: BigDecimal!
   debtTokenTotal: BigInt!
   lockEnd: BigInt! # Timestamp when TEA becomes unlocked (0 = no lock)
+  lockIndex: Int! # Fenwick tree index: 0 = unlocked, -1 = POL (infinite lock), >0 = lockEnd - REFERENCE_TIMESTAMP
   createdAt: BigInt! # Block timestamp of first mint (resets after full burn)
 }
 
@@ -188,6 +189,20 @@ type StakingStats @entity(immutable: false) {
   id: Bytes!                          # singleton "staking-stats"
   stakingAprEwma: BigDecimal!         # 30-day EWMA of staking APR (simple annualized rate, no compounding)
   lastDividendTimestamp: BigInt!       # Last DividendsPaid event timestamp
+}
+
+type FenwickNode @entity(immutable: false) {
+  id: String!             # "{vaultId_hex}-fw-{index}"
+  vault: Vault! @link
+  index: Int!
+  value: BigInt!          # Fenwick tree node value (NOT raw value at this lock time)
+}
+
+type VaultLockTree @entity(immutable: false) {
+  id: Bytes!              # same as vault ID
+  vault: Vault! @link
+  polLockedSupply: BigInt! # TEA with infinite lock (outside the tree)
+  maxIndex: Int!           # Highest index in use (dynamic tree size)
 }
 
 type UserMonthlyStats @entity(immutable: false) {
