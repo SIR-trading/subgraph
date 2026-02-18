@@ -13,6 +13,7 @@ dataSources:
     mapping:
       entities:
         - Vault
+        - Token
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
@@ -21,15 +22,13 @@ dataSources:
           file: ./abis/VaultExternal.json
         - name: ERC20
           file: ./abis/Erc20.json
-        - name: Oracle
-          file: ./abis/Oracle.json
       eventHandlers:
         # Vault initialization from VaultExternal
         - event: VaultInitialized(indexed address,indexed address,indexed int8,uint256,address)
           handler: handleVaultInitialized
       file: ./src/mappings/vault.ts
 
-  # Vault contract - Tea/ERC1155 events  
+  # Vault contract - Tea/ERC1155 events
   - kind: ethereum
     name: Tea
     network: {{NETWORK}}
@@ -40,21 +39,12 @@ dataSources:
     mapping:
       entities:
         - Vault
-        - UserPositionTea
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       abis:
         - name: Tea
           file: ./abis/Tea.json
-        - name: Vault
-          file: ./abis/Vault.json
-        - name: ERC20
-          file: ./abis/Erc20.json
-        - name: UniswapV3Factory
-          file: ./abis/UniswapV3Factory.json
-        - name: UniswapV3Pool
-          file: ./abis/UniswapV3Pool.json
       eventHandlers:
         # TEA transfers (ERC1155) from Tea ABI
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
@@ -74,26 +64,15 @@ dataSources:
     mapping:
       entities:
         - Vault
-        - ApePosition
-        - ApePositionClosed
-        - TeaPositionClosed
-        - UserStats
+        - Fee
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       abis:
         - name: Vault
           file: ./abis/Vault.json
-        - name: ERC20
-          file: ./abis/Erc20.json
         - name: Sir
           file: ./abis/Sir.json
-        - name: UniswapV3Factory
-          file: ./abis/UniswapV3Factory.json
-        - name: UniswapV3Pool
-          file: ./abis/UniswapV3Pool.json
-        - name: Oracle
-          file: ./abis/Oracle.json
       eventHandlers:
         # Vault reserves and tax events from Vault ABI
         - event: ReservesChanged(indexed uint48,uint144,uint144)
@@ -106,76 +85,3 @@ dataSources:
         - event: {{MINT_EVENT}}
           handler: handleMint
       file: ./src/mappings/vault.ts
-
-  # SIR contract events - consolidated for claims, dividends, and auctions
-  - kind: ethereum
-    name: Sir
-    network: {{NETWORK}}
-    source:
-      address: "{{SIR_ADDRESS}}"
-      abi: Sir
-      startBlock: {{START_BLOCK}}
-    mapping:
-      entities:
-        - Dividend
-        - Auction
-        - AuctionsParticipant
-        - AuctionStats
-        - CurrentAuction
-        - UserStats
-        - StakingStats
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      abis:
-        - name: Vault
-          file: ./abis/Vault.json
-        - name: Sir
-          file: ./abis/Sir.json
-        - name: ERC20
-          file: ./abis/Erc20.json
-        - name: Quoter
-          file: ./abis/Quoter.json
-        - name: UniswapV3Factory
-          file: ./abis/UniswapV3Factory.json
-        - name: UniswapV3Pool
-          file: ./abis/UniswapV3Pool.json
-      eventHandlers:
-        # Dividend and claim events
-        - event: DividendsPaid(uint96,uint80)
-          handler: handleDividendsPaid
-        - event: DividendsClaimed(indexed address,uint96)
-          handler: handleDividendsClaimed
-        - event: RewardsClaimed(indexed address,indexed uint256,uint80)
-          handler: handleClaim
-        # Auction events
-        - event: AuctionStarted(indexed address,uint256)
-          handler: handleAuctionStarted
-        - event: BidReceived(indexed address,indexed address,uint96,uint96)
-          handler: handleBidReceived
-        - event: AuctionedTokensSentToWinner(indexed address,indexed address,indexed address,uint256)
-          handler: handleAuctionedClaimed
-      file: ./src/mappings/consolidated.ts
-
-templates:
-  - name: APE
-    kind: ethereum/contract
-    network: {{NETWORK}}
-    source:
-      abi: APE
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      file: ./src/mappings/ape.ts
-      entities:
-        - APE
-        - ApePosition
-      abis:
-        - name: APE
-          file: ./abis/APE.json
-        - name: ERC20
-          file: ./abis/Erc20.json
-      eventHandlers:
-        - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransferFrom

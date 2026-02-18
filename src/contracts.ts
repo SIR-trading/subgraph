@@ -3,11 +3,3 @@
 
 export const vaultAddress = "0x8d694D1b369BdE5B274Ad643fEdD74f836E88543";
 export const sirAddress = "0x9367A0c482703d8d9bda995B03f8E71056a72500";
-export const oracleAddress = "0x4edF071a7dEe52fBE663DF7873994725ba91Cdc7";
-
-// Uniswap V3 Factory (same address on all networks)
-export const uniswapV3FactoryAddress = "0x68b34591f662508076927803c567Cc8006988a09";
-
-// Network-specific token addresses
-export const usdStablecoinAddress = "0xFAfDdbb3FC7688494971a79cc65DCa3EF82079E7";
-export const wethAddress = "0x4200000000000000000000000000000000000006";

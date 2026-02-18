@@ -1,21 +1,7 @@
 type Token @entity(immutable: false) {
-  id: Bytes! # Token contract address
+  id: Bytes!
   symbol: String
   decimals: Int!
-  isCollateral: Boolean!
-  isDebt: Boolean!
-  vaultCount: Int! # Number of vaults using this token (as collateral or debt)
-}
-
-type TokenPairVolatility @entity(immutable: false) {
-  id: Bytes!                       # sorted(token0, token1) concatenated
-  token0: Token! @link             # smaller address (sorted)
-  token1: Token! @link             # larger address (sorted)
-  ewmaVarianceRate: BigDecimal!    # EWMA of variance rate (variance per year)
-  lastPrice: BigInt!               # Oracle tick in Q21.42 format (always token0/token1 direction)
-  lastTimestamp: BigInt!           # last update timestamp
-  volatilityAnnual: BigDecimal!    # computed annualized volatility = sqrt(ewmaVarianceRate)
-  vaultCount: Int!                 # vaults using this pair
 }
 
 type Vault @entity(immutable: false) {
@@ -24,32 +10,10 @@ type Vault @entity(immutable: false) {
   collateralToken: Token! @link
   debtToken: Token! @link
   leverageTier: Int!
-  totalValue: BigInt!
-  totalValueUsd: BigDecimal!
   lockedLiquidity: BigInt!
   teaSupply: BigInt!
-  reserveApes: BigInt!
   reserveLPers: BigInt!
-  tax: BigInt!
   rate: BigInt!
-  ape: Token! @link
-  volatility: TokenPairVolatility @link  # 30-day realized volatility for this token pair
-  createdAt: BigInt!        # Block timestamp when vault was initialized
-  creator: Bytes!           # Address that created the vault (event.transaction.from)
-
-  # Denormalized from linked TokenPairVolatility for sorting
-  volatilityAnnual: BigDecimal!
-
-  # 30-day EWMA of LP APY for sorting (continuous annualized rate, updated on each fee event)
-  lpApyEwma: BigDecimal!
-  lpApyLastTimestamp: BigInt!  # Last fee timestamp
-
-  # EWMA Volume Tracking (USD, annualized rate)
-  volumeUsdEwma1d: BigDecimal!    # 1-day half-life
-  volumeUsdEwma7d: BigDecimal!    # 7-day half-life
-  volumeUsdEwma30d: BigDecimal!   # 30-day half-life
-  volumeLastTimestamp: BigInt!    # Last volume event timestamp
-
   feesIds: [Bytes!]!
 }
 
@@ -58,173 +22,4 @@ type Fee @entity(immutable: false) {
   vaultId: Bytes!
   timestamp: BigInt!
   lpApy: BigDecimal!
-}
-
-type UsdRefreshState @entity {
-  id: Bytes! # "usd-refresh" singleton
-  nextVaultIdToRefresh: BigInt! # Next vault ID number in rotation (1, 2, 3...)
-  highestVaultId: BigInt! # Highest vault ID created, for wrap-around
-}
-
-type TeaPosition @entity(immutable: false) {
-  id: Bytes!
-  vault: Vault! @link
-  user: Bytes!
-  balance: BigInt!
-  collateralTotal: BigInt!
-  dollarTotal: BigDecimal!
-  debtTokenTotal: BigInt!
-  lockEnd: BigInt! # Timestamp when TEA becomes unlocked (0 = no lock)
-  lockIndex: Int! # Fenwick tree index: 0 = unlocked, -1 = POL (infinite lock), >0 = lockEnd - REFERENCE_TIMESTAMP
-  createdAt: BigInt! # Block timestamp of first mint (resets after full burn)
-}
-
-type ApePosition @entity(immutable: false) {
-  id: Bytes!
-  vault: Vault! @link
-  user: Bytes!
-  balance: BigInt!
-  collateralTotal: BigInt!
-  dollarTotal: BigDecimal!
-  debtTokenTotal: BigInt!
-  createdAt: BigInt! # Block timestamp of first mint (resets after full burn)
-}
-
-type ApePositionClosed @entity(immutable: true) {
-  id: Bytes!
-  vault: Vault! @link
-  user: Bytes!
-  collateralDeposited: BigInt!
-  dollarDeposited: BigDecimal!
-  collateralWithdrawn: BigInt!
-  dollarWithdrawn: BigDecimal!
-  createdAt: BigInt!  # When position was opened
-  closedAt: BigInt!   # When position was closed
-}
-
-type TeaPositionClosed @entity(immutable: true) {
-  id: Bytes!
-  vault: Vault! @link
-  user: Bytes!
-  collateralDeposited: BigInt!
-  dollarDeposited: BigDecimal!
-  collateralWithdrawn: BigInt!
-  dollarWithdrawn: BigDecimal!
-  createdAt: BigInt!  # When position was opened
-  closedAt: BigInt!   # When position was closed
-}
-
-type Dividend @entity(immutable: true) {
-  id: Bytes!
-  ethAmount: BigInt!
-  sirEthPrice: BigDecimal
-  stakedAmount: BigInt!
-  timestamp: BigInt!
-}
-
-type Auction @entity(immutable: false) {
-  id: Bytes!
-  token: Token! @link
-  amount: BigInt!
-  highestBid: BigInt!
-  highestBidder: Bytes!
-  startTime: BigInt!
-  isClaimed: Boolean!
-  bidderCount: Int!          # Number of unique bidders
-  amountUsd: BigDecimal!     # USD value of auctioned tokens (at time of winning bid)
-  highestBidUsd: BigDecimal! # USD value of winning bid (at time of bid)
-  participants: [AuctionsParticipant!] @derivedFrom(field: "auctionId")
-}
-
-type AuctionsParticipant @entity(immutable: false) {
-  id: Bytes!
-  auctionId: Auction! @link
-  user: Bytes!
-  bid: BigInt!
-}
-
-type AuctionStats @entity {
-  id: Bytes! # singleton "stats"
-  totalAuctions: BigInt! # total auctions ever started
-  totalDiscountUsd: BigDecimal! # sum of (amountUsd - highestBidUsd) for claimed auctions
-  claimedAuctionsWithBids: BigInt! # count of claimed auctions that had bids (for averaging)
-  uniqueWinners: BigInt! # count of unique addresses that have won at least one auction
-}
-
-type CurrentAuction @entity {
-  id: Bytes! # token address
-  auction: Auction! @link # reference to the current auction for this token
-}
-
-type VolumeStats @entity {
-  id: Bytes!                     # singleton "volume-stats"
-  totalVolumeUsd1d: BigDecimal!  # EWMA of total volume (1-day half-life)
-  totalVolumeUsd7d: BigDecimal!  # EWMA of total volume (7-day half-life)
-  totalVolumeUsd30d: BigDecimal! # EWMA of total volume (30-day half-life)
-  lastTimestamp: BigInt!         # Last update timestamp for EWMA decay
-}
-
-type UserStats @entity(immutable: false) {
-  id: Bytes!                          # User address
-  totalSirEarned: BigInt!             # Cumulative SIR from LP RewardsClaimed (12 decimals)
-  sirRewardClaimCount: Int!           # Number of LP reward claims
-  totalContributorSirEarned: BigInt!  # Cumulative SIR from contributor RewardsClaimed (12 decimals)
-  contributorClaimCount: Int!         # Number of contributor reward claims
-  totalDividendsClaimed: BigInt!      # Cumulative native token from DividendsClaimed (18 decimals)
-  dividendClaimCount: Int!
-  apePositionsOpened: Int!
-  apePositionsClosed: Int!
-  apeDollarDeposited: BigDecimal!     # Cumulative USD deposited (closed positions)
-  apeDollarWithdrawn: BigDecimal!     # Cumulative USD withdrawn (closed positions)
-  teaPositionsOpened: Int!
-  teaPositionsClosed: Int!
-  teaDollarDeposited: BigDecimal!
-  teaDollarWithdrawn: BigDecimal!
-  # Auction stats
-  auctionsWon: Int!                   # Number of auctions won (claimed)
-  auctionTotalSavedUsd: BigDecimal!   # Total USD saved (market value - bid price)
-}
-
-type StakingStats @entity(immutable: false) {
-  id: Bytes!                          # singleton "staking-stats"
-  stakingAprEwma: BigDecimal!         # 30-day EWMA of staking APR (simple annualized rate, no compounding)
-  lastDividendTimestamp: BigInt!       # Last DividendsPaid event timestamp
-}
-
-type FenwickNode @entity(immutable: false) {
-  id: String!             # "{vaultId_hex}-fw-{index}"
-  vault: Vault! @link
-  index: Int!
-  value: BigInt!          # Fenwick tree node value (NOT raw value at this lock time)
-}
-
-type VaultLockTree @entity(immutable: false) {
-  id: Bytes!              # same as vault ID
-  vault: Vault! @link
-  polLockedSupply: BigInt! # TEA with infinite lock (outside the tree)
-  maxIndex: Int!           # Highest index in use (dynamic tree size)
-}
-
-type UserMonthlyStats @entity(immutable: false) {
-  "Composite ID: user (20 bytes) + monthStart timestamp (8 bytes)"
-  id: Bytes!
-
-  user: Bytes!
-  monthStartTimestamp: BigInt!  # Unix timestamp of first second of month (UTC)
-
-  # Aggregated metrics
-  totalDepositedUsd: BigDecimal!
-  totalWithdrawnUsd: BigDecimal!
-  tradeCount: Int!
-  totalHoldSeconds: BigInt!
-
-  # Best trade tracking (need deposited/withdrawn for % calculation in API)
-  bestTradePnlPercentage: BigDecimal!
-  bestTradeDepositedUsd: BigDecimal!
-  bestTradeWithdrawnUsd: BigDecimal!
-  bestTradeVault: Vault @link
-
-  # Timestamps
-  firstTradeAt: BigInt!
-  lastTradeAt: BigInt!
 }
