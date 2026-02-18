@@ -228,3 +228,23 @@ type UserMonthlyStats @entity(immutable: false) {
   firstTradeAt: BigInt!
   lastTradeAt: BigInt!
 }
+
+type Activity @entity(immutable: false) {
+  id: Bytes!
+  counter: BigInt!
+  type: String!
+  user: Bytes
+  vaultId: Bytes
+  amount: BigInt
+  isAPE: Boolean
+  token: Bytes
+  timestamp: BigInt!
+  txHash: Bytes!
+  blockNumber: BigInt!
+  logIndex: BigInt!
+}
+
+type ActivityCounter @entity(immutable: false) {
+  id: Bytes!
+  count: BigInt!
+}

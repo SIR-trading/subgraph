@@ -13,6 +13,8 @@ dataSources:
     mapping:
       entities:
         - Vault
+        - Activity
+        - ActivityCounter
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
@@ -78,6 +80,8 @@ dataSources:
         - ApePositionClosed
         - TeaPositionClosed
         - UserStats
+        - Activity
+        - ActivityCounter
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
@@ -124,6 +128,8 @@ dataSources:
         - CurrentAuction
         - UserStats
         - StakingStats
+        - Activity
+        - ActivityCounter
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
@@ -155,6 +161,11 @@ dataSources:
           handler: handleBidReceived
         - event: AuctionedTokensSentToWinner(indexed address,indexed address,indexed address,uint256)
           handler: handleAuctionedClaimed
+        # Staking events
+        - event: Staked(indexed address,uint80)
+          handler: handleStaked
+        - event: Unstaked(indexed address,uint80)
+          handler: handleUnstaked
       file: ./src/mappings/consolidated.ts
 
 templates:

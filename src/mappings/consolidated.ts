@@ -9,7 +9,10 @@ import {
   DividendsPaid,
   DividendsClaimed,
   RewardsClaimed,
+  Staked,
+  Unstaked,
 } from "../../generated/Sir/Sir";
+import { createActivity } from "./activity";
 import {
   Auction,
   AuctionsParticipant,
@@ -19,7 +22,7 @@ import {
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
-import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, loadOrCreateUserStats, loadOrCreateStakingStats, getTokenUsdcPrice } from "../helpers";
+import { getBestPoolPrice, generateUserPositionId, loadOrCreateToken, loadOrCreateUserStats, loadOrCreateStakingStats, getTokenUsdcPrice, bigIntToHex } from "../helpers";
 import { updateEwma } from "../math-utils";
 
 // ===== DIVIDEND HANDLERS =====
@@ -123,6 +126,23 @@ export function handleClaim(event: RewardsClaimed): void {
       store.remove("TeaPosition", userPositionId.toHexString());
     }
   }
+
+  const activityVaultId = vaultId.gt(BigInt.fromI32(0))
+    ? Bytes.fromHexString(bigIntToHex(vaultId))
+    : null;
+  createActivity(
+    "claimLpRewards",
+    userAddress,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    activityVaultId,
+    rewards,
+    false,
+    false,
+    null
+  );
 }
 
 /**
@@ -139,6 +159,20 @@ export function handleDividendsClaimed(event: DividendsClaimed): void {
     userStats.dividendClaimCount = userStats.dividendClaimCount + 1;
     userStats.save();
   }
+
+  createActivity(
+    "claimRewards",
+    staker,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    amount,
+    false,
+    false,
+    null
+  );
 }
 
 // ===== AUCTION HANDLERS =====
@@ -208,6 +242,20 @@ export function handleAuctionStarted(event: AuctionStarted): void {
   const stats = loadOrCreateStats();
   stats.totalAuctions = stats.totalAuctions.plus(BigInt.fromI32(1));
   stats.save();
+
+  createActivity(
+    "auctionStarted",
+    null,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    event.params.feesToBeAuctioned,
+    false,
+    false,
+    event.params.token
+  );
 }
 
 export function handleBidReceived(event: BidReceived): void {
@@ -260,6 +308,20 @@ export function handleBidReceived(event: BidReceived): void {
   }
 
   auction.save();
+
+  createActivity(
+    "bid",
+    event.params.bidder,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    event.params.newBid,
+    false,
+    false,
+    event.params.token
+  );
 }
 
 export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void {
@@ -302,4 +364,52 @@ export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void
     }
     winnerStats.save();
   }
+
+  createActivity(
+    "auctionSettled",
+    event.params.winner,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    event.params.reward,
+    false,
+    false,
+    event.params.token
+  );
+}
+
+// ===== STAKING HANDLERS =====
+
+export function handleStaked(event: Staked): void {
+  createActivity(
+    "stake",
+    event.params.staker,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    event.params.amount,
+    false,
+    false,
+    null
+  );
+}
+
+export function handleUnstaked(event: Unstaked): void {
+  createActivity(
+    "unstake",
+    event.params.staker,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    event.params.amount,
+    false,
+    false,
+    null
+  );
 }

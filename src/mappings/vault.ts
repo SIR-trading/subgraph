@@ -9,6 +9,7 @@ import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store, log } fro
 const DEBUG_BLOCK = BigInt.fromI32(7449520);
 import { sirAddress, vaultAddress } from "../contracts";
 import { generateApePositionId, getCollateralUsdPrice, getDirectTokenPrice, loadOrCreateToken, bigIntToHex, generateUserPositionId, loadOrCreateUserStats, getMonthStartTimestamp, generateUserMonthlyStatsId } from "../helpers";
+import { createActivity } from "./activity";
 
 /**
  * Generates a unique Fee entity ID based on vault ID and timestamp
@@ -304,6 +305,20 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   // Track highest vault ID for round-robin USD refresh
   updateHighestVaultId(event.params.vaultId);
 
+  createActivity(
+    "vaultCreated",
+    event.transaction.from,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    vaultId,
+    null,
+    false,
+    false,
+    null
+  );
+
   if (isDebugBlock) {
     log.info("handleVaultInitialized END - tx: {}, apeAddress: {}", [
       event.transaction.hash.toHexString(),
@@ -449,6 +464,20 @@ export function handleMint(event: Mint): void {
   updateVaultVolatility(vault, event.block.timestamp);
 
   vault.save();
+
+  createActivity(
+    "mint",
+    event.params.minter,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    vaultId,
+    event.params.collateralIn,
+    isAPE,
+    true,
+    null
+  );
 
   if (isDebugBlock) {
     log.info("handleMint END - tx: {}", [event.transaction.hash.toHexString()]);
@@ -674,6 +703,20 @@ export function handleBurn(event: Burn): void {
   updateVaultVolatility(vault, event.block.timestamp);
 
   vault.save();
+
+  createActivity(
+    "burn",
+    event.params.burner,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    vaultId,
+    event.params.collateralWithdrawn,
+    isAPE,
+    true,
+    null
+  );
 }
 
 /**
