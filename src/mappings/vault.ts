@@ -548,6 +548,7 @@ function processTeaMint(event: Mint, vault: Vault): void {
     position.balance = BigInt.fromI32(0);
     position.lockEnd = BigInt.fromI32(0);
     position.lockIndex = 0;
+    position.claimedSir = BigInt.fromI32(0);
     position.createdAt = event.block.timestamp;
   }
 

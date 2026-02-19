@@ -76,6 +76,7 @@ type TeaPosition @entity(immutable: false) {
   debtTokenTotal: BigInt!
   lockEnd: BigInt! # Timestamp when TEA becomes unlocked (0 = no lock)
   lockIndex: Int! # Fenwick tree index: 0 = unlocked, -1 = POL (infinite lock), >0 = lockEnd - REFERENCE_TIMESTAMP
+  claimedSir: BigInt! # Cumulative SIR claimed for this position (12 decimals)
   createdAt: BigInt! # Block timestamp of first mint (resets after full burn)
 }
 

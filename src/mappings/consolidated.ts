@@ -19,6 +19,7 @@ import {
   AuctionStats,
   CurrentAuction,
   Dividend,
+  TeaPosition,
 } from "../../generated/schema";
 import { Vault as VaultContract } from "../../generated/Vault/Vault";
 import { sirAddress, vaultAddress, wethAddress } from "../contracts";
@@ -106,6 +107,14 @@ export function handleClaim(event: RewardsClaimed): void {
       // LP rewards
       userStats.totalSirEarned = userStats.totalSirEarned.plus(rewards);
       userStats.sirRewardClaimCount = userStats.sirRewardClaimCount + 1;
+
+      // Track per-position claimed SIR
+      const positionId = generateUserPositionId(userAddress, vaultId);
+      const position = TeaPosition.load(positionId);
+      if (position) {
+        position.claimedSir = position.claimedSir.plus(rewards);
+        position.save();
+      }
     }
     userStats.save();
   }

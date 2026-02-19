@@ -911,6 +911,19 @@ export class TeaPosition extends Entity {
     this.set("lockIndex", Value.fromI32(value));
   }
 
+  get claimedSir(): BigInt {
+    let value = this.get("claimedSir");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set claimedSir(value: BigInt) {
+    this.set("claimedSir", Value.fromBigInt(value));
+  }
+
   get createdAt(): BigInt {
     let value = this.get("createdAt");
     if (!value || value.kind == ValueKind.NULL) {

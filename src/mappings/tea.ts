@@ -259,6 +259,7 @@ function createNewTeaPosition(
   newPosition.debtTokenTotal = BigInt.fromI32(0);
   newPosition.lockEnd = BigInt.fromI32(0);
   newPosition.lockIndex = 0;
+  newPosition.claimedSir = BigInt.fromI32(0);
   newPosition.createdAt = blockTimestamp;
 
   newPosition.save();
