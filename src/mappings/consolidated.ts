@@ -82,6 +82,20 @@ export function handleDividendsPaid(event: DividendsPaid): void {
       stakingStats.save();
     }
   }
+
+  createActivity(
+    "dividendPaid",
+    null,
+    event.block.timestamp,
+    event.transaction.hash,
+    event.block.number,
+    event.logIndex,
+    null,
+    event.params.amountETH,
+    false,
+    false,
+    null
+  );
 }
 
 /**
