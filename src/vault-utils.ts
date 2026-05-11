@@ -2,7 +2,7 @@ import { Address, BigInt, BigDecimal, Bytes, ethereum } from "@graphprotocol/gra
 import { Vault, UsdRefreshState } from "../generated/schema";
 import { ERC20 } from "../generated/VaultExternal/ERC20";
 import { Vault as VaultContract, Vault__getReservesInputVaultParamsStruct as VaultContract__getReservesInputVaultParamsStruct } from "../generated/Vault/Vault";
-import { getTokenUsdcPrice, USD_STABLECOIN, bigIntToHex } from "./helpers";
+import { getTokenUsdcPrice, bigIntToHex } from "./helpers";
 import { vaultAddress } from "./contracts";
 import { updateVaultVolatility } from "./volatility-utils";
 
@@ -56,11 +56,6 @@ export function loadOrCreateVault(vaultId: Bytes): Vault {
  */
 export function calculateVaultUsdcValue(vault: Vault, blockNumber: BigInt): BigDecimal {
   const collateralToken = Address.fromBytes(vault.collateralToken);
-
-  if (collateralToken.equals(USD_STABLECOIN)) {
-    // For USD stablecoin, totalValue is already in 6 decimals, convert to BigDecimal
-    return vault.totalValue.toBigDecimal();
-  }
 
   // Use full precision price calculation
   const priceUsd = getTokenUsdcPrice(collateralToken, blockNumber);
