@@ -110,6 +110,36 @@ export function updateVolumeEwma(vault: Vault, volumeUsd: BigDecimal, timestamp:
 }
 
 /**
+ * Updates the per-vault APE-only EWMA volume (30-day half-life).
+ *
+ * Mirrors updateVolumeEwma but only tracks volume from APE mint/burn events,
+ * excluding TEA LP mints/burns. Used to weight issuance updates by trading
+ * activity only.
+ *
+ * @param vault The vault entity to update
+ * @param volumeUsd Volume in USD (already scaled by 10^6)
+ * @param timestamp Current block timestamp
+ */
+export function updateApeVolumeEwma(vault: Vault, volumeUsd: BigDecimal, timestamp: BigInt): void {
+  const zero = BigDecimal.fromString("0");
+
+  if (volumeUsd.le(zero)) {
+    return;
+  }
+
+  const dtSeconds = timestamp.minus(vault.apeVolumeLastTimestamp).toBigDecimal();
+  const dtYears = dtSeconds.div(SECONDS_PER_YEAR);
+
+  if (vault.apeVolumeLastTimestamp.equals(BigInt.fromI32(0))) {
+    vault.apeVolumeUsdEwma30d = LAMBDA_30D.times(volumeUsd);
+  } else {
+    vault.apeVolumeUsdEwma30d = calculateEwmaUpdate(vault.apeVolumeUsdEwma30d, volumeUsd, dtYears, LAMBDA_30D);
+  }
+
+  vault.apeVolumeLastTimestamp = timestamp;
+}
+
+/**
  * Updates the global EWMA volume estimators (1d, 7d, 30d half-lives).
  * Uses the same formula as per-vault EWMA - each volume event directly
  * updates the global EWMA.

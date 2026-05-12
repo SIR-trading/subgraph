@@ -601,6 +601,32 @@ export class Vault extends Entity {
     this.set("volumeLastTimestamp", Value.fromBigInt(value));
   }
 
+  get apeVolumeUsdEwma30d(): BigDecimal {
+    let value = this.get("apeVolumeUsdEwma30d");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set apeVolumeUsdEwma30d(value: BigDecimal) {
+    this.set("apeVolumeUsdEwma30d", Value.fromBigDecimal(value));
+  }
+
+  get apeVolumeLastTimestamp(): BigInt {
+    let value = this.get("apeVolumeLastTimestamp");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set apeVolumeLastTimestamp(value: BigInt) {
+    this.set("apeVolumeLastTimestamp", Value.fromBigInt(value));
+  }
+
   get feesIds(): Array<Bytes> {
     let value = this.get("feesIds");
     if (!value || value.kind == ValueKind.NULL) {

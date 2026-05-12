@@ -115,7 +115,7 @@ import {
   VaultNewTax,
 } from "../../generated/Vault/Vault";
 import { linkVaultToVolatility, updateVaultVolatility } from "../volatility-utils";
-import { updateVolumeEwma, updateGlobalVolumeEwma } from "../volume-utils";
+import { updateVolumeEwma, updateGlobalVolumeEwma, updateApeVolumeEwma } from "../volume-utils";
 import { ln, updateEwma } from "../math-utils";
 import { lockEndToIndex, applyLockDelta } from "../fenwick-utils";
 
@@ -455,6 +455,9 @@ export function handleMint(event: Mint): void {
   const volumeUsd = calculateVolumeUsd(totalVolume, vault, event.block.number);
   updateVolumeEwma(vault, volumeUsd, event.block.timestamp);
   updateGlobalVolumeEwma(volumeUsd, event.block.timestamp);
+  if (isAPE) {
+    updateApeVolumeEwma(vault, volumeUsd, event.block.timestamp);
+  }
 
   if (isDebugBlock) {
     log.info("handleMint before updateVaultVolatility - tx: {}", [event.transaction.hash.toHexString()]);
@@ -699,6 +702,9 @@ export function handleBurn(event: Burn): void {
   const volumeUsd = calculateVolumeUsd(totalVolume, vault, event.block.number);
   updateVolumeEwma(vault, volumeUsd, event.block.timestamp);
   updateGlobalVolumeEwma(volumeUsd, event.block.timestamp);
+  if (isAPE) {
+    updateApeVolumeEwma(vault, volumeUsd, event.block.timestamp);
+  }
 
   // Update volatility for this vault
   updateVaultVolatility(vault, event.block.timestamp);
