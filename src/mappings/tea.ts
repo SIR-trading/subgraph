@@ -337,6 +337,14 @@ function handleTeaTransfer(
     }
   }
 
+  // POL donation: recipient is the vault contract. POL bookkeeping was already
+  // done in updateVaultLiquidity (lockedLiquidity + Fenwick POL_INDEX); we must
+  // NOT create a TeaPosition for the vault address or it surfaces as a
+  // user-owned LP on the leaderboard.
+  if (recipientAddress.equals(vaultAddressBytes)) {
+    return;
+  }
+
   // Update or create recipient's position with cost basis
   updateRecipientPosition(vaultId, recipientAddress, transferAmount, vaultContract, collateralToTransfer, dollarToTransfer, debtTokenToTransfer, blockTimestamp);
 }
