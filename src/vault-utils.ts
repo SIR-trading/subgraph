@@ -42,7 +42,8 @@ export function loadOrCreateVault(vaultId: Bytes): Vault {
     vault.volumeUsdEwma7d = BigDecimal.fromString("0");
     vault.volumeUsdEwma30d = BigDecimal.fromString("0");
     vault.volumeLastTimestamp = BigInt.fromI32(0);
-    // APE-only volume EWMA (used for issuance weighting)
+    // APE-only volume EWMA (used for issuance weighting & "notable activity" badge)
+    vault.apeVolumeUsdEwma7d = BigDecimal.fromString("0");
     vault.apeVolumeUsdEwma30d = BigDecimal.fromString("0");
     vault.apeVolumeLastTimestamp = BigInt.fromI32(0);
     vault.feesIds = [];

@@ -130,6 +130,15 @@ export function updateApeVolumeEwma(vault: Vault, volumeUsd: BigDecimal, timesta
   const dtSeconds = timestamp.minus(vault.apeVolumeLastTimestamp).toBigDecimal();
   const dtYears = dtSeconds.div(SECONDS_PER_YEAR);
 
+  // 7d (nullable on pre-migration vaults; back-fills on first APE event after deploy)
+  const prev7d = vault.apeVolumeUsdEwma7d;
+  if (prev7d === null) {
+    vault.apeVolumeUsdEwma7d = LAMBDA_7D.times(volumeUsd);
+  } else {
+    vault.apeVolumeUsdEwma7d = calculateEwmaUpdate(prev7d, volumeUsd, dtYears, LAMBDA_7D);
+  }
+
+  // 30d (non-null, existing behaviour preserved)
   if (vault.apeVolumeLastTimestamp.equals(BigInt.fromI32(0))) {
     vault.apeVolumeUsdEwma30d = LAMBDA_30D.times(volumeUsd);
   } else {

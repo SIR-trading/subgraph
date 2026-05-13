@@ -50,7 +50,8 @@ type Vault @entity(immutable: false) {
   volumeUsdEwma30d: BigDecimal!   # 30-day half-life
   volumeLastTimestamp: BigInt!    # Last volume event timestamp
 
-  # APE-only EWMA volume (excludes TEA mints/burns) — used for issuance weighting
+  # APE-only EWMA volume (excludes TEA mints/burns) — used for issuance weighting and "notable activity" badge
+  apeVolumeUsdEwma7d: BigDecimal     # nullable: back-fills on next APE event for pre-existing vaults
   apeVolumeUsdEwma30d: BigDecimal!
   apeVolumeLastTimestamp: BigInt!
 

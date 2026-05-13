@@ -601,6 +601,23 @@ export class Vault extends Entity {
     this.set("volumeLastTimestamp", Value.fromBigInt(value));
   }
 
+  get apeVolumeUsdEwma7d(): BigDecimal | null {
+    let value = this.get("apeVolumeUsdEwma7d");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set apeVolumeUsdEwma7d(value: BigDecimal | null) {
+    if (!value) {
+      this.unset("apeVolumeUsdEwma7d");
+    } else {
+      this.set("apeVolumeUsdEwma7d", Value.fromBigDecimal(<BigDecimal>value));
+    }
+  }
+
   get apeVolumeUsdEwma30d(): BigDecimal {
     let value = this.get("apeVolumeUsdEwma30d");
     if (!value || value.kind == ValueKind.NULL) {
