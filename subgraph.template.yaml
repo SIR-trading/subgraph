@@ -1,6 +1,12 @@
 specVersion: 1.2.0
 schema:
   file: ./schema.graphql
+# `grafting` is declared here permanently so Goldsky's `--graft-from` flag
+# (which injects a `graft:` block server-side without touching the features
+# list) passes graph-node validation. Declaring a feature without using it
+# is allowed; using one without declaring it is not.
+features:
+  - grafting
 dataSources:
   # Vault contract - VaultExternal events
   - kind: ethereum

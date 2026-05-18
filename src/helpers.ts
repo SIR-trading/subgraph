@@ -454,8 +454,13 @@ const STAKING_STATS_ID = Bytes.fromUTF8("staking-stats");
 /**
  * Loads or creates a UserStats entity for a given user address.
  * Initializes all cumulative fields to zero.
+ *
+ * `interactionTimestamp` is the block timestamp of the event that prompted
+ * this call. It is used to set `firstInteractionAt` the first time we see
+ * this address (and only the first time) — this gates referral signup
+ * eligibility downstream.
  */
-export function loadOrCreateUserStats(userAddress: Bytes): UserStats {
+export function loadOrCreateUserStats(userAddress: Bytes, interactionTimestamp: BigInt): UserStats {
   let stats = UserStats.load(userAddress);
   if (!stats) {
     stats = new UserStats(userAddress);
@@ -476,6 +481,12 @@ export function loadOrCreateUserStats(userAddress: Bytes): UserStats {
     // Auction stats
     stats.auctionsWon = 0;
     stats.auctionTotalSavedUsd = BigDecimal.fromString("0");
+    stats.firstInteractionAt = interactionTimestamp;
+    stats.save();
+  } else if (stats.firstInteractionAt === null) {
+    // Backfill for entities created before firstInteractionAt was added.
+    // The first call after deploy seeds the field; subsequent calls leave it.
+    stats.firstInteractionAt = interactionTimestamp;
     stats.save();
   }
   return stats;

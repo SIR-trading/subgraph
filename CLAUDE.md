@@ -413,6 +413,26 @@ npm run build
 npm run deploy
 ```
 
+### Grafting (schema migrations without re-indexing)
+
+When making a backwards-compatible schema change (e.g., adding nullable fields), graft the new version onto the existing Goldsky deployment to skip a full re-sync. Use Goldsky's `--graft-from` CLI flag — it takes a `<name>/<version>` and auto-uses the live deployment's latest block:
+
+```bash
+NETWORK=mainnet pnpm build
+goldsky subgraph deploy sir-ethereum-subgraph-1/<new-version> \
+  --graft-from sir-ethereum-subgraph-1/<live-version>
+```
+
+The CLI injects `features: [grafting]` and the `graft:` block into the uploaded manifest — your local `subgraph.yaml` does not need to change.
+
+**On the next non-graft deploy**, use `--remove-graft` to strip the inherited graft so the subgraph runs cleanly:
+
+```bash
+goldsky subgraph deploy sir-ethereum-subgraph-1/<even-newer-version> --remove-graft
+```
+
+Run the same recipe per chain with that chain's Goldsky subgraph name.
+
 ## Notes for Developers
 
 1. **BigDecimal vs BigInt**: USD values use BigDecimal for precision, token amounts use BigInt

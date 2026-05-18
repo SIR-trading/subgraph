@@ -189,6 +189,10 @@ type UserStats @entity(immutable: false) {
   # Auction stats
   auctionsWon: Int!                   # Number of auctions won (claimed)
   auctionTotalSavedUsd: BigDecimal!   # Total USD saved (market value - bid price)
+  # Referral program eligibility: timestamp of the first time this address
+  # appeared in a SIR handler. Nullable so the field addition is backwards-
+  # compatible with already-indexed entities (no resync required).
+  firstInteractionAt: BigInt
 }
 
 type StakingStats @entity(immutable: false) {
@@ -233,6 +237,22 @@ type UserMonthlyStats @entity(immutable: false) {
   # Timestamps
   firstTradeAt: BigInt!
   lastTradeAt: BigInt!
+
+  # Referral program score: sum of fees paid (USD) across all APE and TEA
+  # mints/burns in this month for this user. Nullable for backwards-compat
+  # with already-indexed entities (treat as 0 when reading).
+  feesPaidUsd: BigDecimal
+}
+
+type Referral @entity(immutable: true) {
+  "Referee wallet address (one referral per wallet, ever)"
+  id: Bytes!
+  "Address of the referrer (the wallet credited for this user's fees)"
+  referrer: Bytes!
+  "Block timestamp of the first interaction that established the referral"
+  createdAt: BigInt!
+  "Transaction hash of the tagged mint that established the referral"
+  txHash: Bytes!
 }
 
 type Activity @entity(immutable: false) {

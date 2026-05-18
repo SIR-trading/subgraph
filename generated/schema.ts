@@ -2259,6 +2259,23 @@ export class UserStats extends Entity {
   set auctionTotalSavedUsd(value: BigDecimal) {
     this.set("auctionTotalSavedUsd", Value.fromBigDecimal(value));
   }
+
+  get firstInteractionAt(): BigInt | null {
+    let value = this.get("firstInteractionAt");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set firstInteractionAt(value: BigInt | null) {
+    if (!value) {
+      this.unset("firstInteractionAt");
+    } else {
+      this.set("firstInteractionAt", Value.fromBigInt(<BigInt>value));
+    }
+  }
 }
 
 export class StakingStats extends Entity {
@@ -2696,6 +2713,104 @@ export class UserMonthlyStats extends Entity {
 
   set lastTradeAt(value: BigInt) {
     this.set("lastTradeAt", Value.fromBigInt(value));
+  }
+
+  get feesPaidUsd(): BigDecimal | null {
+    let value = this.get("feesPaidUsd");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set feesPaidUsd(value: BigDecimal | null) {
+    if (!value) {
+      this.unset("feesPaidUsd");
+    } else {
+      this.set("feesPaidUsd", Value.fromBigDecimal(<BigDecimal>value));
+    }
+  }
+}
+
+export class Referral extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Referral entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type Referral must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("Referral", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static loadInBlock(id: Bytes): Referral | null {
+    return changetype<Referral | null>(
+      store.get_in_block("Referral", id.toHexString()),
+    );
+  }
+
+  static load(id: Bytes): Referral | null {
+    return changetype<Referral | null>(store.get("Referral", id.toHexString()));
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get referrer(): Bytes {
+    let value = this.get("referrer");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set referrer(value: Bytes) {
+    this.set("referrer", Value.fromBytes(value));
+  }
+
+  get createdAt(): BigInt {
+    let value = this.get("createdAt");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set createdAt(value: BigInt) {
+    this.set("createdAt", Value.fromBigInt(value));
+  }
+
+  get txHash(): Bytes {
+    let value = this.get("txHash");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set txHash(value: Bytes) {
+    this.set("txHash", Value.fromBytes(value));
   }
 }
 

@@ -1,9 +1,9 @@
 import { VaultInitialized } from "../../generated/VaultExternal/VaultExternal";
-import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed, UserMonthlyStats } from "../../generated/schema";
+import { ApePosition, Vault, ApePositionClosed, Fee, Token, TeaPosition, TeaPositionClosed, UserMonthlyStats, UserStats, Referral } from "../../generated/schema";
 import { Sir } from "../../generated/Sir/Sir";
 import { Vault as VaultContractBinding } from "../../generated/Vault/Vault";
 import { APE } from "../../generated/templates";
-import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, Bytes, DataSourceContext, store, log, ethereum } from "@graphprotocol/graph-ts";
 
 // Debug block for stuck subgraph investigation
 const DEBUG_BLOCK = BigInt.fromI32(7449520);
@@ -384,8 +384,106 @@ export function handleReservesChanged(event: ReservesChanged): void {
   }
 }
 
+/**
+ * Extracts a 20-byte trailing referrer address from a transaction's calldata,
+ * if present. Standard ABI encoding produces a calldata length where
+ * `(length - 4) % 32 == 0`. A 20-byte trailing suffix yields a remainder of 20.
+ * Anything else is treated as "no referrer".
+ */
+function extractReferrerFromCalldata(input: Bytes): Bytes | null {
+  const len = input.length;
+  if (len <= 24) return null;
+  if ((len - 4) % 32 != 20) return null;
+  // Last 20 bytes
+  const start = len - 20;
+  const slice = new Uint8Array(20);
+  for (let i = 0; i < 20; i++) {
+    slice[i] = input[start + i];
+  }
+  return Bytes.fromUint8Array(slice);
+}
+
+/**
+ * If this is the user's first interaction AND the tx calldata carries a
+ * referrer suffix AND the referrer isn't the user themselves, record a
+ * Referral entity. Idempotent: only fires once per wallet, the first time.
+ */
+function maybeRecordReferral(
+  user: Bytes,
+  wasFirstInteraction: boolean,
+  event: ethereum.Event
+): void {
+  if (!wasFirstInteraction) return;
+  const referrer = extractReferrerFromCalldata(event.transaction.input);
+  if (referrer === null) return;
+  if (referrer.equals(user)) return;
+  // Defensive: only insert if no existing Referral row (should always be true
+  // when wasFirstInteraction is true, but cheap to double-check).
+  if (Referral.load(user) !== null) return;
+  const ref = new Referral(user);
+  ref.referrer = referrer;
+  ref.createdAt = event.block.timestamp;
+  ref.txHash = event.transaction.hash;
+  ref.save();
+}
+
+/**
+ * Adds fee-paid USD to the user's current-month UserMonthlyStats.
+ * Used by the referral program to score "fees brought to the protocol".
+ * Skips when price is unavailable or fee is zero.
+ */
+function recordUserFeesPaid(
+  user: Bytes,
+  feeCollateral: BigInt,
+  vault: Vault,
+  blockNumber: BigInt,
+  timestamp: BigInt
+): void {
+  if (feeCollateral.le(BigInt.zero())) return;
+
+  const collateralPriceUsd = getCollateralUsdPrice(vault.collateralToken, blockNumber);
+  if (collateralPriceUsd.le(BigDecimal.zero())) return;
+
+  const collateralToken = Token.load(vault.collateralToken);
+  const collateralDecimals = collateralToken ? collateralToken.decimals : 18;
+
+  const feeUsd = feeCollateral
+    .toBigDecimal()
+    .times(collateralPriceUsd)
+    .div(BigInt.fromI32(10).pow(u8(collateralDecimals)).toBigDecimal());
+
+  const monthStart = getMonthStartTimestamp(timestamp);
+  const statsId = generateUserMonthlyStatsId(user, monthStart);
+  let monthlyStats = UserMonthlyStats.load(statsId);
+  if (!monthlyStats) {
+    monthlyStats = new UserMonthlyStats(statsId);
+    monthlyStats.user = user;
+    monthlyStats.monthStartTimestamp = monthStart;
+    monthlyStats.totalDepositedUsd = BigDecimal.zero();
+    monthlyStats.totalWithdrawnUsd = BigDecimal.zero();
+    monthlyStats.tradeCount = 0;
+    monthlyStats.totalHoldSeconds = BigInt.zero();
+    monthlyStats.bestTradePnlPercentage = BigDecimal.fromString("-999999");
+    monthlyStats.bestTradeDepositedUsd = BigDecimal.zero();
+    monthlyStats.bestTradeWithdrawnUsd = BigDecimal.zero();
+    monthlyStats.bestTradeVault = null;
+    monthlyStats.firstTradeAt = timestamp;
+    monthlyStats.lastTradeAt = timestamp;
+    monthlyStats.feesPaidUsd = BigDecimal.zero();
+  } else if (monthlyStats.feesPaidUsd === null) {
+    monthlyStats.feesPaidUsd = BigDecimal.zero();
+  }
+
+  monthlyStats.feesPaidUsd = monthlyStats.feesPaidUsd!.plus(feeUsd);
+  monthlyStats.save();
+}
+
 export function handleMint(event: Mint): void {
   const isDebugBlock = event.block.number.equals(DEBUG_BLOCK);
+
+  // Snapshot whether this is the wallet's first SIR interaction BEFORE any
+  // downstream code creates UserStats. Used by the referral suffix logic.
+  const wasFirstInteraction = UserStats.load(event.params.minter) === null;
 
   if (isDebugBlock) {
     log.info("handleMint START - tx: {}, vaultId: {}, isAPE: {}, minter: {}", [
@@ -459,6 +557,20 @@ export function handleMint(event: Mint): void {
     updateApeVolumeEwma(vault, volumeUsd, event.block.timestamp);
   }
 
+  // Record fees paid by the minter for the referral program score
+  const mintFeeCollateral = event.params.collateralFeeToLPers.plus(event.params.collateralFeeToStakers);
+  recordUserFeesPaid(
+    event.params.minter,
+    mintFeeCollateral,
+    vault,
+    event.block.number,
+    event.block.timestamp
+  );
+
+  // If this is the wallet's first interaction with SIR and the tx carries a
+  // 20-byte referrer suffix, record the Referral. Only fires once per wallet.
+  maybeRecordReferral(event.params.minter, wasFirstInteraction, event);
+
   if (isDebugBlock) {
     log.info("handleMint before updateVaultVolatility - tx: {}", [event.transaction.hash.toHexString()]);
   }
@@ -514,9 +626,13 @@ function processApeMint(event: Mint, vault: Vault): void {
 
   // Track new position opening in UserStats
   if (isNewPosition) {
-    const userStats = loadOrCreateUserStats(userAddress);
+    const userStats = loadOrCreateUserStats(userAddress, event.block.timestamp);
     userStats.apePositionsOpened = userStats.apePositionsOpened + 1;
     userStats.save();
+  } else {
+    // Even on subsequent mints, ensure firstInteractionAt is seeded for
+    // wallets created before this field existed.
+    loadOrCreateUserStats(userAddress, event.block.timestamp);
   }
 
   // Update position with calculated values
@@ -557,9 +673,11 @@ function processTeaMint(event: Mint, vault: Vault): void {
 
   // Track new position opening in UserStats
   if (isNewPosition) {
-    const userStats = loadOrCreateUserStats(userAddress);
+    const userStats = loadOrCreateUserStats(userAddress, event.block.timestamp);
     userStats.teaPositionsOpened = userStats.teaPositionsOpened + 1;
     userStats.save();
+  } else {
+    loadOrCreateUserStats(userAddress, event.block.timestamp);
   }
 
   // Snapshot old balance and lock index BEFORE any modifications
@@ -706,6 +824,16 @@ export function handleBurn(event: Burn): void {
     updateApeVolumeEwma(vault, volumeUsd, event.block.timestamp);
   }
 
+  // Record fees paid by the burner for the referral program score
+  const burnFeeCollateral = event.params.collateralFeeToLPers.plus(event.params.collateralFeeToStakers);
+  recordUserFeesPaid(
+    event.params.burner,
+    burnFeeCollateral,
+    vault,
+    event.block.number,
+    event.block.timestamp
+  );
+
   // Update volatility for this vault
   updateVaultVolatility(vault, event.block.timestamp);
 
@@ -779,7 +907,7 @@ function processApeBurn(event: Burn, vault: Vault): void {
     .div(apePosition.balance);
 
   // Accumulate closed position amounts into UserStats
-  const userStats = loadOrCreateUserStats(userAddress);
+  const userStats = loadOrCreateUserStats(userAddress, event.block.timestamp);
   userStats.apeDollarDeposited = userStats.apeDollarDeposited.plus(dollarDeposited);
   userStats.apeDollarWithdrawn = userStats.apeDollarWithdrawn.plus(dollarWithdrawn);
 
@@ -899,7 +1027,7 @@ function processTeaBurn(event: Burn, vault: Vault): void {
     .div(teaPosition.balance);
 
   // Accumulate closed position amounts into UserStats
-  const userStats = loadOrCreateUserStats(userAddress);
+  const userStats = loadOrCreateUserStats(userAddress, event.block.timestamp);
   userStats.teaDollarDeposited = userStats.teaDollarDeposited.plus(dollarDeposited);
   userStats.teaDollarWithdrawn = userStats.teaDollarWithdrawn.plus(dollarWithdrawn);
 

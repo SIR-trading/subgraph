@@ -110,7 +110,7 @@ export function handleClaim(event: RewardsClaimed): void {
   const rewards = event.params.rewards;
 
   if (rewards.gt(BigInt.fromI32(0))) {
-    const userStats = loadOrCreateUserStats(userAddress);
+    const userStats = loadOrCreateUserStats(userAddress, event.block.timestamp);
 
     // vaultId = 0 means contributor rewards, otherwise LP rewards
     if (vaultId.equals(BigInt.fromI32(0))) {
@@ -177,7 +177,7 @@ export function handleDividendsClaimed(event: DividendsClaimed): void {
   const amount = event.params.amount;
 
   if (amount.gt(BigInt.fromI32(0))) {
-    const userStats = loadOrCreateUserStats(staker);
+    const userStats = loadOrCreateUserStats(staker, event.block.timestamp);
     userStats.totalDividendsClaimed = userStats.totalDividendsClaimed.plus(amount);
     userStats.dividendClaimCount = userStats.dividendClaimCount + 1;
     userStats.save();
@@ -368,7 +368,7 @@ export function handleAuctionedClaimed(event: AuctionedTokensSentToWinner): void
     const discountUsd = auction.amountUsd.minus(auction.highestBidUsd);
 
     // Load winner's stats first to check if this is their first win
-    const winnerStats = loadOrCreateUserStats(auction.highestBidder);
+    const winnerStats = loadOrCreateUserStats(auction.highestBidder, event.block.timestamp);
     const isFirstWin = winnerStats.auctionsWon == 0;
 
     // Update global auction stats
