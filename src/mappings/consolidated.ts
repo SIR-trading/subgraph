@@ -51,36 +51,23 @@ export function handleDividendsPaid(event: DividendsPaid): void {
   }
   dividendsEntity.save();
 
-  // Update staking APR EWMA (simple returns, no compounding)
-  // x = amountETH / totalStakedValueInETH (simple return per dividend)
-  // where totalStakedValueInETH = amountStakedSIR × SIR/ETH price
-  const zero = BigDecimal.fromString("0");
-
-  if (sirTokenEthPrice.gt(zero) && event.params.amountStakedSIR.gt(BigInt.fromI32(0))) {
-    // Normalize raw values to human-readable units
-    // amountETH is in wei (18 decimals), stakedSIR is in raw SIR (12 decimals)
-    // sirTokenEthPrice is already in human-readable units (ETH per 1 SIR)
+  // Update EWMA of annualised ETH dividends paid to stakers.
+  // x = amountETH (normalised to ETH units). The kernel multiplies by λ, so the
+  // estimator converges to ETH/year — price/supply normalisation is deferred to
+  // the UI, which divides by the current staked SIR value.
+  if (event.params.amountETH.gt(BigInt.fromI32(0))) {
     const ETH_DECIMALS = BigInt.fromI32(10).pow(18).toBigDecimal();
-    const SIR_DECIMALS = BigInt.fromI32(10).pow(12).toBigDecimal();
-
     const amountETH = event.params.amountETH.toBigDecimal().div(ETH_DECIMALS);
-    const stakedSIR = event.params.amountStakedSIR.toBigDecimal().div(SIR_DECIMALS);
-    const totalStakedValueInETH = stakedSIR.times(sirTokenEthPrice);
 
-    if (totalStakedValueInETH.gt(zero)) {
-      // Simple return (no log) for APR without compounding
-      const x = amountETH.div(totalStakedValueInETH);
-
-      const stakingStats = loadOrCreateStakingStats();
-      stakingStats.stakingAprEwma = updateEwma(
-        stakingStats.stakingAprEwma,
-        x,
-        stakingStats.lastDividendTimestamp,
-        event.block.timestamp
-      );
-      stakingStats.lastDividendTimestamp = event.block.timestamp;
-      stakingStats.save();
-    }
+    const stakingStats = loadOrCreateStakingStats();
+    stakingStats.annualEthDividendsEwma = updateEwma(
+      stakingStats.annualEthDividendsEwma,
+      amountETH,
+      stakingStats.lastDividendTimestamp,
+      event.block.timestamp
+    );
+    stakingStats.lastDividendTimestamp = event.block.timestamp;
+    stakingStats.save();
   }
 
   createActivity(

@@ -2321,8 +2321,8 @@ export class StakingStats extends Entity {
     this.set("id", Value.fromBytes(value));
   }
 
-  get stakingAprEwma(): BigDecimal {
-    let value = this.get("stakingAprEwma");
+  get annualEthDividendsEwma(): BigDecimal {
+    let value = this.get("annualEthDividendsEwma");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -2330,8 +2330,8 @@ export class StakingStats extends Entity {
     }
   }
 
-  set stakingAprEwma(value: BigDecimal) {
-    this.set("stakingAprEwma", Value.fromBigDecimal(value));
+  set annualEthDividendsEwma(value: BigDecimal) {
+    this.set("annualEthDividendsEwma", Value.fromBigDecimal(value));
   }
 
   get lastDividendTimestamp(): BigInt {

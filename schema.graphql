@@ -197,7 +197,7 @@ type UserStats @entity(immutable: false) {
 
 type StakingStats @entity(immutable: false) {
   id: Bytes!                          # singleton "staking-stats"
-  stakingAprEwma: BigDecimal!         # 30-day EWMA of staking APR (simple annualized rate, no compounding)
+  annualEthDividendsEwma: BigDecimal! # 30-day EWMA of annualised ETH dividends paid to stakers (ETH units, decay applied at read time)
   lastDividendTimestamp: BigInt!       # Last DividendsPaid event timestamp
 }
 

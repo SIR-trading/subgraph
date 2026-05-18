@@ -268,17 +268,12 @@ dailyVolume = ewma / 365.25
 - `src/mappings/vault.ts` → `calculateVolumeUsd()`, volume tracking in `handleMint()` and `handleBurn()`
 - `src/math-utils.ts` → `exp()`
 
-### Staking APR Estimator (EWMA)
+### Staking Dividend Rate Estimator (EWMA)
 
-The subgraph computes annualized staking APR for SIR stakers using an EWMA with a 30-day half-life. This uses **simple returns** (not log returns) since dividends are paid out and not auto-compounded.
-
-The estimator is similar to summing yields over 30 days and extrapolating to 1 year, but uses exponential weighting for smoothness.
+The subgraph computes the annualised ETH dividend flow to SIR stakers using an EWMA with a 30-day half-life. **Price and staked-supply normalisation is deferred to the UI** so the displayed APR reflects current conditions rather than the conditions in force at each historical dividend.
 
 #### Definitions
-- `d_n`: ETH dividends paid
-- `p_n`: SIR price in ETH (ETH per SIR)
-- `s_n`: total staked SIR
-- `x_n = d_n / (p_n × s_n)`: simple return per dividend
+- `d_n`: ETH dividends paid (per event, normalised to ETH units)
 - `H = 30/365.25`: half-life in years
 - `τ = H / ln(2)`: time constant (~0.1186 years)
 - `λ = 1/τ = ln(2)/H ≈ 8.445`: decay constant (1/year)
@@ -286,33 +281,31 @@ The estimator is similar to summing yields over 30 days and extrapolating to 1 y
 
 #### Recursive Formula
 ```
-y_n = x_n/τ + D_n × y_{n-1}
+y_n = λ × d_n + D_n × y_{n-1}
 ```
 
-Equivalently (since 1/τ = λ):
-```
-y_n = λ × x_n + D_n × y_{n-1}
-```
-
-The `1/τ` (or `λ`) factor converts the dimensionless return directly to an annualized rate, so `y_n` is the annualized APR.
+The `λ` factor is the kernel-density weight that converts a sum of impulses into an annualised rate, so `y_n` is in ETH/year.
 
 #### StakingStats Entity
-- `stakingAprEwma`: 30-day EWMA of staking APR (simple annualized rate)
+- `annualEthDividendsEwma`: 30-day EWMA of annualised ETH dividends paid to stakers (ETH units)
 - `lastDividendTimestamp`: Timestamp of last DividendsPaid event
 
-#### Reading in App (with decay)
+#### Reading in App (with decay + UI normalisation)
 ```typescript
 const LAMBDA_30D = 8.445;
 const SECONDS_PER_YEAR = 31_557_600;
 
-function getStakingApr(stakingAprEwma: number, lastDividendTimestamp: number): number {
+function getAnnualEthDividends(ewma: number, lastDividendTimestamp: number): number {
   const now = Date.now() / 1000;
   const dtYears = (now - lastDividendTimestamp) / SECONDS_PER_YEAR;
-  return stakingAprEwma * Math.exp(-LAMBDA_30D * dtYears);  // apply decay
+  return ewma * Math.exp(-LAMBDA_30D * dtYears);  // ETH/year
 }
+
+// In the UI: divide by current value of staked SIR
+const apr = annualEthDividends / (currentStakedSir * sirPriceInEth);
 ```
 
-The decay ensures APR naturally decreases if no dividends are paid.
+The decay ensures the dividend rate naturally decreases if no dividends are paid.
 
 #### Key Files
 - `src/mappings/consolidated.ts` → `handleDividendsPaid()`
